@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# test and tooling output
+coverage/
+.pytest_cache/
+*.tsbuildinfo
+
+# local environment and secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# logs and editor files
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+# local infrastructure data and credentials
+infra/pgbouncer/certs/*
+!infra/pgbouncer/certs/README.md
+backups/

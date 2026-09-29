@@ -1,0 +1,56 @@
+name: read-buddy
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-read_buddy}
+      POSTGRES_USER: ${POSTGRES_USER:-read_buddy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - database
+
+  pgbouncer:
+    image: edoburu/pgbouncer:1.24.1-p0
+    restart: unless-stopped
+    profiles: ["production"]
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-read_buddy}
+      DB_USER: ${POSTGRES_USER:-read_buddy}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN:-200}
+      DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-20}
+      CLIENT_TLS_SSLMODE: require
+      CLIENT_TLS_CERT_FILE: /etc/pgbouncer/certs/server.crt
+      CLIENT_TLS_KEY_FILE: /etc/pgbouncer/certs/server.key
+      SERVER_TLS_SSLMODE: disable
+    ports:
+      - "${PGBOUNCER_PORT:-6432}:5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ${PGBOUNCER_CERT_DIR:-./infra/pgbouncer/certs}:/etc/pgbouncer/certs:ro
+    networks:
+      - database
+
+volumes:
+  postgres_data:
+
+networks:
+  database:
+    driver: bridge
