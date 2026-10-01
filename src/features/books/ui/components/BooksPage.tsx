@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Book, BookStatus } from "@/features/books/domain";
+import { BookStatus } from "@/features/books/domain";
 import { getBooks, getCurrentReading } from "@/features/books/ui/book-actions";
+import type { BookView } from "@/features/books/ui/book-view";
 import { BookList } from "./BookList";
 import { CreateBookForm } from "./CreateBookForm";
 import { Loader2 } from "lucide-react";
 
 export function BooksPage() {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [currentReading, setCurrentReading] = useState<Book | null>(null);
+  const [books, setBooks] = useState<BookView[]>([]);
+  const [currentReading, setCurrentReading] = useState<BookView | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,8 +88,15 @@ export function BooksPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-foreground text-2xl font-semibold">My Books</h1>
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="text-foreground text-3xl font-semibold tracking-tight">
+            Books
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your queue and choose what to read next.
+          </p>
+        </div>
         <CreateBookForm onSuccess={handleBookChange} />
       </div>
 
@@ -98,6 +106,7 @@ export function BooksPage() {
           currentReadingId={currentReading.id}
           title="Currently Reading"
           emptyMessage="No book currently being read"
+          onBookChange={handleBookChange}
         />
       )}
 
@@ -106,12 +115,14 @@ export function BooksPage() {
         currentReadingId={currentReading?.id}
         title="Queued"
         emptyMessage="No queued books. Add a book to get started!"
+        onBookChange={handleBookChange}
       />
 
       <BookList
         books={completedBooks}
         title="Completed"
         emptyMessage="No completed books yet"
+        onBookChange={handleBookChange}
       />
     </div>
   );

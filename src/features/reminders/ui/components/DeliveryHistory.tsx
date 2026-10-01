@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 export interface ReminderDelivery {
   id: string;
@@ -115,8 +114,8 @@ export function DeliveryHistory({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="max-h-96">
-          <table className="w-full text-sm">
+        <div className="max-h-96 overflow-auto">
+          <table className="w-full min-w-[42rem] text-sm">
             <thead>
               <tr className="text-muted-foreground border-border border-b text-left">
                 <th className="pb-2 font-medium">Scheduled</th>
@@ -191,7 +190,7 @@ export function DeliveryHistory({
               ))}
             </tbody>
           </table>
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   );

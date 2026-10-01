@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -58,27 +58,46 @@ export function ReminderSettingsForm() {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
   };
+  const showLoadError = useEffectEvent(() => {
+    showToast({
+      title: "Error",
+      description: "Failed to load reminder settings",
+      variant: "destructive",
+    });
+  });
+  const { reset } = form;
 
-  const loadPreference = async () => {
-    try {
-      const response = await fetch("/api/reminders");
-      if (!response.ok) throw new Error("Failed to load");
-      const data = await response.json();
-      setPreference(data);
-      form.reset({
-        enabled: data.enabled,
-        reminderTime: data.reminderTime.slice(0, 5),
-      });
-    } catch {
-      showToast({
-        title: "Error",
-        description: "Failed to load reminder settings",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  useEffect(() => {
+    let mounted = true;
+
+    const loadPreference = async () => {
+      try {
+        const response = await fetch("/api/reminders");
+        if (!response.ok) throw new Error("Failed to load");
+        const data = await response.json();
+
+        if (mounted) {
+          setPreference(data.updatedAt ? data : null);
+          reset({
+            enabled: data.enabled,
+            reminderTime: data.reminderTime.slice(0, 5),
+          });
+          setIsEnabled(data.enabled);
+        }
+      } catch {
+        if (mounted) {
+          showLoadError();
+        }
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+
+    void loadPreference();
+    return () => {
+      mounted = false;
+    };
+  }, [reset]);
 
   const handleSubmit = async (data: ReminderFormData) => {
     setIsSaving(true);
@@ -92,12 +111,18 @@ export function ReminderSettingsForm() {
         }),
       });
       if (!response.ok) throw new Error("Failed to save");
+      const preferenceData = await response.json();
+      setPreference(preferenceData);
+      form.reset({
+        enabled: preferenceData.enabled,
+        reminderTime: preferenceData.reminderTime.slice(0, 5),
+      });
+      setIsEnabled(preferenceData.enabled);
       showToast({
         title: "Saved",
         description: "Reminder settings updated successfully",
         variant: "default",
       });
-      await loadPreference();
     } catch {
       showToast({
         title: "Error",
@@ -211,7 +236,7 @@ export function ReminderSettingsForm() {
       </Card>
       {toast && (
         <div
-          className={`fixed right-4 bottom-4 z-50 rounded-lg px-4 py-3 text-sm shadow-lg ${
+          className={`fixed right-4 bottom-4 left-4 z-50 rounded-lg px-4 py-3 text-sm shadow-lg sm:left-auto sm:max-w-sm ${
             toast.variant === "destructive"
               ? "bg-destructive text-destructive-foreground"
               : "bg-background text-foreground border-border border"

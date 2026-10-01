@@ -24,7 +24,7 @@ export default function Home() {
         </div>
         <div>
           <p className="text-accent-foreground mb-2 text-sm font-medium tracking-wide uppercase">
-            Foundation ready
+            Read with intention
           </p>
           <h1 className="text-foreground text-4xl font-semibold tracking-tight">
             Read Buddy
@@ -44,8 +44,8 @@ export default function Home() {
             <ArrowRight className="size-5" aria-hidden="true" />
           </Link>
           <p className="text-muted-foreground text-sm">
-            Phase 2: Authentication is implemented. Product features coming in
-            subsequent phases.
+            Your books, reading sessions, progress, and reminders in one focused
+            workspace.
           </p>
         </div>
       </section>

@@ -1,14 +1,15 @@
 "use client";
 
-import { Book } from "@/features/books/domain";
+import type { BookView } from "@/features/books/ui/book-view";
 import { BookCard } from "./BookCard";
 import { BookOpen } from "lucide-react";
 
 interface BookListProps {
-  books: Book[];
+  books: BookView[];
   currentReadingId?: string;
   title: string;
   emptyMessage: string;
+  onBookChange?: () => void;
 }
 
 export function BookList({
@@ -16,6 +17,7 @@ export function BookList({
   currentReadingId,
   title,
   emptyMessage,
+  onBookChange,
 }: BookListProps) {
   if (books.length === 0) {
     return (
@@ -38,6 +40,7 @@ export function BookList({
             key={book.id}
             book={book}
             isCurrentReading={book.id === currentReadingId}
+            onBookChange={onBookChange}
           />
         ))}
       </div>

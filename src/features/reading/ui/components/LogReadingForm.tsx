@@ -49,6 +49,8 @@ export function MoodButton({ mood, selected, onSelect }: MoodButtonProps) {
           ? "border-primary bg-primary/10 text-primary"
           : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5",
       )}
+      role="radio"
+      aria-checked={isSelected}
     >
       <div
         className={cn(
@@ -158,15 +160,24 @@ export function LogReadingForm({
         className="fixed inset-0 bg-black/50"
         onClick={() => setIsOpen(false)}
       />
-      <div className="bg-card border-border relative w-full max-w-md rounded-xl border p-6 shadow-xl">
+      <div
+        className="bg-card border-border relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border p-5 shadow-xl sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="log-reading-title"
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-foreground text-xl font-semibold">
+          <h2
+            id="log-reading-title"
+            className="text-foreground text-xl font-semibold"
+          >
             Log Reading Progress
           </h2>
           <button
             onClick={() => setIsOpen(false)}
             disabled={isSubmitting}
             className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            aria-label="Close log reading dialog"
           >
             <X className="size-5" aria-hidden="true" />
           </button>
@@ -246,6 +257,8 @@ export function LogReadingForm({
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5",
                 )}
+                role="radio"
+                aria-checked={mood === null}
               >
                 <div
                   className={cn(

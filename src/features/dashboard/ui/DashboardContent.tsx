@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Book, BookStatus } from "@/features/books/domain";
+import Link from "next/link";
+import { BookStatus } from "@/features/books/domain";
+import type { BookView } from "@/features/books/ui/book-view";
 import {
   getCurrentReading,
   getBooks,
@@ -31,8 +33,8 @@ interface RecentSession {
 }
 
 export function DashboardContent() {
-  const [currentBook, setCurrentBook] = useState<Book | null>(null);
-  const [queuedBooks, setQueuedBooks] = useState<Book[]>([]);
+  const [currentBook, setCurrentBook] = useState<BookView | null>(null);
+  const [queuedBooks, setQueuedBooks] = useState<BookView[]>([]);
   const [dailyTarget, setDailyTarget] = useState<number>(10);
   const [recentSessions, setRecentSessions] = useState<RecentSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,7 +56,7 @@ export function DashboardContent() {
           setDailyTarget(target);
           setRecentSessions(sessions as RecentSession[]);
           setQueuedBooks(
-            books.filter((b: Book) => b.status === BookStatus.QUEUED),
+            books.filter((book) => book.status === BookStatus.QUEUED),
           );
         }
       } catch (err) {
@@ -77,6 +79,10 @@ export function DashboardContent() {
   const progressPercent = currentBook
     ? Math.round((currentBook.currentPage / currentBook.totalPages) * 100)
     : 0;
+  const today = new Date().toDateString();
+  const pagesReadToday = recentSessions
+    .filter((session) => new Date(session.readAt).toDateString() === today)
+    .reduce((total, session) => total + session.pagesRead, 0);
 
   if (isLoading) {
     return (
@@ -99,14 +105,24 @@ export function DashboardContent() {
 
   return (
     <div className="space-y-6">
+      <header>
+        <p className="text-primary text-sm font-medium">Your reading day</p>
+        <h1 className="text-foreground mt-1 text-3xl font-semibold tracking-tight">
+          Dashboard
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Keep your current book moving and your reading habit visible.
+        </p>
+      </header>
+
       {/* Current Reading Book - Primary */}
       {currentBook && (
-        <section className="border-border bg-card rounded-xl border p-6 shadow-sm">
-          <div className="mb-4 flex items-start justify-between gap-4">
+        <section className="border-border bg-card rounded-xl border p-4 shadow-sm sm:p-6">
+          <div className="mb-4 flex flex-col items-start justify-between gap-4 sm:flex-row">
             <div className="flex-1">
               <div className="mb-2 flex items-center gap-2">
                 <BookOpen className="text-primary h-5 w-5" aria-hidden="true" />
-                <h2 className="text-foreground text-xl font-semibold">
+                <h2 className="text-foreground text-lg font-semibold sm:text-xl">
                   Currently Reading
                 </h2>
                 <span className="bg-primary/10 text-primary border-primary/20 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium">
@@ -114,9 +130,9 @@ export function DashboardContent() {
                 </span>
               </div>
               <p className="text-muted-foreground mb-4">{currentBook.author}</p>
-              <h1 className="text-foreground mb-4 text-2xl font-semibold">
+              <h3 className="text-foreground mb-4 text-2xl font-semibold">
                 {currentBook.title}
-              </h1>
+              </h3>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
@@ -140,7 +156,7 @@ export function DashboardContent() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="bg-muted/60 flex shrink-0 items-center gap-2 rounded-lg px-3 py-2">
               <Target className="text-primary h-4 w-4" aria-hidden="true" />
               <span className="text-muted-foreground text-sm">
                 Daily target: {dailyTarget} pages
@@ -148,14 +164,20 @@ export function DashboardContent() {
             </div>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <button className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium">
+            <Link
+              href="/sessions"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium"
+            >
               <Play className="h-4 w-4" aria-hidden="true" />
               Continue Reading
-            </button>
-            <button className="border-border bg-background hover:bg-muted inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium">
+            </Link>
+            <Link
+              href="/books"
+              className="border-border bg-background hover:bg-muted inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium"
+            >
               <CheckCircle className="h-4 w-4" aria-hidden="true" />
-              Complete
-            </button>
+              Manage book
+            </Link>
           </div>
         </section>
       )}
@@ -178,14 +200,14 @@ export function DashboardContent() {
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Pages today</span>
               <span className="text-foreground font-medium">
-                {currentBook?.currentPage || 0} / {dailyTarget}
+                {pagesReadToday} / {dailyTarget}
               </span>
             </div>
             <div className="bg-muted h-3 overflow-hidden rounded-full">
               <div
                 className="bg-primary h-full transition-all duration-500"
                 style={{
-                  width: `${Math.min(100, Math.round(((currentBook?.currentPage || 0) / dailyTarget) * 100))}%`,
+                  width: `${Math.min(100, Math.round((pagesReadToday / dailyTarget) * 100))}%`,
                 }}
               />
             </div>
@@ -203,8 +225,8 @@ export function DashboardContent() {
             Quick Actions
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            <a
-              href="/books/new"
+            <Link
+              href="/books"
               className="border-border bg-card hover:bg-muted flex items-center gap-3 rounded-lg border p-4 transition-colors"
             >
               <Plus className="text-primary h-5 w-5" aria-hidden="true" />
@@ -214,8 +236,8 @@ export function DashboardContent() {
                   Add a new book to your queue
                 </p>
               </div>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/books"
               className="border-border bg-card hover:bg-muted flex items-center gap-3 rounded-lg border p-4 transition-colors"
             >
@@ -226,9 +248,9 @@ export function DashboardContent() {
                   View and manage your books
                 </p>
               </div>
-            </a>
-            <a
-              href="/reading"
+            </Link>
+            <Link
+              href="/sessions"
               className="border-border bg-card hover:bg-muted flex items-center gap-3 rounded-lg border p-4 transition-colors"
             >
               <Clock className="text-primary h-5 w-5" aria-hidden="true" />
@@ -238,19 +260,19 @@ export function DashboardContent() {
                   Record a reading session
                 </p>
               </div>
-            </a>
-            <a
-              href="/settings"
+            </Link>
+            <Link
+              href="/reminders"
               className="border-border bg-card hover:bg-muted flex items-center gap-3 rounded-lg border p-4 transition-colors"
             >
               <Settings className="text-primary h-5 w-5" aria-hidden="true" />
               <div>
-                <p className="text-foreground font-medium">Settings</p>
+                <p className="text-foreground font-medium">Reminders</p>
                 <p className="text-muted-foreground text-sm">
                   Manage preferences and reminders
                 </p>
               </div>
-            </a>
+            </Link>
           </div>
         </section>
       </div>
@@ -296,13 +318,13 @@ export function DashboardContent() {
                         </span>
                       </div>
                     </div>
-                    <a
-                      href={`/books/${book.id}`}
+                    <Link
+                      href="/books"
                       className="text-primary hover:bg-primary/10 flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium"
                     >
-                      Start
+                      View
                       <Play className="h-3.5 w-3.5" aria-hidden="true" />
-                    </a>
+                    </Link>
                   </div>
                 </li>
               ))}
@@ -344,7 +366,7 @@ export function DashboardContent() {
                           ({session.pagesRead} pages)
                         </span>
                         {session.mood && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                          <span className="border-chart-2/20 bg-chart-2/10 text-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium">
                             {session.mood}
                           </span>
                         )}

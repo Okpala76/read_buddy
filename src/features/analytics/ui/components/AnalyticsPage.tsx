@@ -53,9 +53,16 @@ export function AnalyticsPage() {
     let mounted = true;
     const loadData = async () => {
       try {
+        const [analyticsResponse, streakResponse] = await Promise.all([
+          fetch(`/api/analytics?preset=month`),
+          fetch(`/api/analytics/streak`),
+        ]);
+        if (!analyticsResponse.ok || !streakResponse.ok) {
+          throw new Error("Analytics request failed");
+        }
         const [analyticsData, streakData] = await Promise.all([
-          fetch(`/api/analytics?preset=month`).then((r) => r.json()),
-          fetch(`/api/analytics/streak`).then((r) => r.json()),
+          analyticsResponse.json(),
+          streakResponse.json(),
         ]);
         if (mounted) {
           setAnalytics(analyticsData);
@@ -102,7 +109,9 @@ export function AnalyticsPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-foreground text-2xl font-semibold">Analytics</h1>
+          <h1 className="text-foreground text-3xl font-semibold tracking-tight">
+            Analytics
+          </h1>
           <p className="text-muted-foreground">
             Track your reading progress and habits
           </p>
@@ -110,8 +119,8 @@ export function AnalyticsPage() {
       </div>
 
       {/* Streak Cards */}
-      <section className="grid gap-4 md:grid-cols-3">
-        <div className="border-border bg-card rounded-xl border p-6">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
           <div className="flex items-center gap-3">
             <div className="bg-primary/10 rounded-lg p-3">
               <TrendingUp className="text-primary h-6 w-6" aria-hidden="true" />
@@ -124,10 +133,10 @@ export function AnalyticsPage() {
             </div>
           </div>
         </div>
-        <div className="border-border bg-card rounded-xl border p-6">
+        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
           <div className="flex items-center gap-3">
-            <div className="bg-green/10 rounded-lg p-3">
-              <Award className="h-6 w-6 text-green-600" aria-hidden="true" />
+            <div className="bg-chart-3/15 rounded-lg p-3">
+              <Award className="text-chart-3 h-6 w-6" aria-hidden="true" />
             </div>
             <div>
               <p className="text-muted-foreground text-sm">Longest Streak</p>
@@ -137,11 +146,11 @@ export function AnalyticsPage() {
             </div>
           </div>
         </div>
-        <div className="border-border bg-card rounded-xl border p-6">
+        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
           <div className="flex items-center gap-3">
-            <div className="bg-blue/10 rounded-lg p-3">
+            <div className="bg-chart-2/15 rounded-lg p-3">
               <CalendarDays
-                className="h-6 w-6 text-blue-600"
+                className="text-chart-2 h-6 w-6"
                 aria-hidden="true"
               />
             </div>
@@ -156,8 +165,8 @@ export function AnalyticsPage() {
       </section>
 
       {/* Key Metrics */}
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="border-border bg-card rounded-xl border p-6">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
           <div className="flex items-center gap-3">
             <div className="bg-primary/10 rounded-lg p-3">
               <BookOpen className="text-primary h-6 w-6" aria-hidden="true" />
@@ -170,13 +179,10 @@ export function AnalyticsPage() {
             </div>
           </div>
         </div>
-        <div className="border-border bg-card rounded-xl border p-6">
+        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
           <div className="flex items-center gap-3">
-            <div className="bg-green/10 rounded-lg p-3">
-              <BarChart2
-                className="h-6 w-6 text-green-600"
-                aria-hidden="true"
-              />
+            <div className="bg-chart-3/15 rounded-lg p-3">
+              <BarChart2 className="text-chart-3 h-6 w-6" aria-hidden="true" />
             </div>
             <div>
               <p className="text-muted-foreground text-sm">Total Sessions</p>
@@ -186,13 +192,10 @@ export function AnalyticsPage() {
             </div>
           </div>
         </div>
-        <div className="border-border bg-card rounded-xl border p-6">
+        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
           <div className="flex items-center gap-3">
-            <div className="bg-purple/10 rounded-lg p-3">
-              <Calendar
-                className="h-6 w-6 text-purple-600"
-                aria-hidden="true"
-              />
+            <div className="bg-chart-5/15 rounded-lg p-3">
+              <Calendar className="text-chart-5 h-6 w-6" aria-hidden="true" />
             </div>
             <div>
               <p className="text-muted-foreground text-sm">Avg Pages/Session</p>
@@ -202,11 +205,11 @@ export function AnalyticsPage() {
             </div>
           </div>
         </div>
-        <div className="border-border bg-card rounded-xl border p-6">
+        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
           <div className="flex items-center gap-3">
-            <div className="bg-orange/10 rounded-lg p-3">
+            <div className="bg-chart-4/15 rounded-lg p-3">
               <CalendarDays
-                className="h-6 w-6 text-orange-600"
+                className="text-chart-4 h-6 w-6"
                 aria-hidden="true"
               />
             </div>
@@ -222,7 +225,7 @@ export function AnalyticsPage() {
 
       {/* Charts */}
       <section className="space-y-6">
-        <section className="border-border bg-card rounded-xl border p-6">
+        <section className="border-border bg-card min-w-0 rounded-xl border p-4 sm:p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-foreground text-xl font-semibold">
               Daily Progress
@@ -242,8 +245,8 @@ export function AnalyticsPage() {
           )}
         </section>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <section className="border-border bg-card rounded-xl border p-6">
+        <div className="grid gap-6 xl:grid-cols-2">
+          <section className="border-border bg-card min-w-0 rounded-xl border p-4 sm:p-6">
             <h2 className="text-foreground mb-4 text-xl font-semibold">
               Weekly Progress
             </h2>
@@ -262,7 +265,7 @@ export function AnalyticsPage() {
             )}
           </section>
 
-          <section className="border-border bg-card rounded-xl border p-6">
+          <section className="border-border bg-card min-w-0 rounded-xl border p-4 sm:p-6">
             <h2 className="text-foreground mb-4 text-xl font-semibold">
               Monthly Progress
             </h2>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Book, BookStatus } from "@/features/books/domain";
+import { BookStatus } from "@/features/books/domain";
+import type { BookView } from "@/features/books/ui/book-view";
 import {
   getCurrentReading,
   getDailyTarget,
@@ -13,7 +14,7 @@ import { Loader2, Target, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ReadingPage() {
-  const [currentBook, setCurrentBook] = useState<Book | null>(null);
+  const [currentBook, setCurrentBook] = useState<BookView | null>(null);
   const [dailyTarget, setDailyTarget] = useState<number>(10);
   const [recentSessions, setRecentSessions] = useState<SessionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,18 +99,27 @@ export function ReadingPage() {
 
   return (
     <div className="space-y-8">
+      <header>
+        <h1 className="text-foreground text-3xl font-semibold tracking-tight">
+          Reading Sessions
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Log your progress and review your recent reading.
+        </p>
+      </header>
+
       {/* Current Reading Book */}
       {currentBook && (
         <section
           className={cn(
-            "border-border bg-card rounded-xl border p-6",
+            "border-border bg-card rounded-xl border p-4 sm:p-6",
             currentBook.status === BookStatus.READING &&
               "ring-primary/50 ring-2",
           )}
         >
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <div className="mb-2 flex items-center gap-2">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
                 <BookOpen
                   className={cn(
                     "size-5",

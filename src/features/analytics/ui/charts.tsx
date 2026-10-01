@@ -45,16 +45,8 @@ export function DailyPagesChart({ data, className }: DailyChartProps) {
         <AreaChart data={data}>
           <defs>
             <linearGradient id="colorPages" x1="0" y1="0" x2="0" y2="1">
-              <stop
-                offset="5%"
-                stopColor="hsl(var(--primary))"
-                stopOpacity={0.3}
-              />
-              <stop
-                offset="95%"
-                stopColor="hsl(var(--primary))"
-                stopOpacity={0}
-              />
+              <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -67,19 +59,18 @@ export function DailyPagesChart({ data, className }: DailyChartProps) {
               })
             }
             tick={{ fontSize: 11 }}
-            stroke="hsl(var(--border))"
+            stroke="var(--border)"
           />
           <YAxis
             tick={{ fontSize: 11 }}
-            stroke="hsl(var(--border))"
+            stroke="var(--border)"
             tickFormatter={formatTick}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "hsl(var(--background))",
-              border: "1px solid hsl(var(--border))",
+              backgroundColor: "var(--background)",
+              border: "1px solid var(--border)",
               borderRadius: "8px",
-              boxShadow: "0 4px 12px hsl(var(--foreground) / 0.1)",
             }}
             labelFormatter={(value) =>
               new Date(String(value)).toLocaleDateString("en-US", {
@@ -97,7 +88,7 @@ export function DailyPagesChart({ data, className }: DailyChartProps) {
           <Area
             type="monotone"
             dataKey="pagesRead"
-            stroke="hsl(var(--primary))"
+            stroke="var(--primary)"
             strokeWidth={2}
             fillOpacity={1}
             fill="url(#colorPages)"
@@ -130,19 +121,18 @@ export function WeeklyChart({ data, className }: WeeklyChartProps) {
               })
             }
             tick={{ fontSize: 11 }}
-            stroke="hsl(var(--border))"
+            stroke="var(--border)"
           />
           <YAxis
             tick={{ fontSize: 11 }}
-            stroke="hsl(var(--border))"
+            stroke="var(--border)"
             tickFormatter={formatTick}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "hsl(var(--background))",
-              border: "1px solid hsl(var(--border))",
+              backgroundColor: "var(--background)",
+              border: "1px solid var(--border)",
               borderRadius: "8px",
-              boxShadow: "0 4px 12px hsl(var(--foreground) / 0.1)",
             }}
             labelFormatter={(value) => {
               const date = new Date(String(value));
@@ -165,14 +155,10 @@ export function WeeklyChart({ data, className }: WeeklyChartProps) {
           <Legend />
           <Bar
             dataKey="pagesRead"
-            fill="hsl(var(--primary))"
+            fill="var(--primary)"
             radius={[4, 4, 0, 0]}
           />
-          <Bar
-            dataKey="sessions"
-            fill="hsl(var(--secondary))"
-            radius={[4, 4, 0, 0]}
-          />
+          <Bar dataKey="sessions" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -201,19 +187,18 @@ export function MonthlyChart({ data, className }: MonthlyChartProps) {
               })
             }
             tick={{ fontSize: 11 }}
-            stroke="hsl(var(--border))"
+            stroke="var(--border)"
           />
           <YAxis
             tick={{ fontSize: 11 }}
-            stroke="hsl(var(--border))"
+            stroke="var(--border)"
             tickFormatter={formatTick}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "hsl(var(--background))",
-              border: "1px solid hsl(var(--border))",
+              backgroundColor: "var(--background)",
+              border: "1px solid var(--border)",
               borderRadius: "8px",
-              boxShadow: "0 4px 12px hsl(var(--foreground) / 0.1)",
             }}
             labelFormatter={(value) =>
               new Date(String(value)).toLocaleDateString("en-US", {
@@ -230,16 +215,16 @@ export function MonthlyChart({ data, className }: MonthlyChartProps) {
           <Line
             type="monotone"
             dataKey="pagesRead"
-            stroke="hsl(var(--primary))"
+            stroke="var(--primary)"
             strokeWidth={2}
-            dot={{ fill: "hsl(var(--primary))", strokeWidth: 2 }}
+            dot={{ fill: "var(--primary)", strokeWidth: 2 }}
           />
           <Line
             type="monotone"
             dataKey="sessions"
-            stroke="hsl(var(--secondary))"
+            stroke="var(--chart-2)"
             strokeWidth={2}
-            dot={{ fill: "hsl(var(--secondary))", strokeWidth: 2 }}
+            dot={{ fill: "var(--chart-2)", strokeWidth: 2 }}
           />
         </LineChart>
       </ResponsiveContainer>

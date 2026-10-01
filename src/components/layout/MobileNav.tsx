@@ -1,91 +1,76 @@
 "use client";
 
+import { BookOpen, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  Library,
-  BookOpen,
-  Settings,
-  LogOut,
-  Menu,
-} from "lucide-react";
+
+import { signOutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  Sheet,
+  SheetClose,
   SheetContent,
-  SheetTrigger,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { signOutAction } from "@/app/actions/auth";
-
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "My Books", href: "/books", icon: Library },
-  { name: "Reading", href: "/reading", icon: BookOpen },
-  { name: "Settings", href: "/settings", icon: Settings },
-];
+import { cn } from "@/lib/utils";
+import { isNavigationItemActive, productNavigation } from "./navigation";
 
 export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <Sheet>
-      <SheetTrigger>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="lg:hidden"
-          aria-label="Open navigation menu"
-        >
-          <Menu className="h-6 w-6" aria-hidden="true" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-72">
-        <SheetHeader>
-          <SheetTitle>Navigation</SheetTitle>
-        </SheetHeader>
-        <nav
-          className="flex flex-col space-y-1 py-4"
-          aria-label="Mobile navigation"
-        >
-          {navigation.map((item) => {
-            const isActive =
-              pathname === item.href || pathname.startsWith(item.href + "/");
-            return (
+    <SheetContent
+      side="left"
+      overlayClassName="lg:hidden"
+      className="flex w-[min(20rem,85vw)] flex-col p-0 lg:hidden"
+    >
+      <SheetHeader className="border-border border-b px-5 py-5 text-left">
+        <SheetTitle className="flex items-center gap-2">
+          <BookOpen className="text-primary size-6" aria-hidden="true" />
+          Read Buddy
+        </SheetTitle>
+        <SheetDescription>Your reading workspace</SheetDescription>
+      </SheetHeader>
+
+      <nav
+        className="flex flex-1 flex-col space-y-1 overflow-y-auto p-4"
+        aria-label="Mobile navigation"
+      >
+        {productNavigation.map((item) => {
+          const isActive = isNavigationItemActive(pathname, item.href);
+          return (
+            <SheetClose asChild key={item.name}>
               <Link
-                key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium transition-colors",
+                  "flex min-h-12 items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium transition-colors",
                   isActive
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                 )}
                 aria-current={isActive ? "page" : undefined}
-                onClick={() => {}}
               >
-                <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
+                <item.icon className="size-6 shrink-0" aria-hidden="true" />
                 {item.name}
               </Link>
-            );
-          })}
-        </nav>
-        <Separator className="my-4" />
-        <form action={signOutAction}>
-          <Button
-            type="submit"
-            variant="ghost"
-            className="text-muted-foreground hover:text-foreground w-full justify-start gap-3"
-          >
-            <LogOut className="h-5 w-5" aria-hidden="true" />
-            Sign out
-          </Button>
-        </form>
-      </SheetContent>
-    </Sheet>
+            </SheetClose>
+          );
+        })}
+      </nav>
+
+      <Separator />
+      <form action={signOutAction} className="p-4">
+        <Button
+          type="submit"
+          variant="ghost"
+          className="text-muted-foreground hover:text-foreground w-full justify-start gap-3"
+        >
+          <LogOut className="size-5" aria-hidden="true" />
+          Sign out
+        </Button>
+      </form>
+    </SheetContent>
   );
 }

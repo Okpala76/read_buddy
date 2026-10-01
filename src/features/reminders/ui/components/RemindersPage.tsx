@@ -31,7 +31,7 @@ export function RemindersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-foreground flex items-center gap-2 text-2xl font-semibold">
+          <h1 className="text-foreground flex items-center gap-2 text-3xl font-semibold tracking-tight">
             <Bell className="text-primary h-6 w-6" aria-hidden="true" />
             Reminders
           </h1>

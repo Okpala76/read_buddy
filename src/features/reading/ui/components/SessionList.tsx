@@ -12,11 +12,11 @@ const moodLabels: Record<ReadingMood, string> = {
 };
 
 const moodColors: Record<ReadingMood, string> = {
-  FOCUSED: "bg-blue/10 text-blue border-blue/20",
-  RELAXED: "bg-green/10 text-green border-green/20",
-  ENERGIZED: "bg-yellow/10 text-yellow border-yellow/20",
-  DISTRACTED: "bg-orange/10 text-orange border-orange/20",
-  TIRED: "bg-purple/10 text-purple border-purple/20",
+  FOCUSED: "bg-chart-1/10 text-foreground border-chart-1/20",
+  RELAXED: "bg-chart-2/10 text-foreground border-chart-2/20",
+  ENERGIZED: "bg-chart-4/15 text-foreground border-chart-4/30",
+  DISTRACTED: "bg-destructive/10 text-destructive border-destructive/20",
+  TIRED: "bg-muted text-muted-foreground border-border",
 };
 
 export interface SessionData {
@@ -47,7 +47,7 @@ export function SessionItem({ session }: SessionItemProps) {
             {session.mood && (
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+                  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
                   moodColors[session.mood],
                 )}
               >

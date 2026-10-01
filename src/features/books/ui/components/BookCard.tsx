@@ -1,23 +1,28 @@
 "use client";
 
-import { BookOpen, Play, CheckCircle, RotateCcw, Trash2 } from "lucide-react";
-import { Book, BookStatus } from "@/features/books/domain";
+import { BookOpen, Play, CheckCircle, Trash2 } from "lucide-react";
+import { BookStatus } from "@/features/books/domain";
+import type { BookView } from "@/features/books/ui/book-view";
 import {
   startBook,
   updateBookProgress,
   completeBook,
-  requeueBook,
   deleteBook,
 } from "@/features/books/ui/book-actions";
 import { useTransition } from "react";
 import { cn } from "@/lib/utils";
 
 interface BookCardProps {
-  book: Book;
+  book: BookView;
   isCurrentReading?: boolean;
+  onBookChange?: () => void;
 }
 
-export function BookCard({ book, isCurrentReading }: BookCardProps) {
+export function BookCard({
+  book,
+  isCurrentReading,
+  onBookChange,
+}: BookCardProps) {
   const [isPending, startTransition] = useTransition();
 
   const handleAction = (
@@ -37,7 +42,7 @@ export function BookCard({ book, isCurrentReading }: BookCardProps) {
   const statusColors = {
     QUEUED: "bg-muted text-muted-foreground",
     READING: "bg-primary/10 text-primary border-primary/20",
-    COMPLETED: "bg-green/10 text-green border-green/20",
+    COMPLETED: "bg-chart-3/15 text-foreground border-chart-3/30",
   };
 
   const statusIcons = {
@@ -56,10 +61,10 @@ export function BookCard({ book, isCurrentReading }: BookCardProps) {
           "ring-primary/50 border-primary/30 bg-primary/5 ring-2",
       )}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div
           className={cn(
-            "h-16 w-12 flex-shrink-0 items-center justify-center rounded-lg",
+            "flex h-16 w-12 flex-shrink-0 items-center justify-center rounded-lg",
             statusColors[book.status],
           )}
         >
@@ -105,65 +110,65 @@ export function BookCard({ book, isCurrentReading }: BookCardProps) {
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-2">
-          {book.status === BookStatus.QUEUED && (
-            <button
-              onClick={() => handleAction(() => startBook({ bookId: book.id }))}
-              disabled={isPending}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex items-center justify-center gap-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Play className="size-3.5" aria-hidden="true" />
-              Start
-            </button>
-          )}
-
-          {book.status === BookStatus.READING && (
-            <div className="flex items-center gap-1">
+        {book.status !== BookStatus.COMPLETED && (
+          <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
+            {book.status === BookStatus.QUEUED && (
               <button
                 onClick={() =>
-                  handleAction(() =>
-                    updateBookProgress({
-                      bookId: book.id,
-                      page: book.currentPage + 1,
-                    }),
+                  handleAction(
+                    () => startBook({ bookId: book.id }),
+                    onBookChange,
                   )
                 }
                 disabled={isPending}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors disabled:opacity-50"
-                aria-label="Increment page"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex items-center justify-center gap-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <span className="text-lg">+1</span>
+                <Play className="size-3.5" aria-hidden="true" />
+                Start
               </button>
-              <button
-                onClick={() =>
-                  handleAction(() => completeBook({ bookId: book.id }))
-                }
-                disabled={isPending}
-                className="bg-green text-green-foreground hover:bg-green/90 focus-visible:ring-ring inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <CheckCircle className="size-3.5" aria-hidden="true" />
-                Complete
-              </button>
-            </div>
-          )}
+            )}
 
-          {book.status === BookStatus.COMPLETED && (
+            {book.status === BookStatus.READING && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() =>
+                    handleAction(
+                      () =>
+                        updateBookProgress({
+                          bookId: book.id,
+                          page: book.currentPage + 1,
+                        }),
+                      onBookChange,
+                    )
+                  }
+                  disabled={isPending}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors disabled:opacity-50"
+                  aria-label="Increment page"
+                >
+                  <span className="text-lg">+1</span>
+                </button>
+                <button
+                  onClick={() =>
+                    handleAction(
+                      () => completeBook({ bookId: book.id }),
+                      onBookChange,
+                    )
+                  }
+                  disabled={isPending}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <CheckCircle className="size-3.5" aria-hidden="true" />
+                  Complete
+                </button>
+              </div>
+            )}
+
             <button
               onClick={() =>
-                handleAction(() => requeueBook({ bookId: book.id }))
-              }
-              disabled={isPending}
-              className="border-border bg-background hover:bg-muted focus-visible:ring-ring inline-flex items-center justify-center gap-1 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <RotateCcw className="size-3.5" aria-hidden="true" />
-              Requeue
-            </button>
-          )}
-
-          {book.status !== BookStatus.COMPLETED && (
-            <button
-              onClick={() =>
-                handleAction(() => deleteBook({ bookId: book.id }))
+                handleAction(
+                  () => deleteBook({ bookId: book.id }),
+                  onBookChange,
+                )
               }
               disabled={isPending}
               className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -171,8 +176,8 @@ export function BookCard({ book, isCurrentReading }: BookCardProps) {
             >
               <Trash2 className="size-4" aria-hidden="true" />
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </article>
   );

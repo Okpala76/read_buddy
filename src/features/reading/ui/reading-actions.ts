@@ -15,6 +15,8 @@ import {
   getBooksInputSchema,
 } from "@/features/reading/application";
 import { GetCurrentReadingUseCase } from "@/features/books/application";
+import { toBookView } from "@/features/books/ui/book-view";
+import { toReadingSessionView } from "./reading-session-view";
 
 function getReadingUseCases() {
   const repo = new DrizzleReadingSessionRepository();
@@ -39,20 +41,22 @@ export async function logReading(input: unknown) {
   const user = await requireAuth();
   const { logReading } = getReadingUseCases();
   const parsed = logReadingInputSchema.parse(input);
-  return logReading.execute(user.id, parsed);
+  await logReading.execute(user.id, parsed);
 }
 
 export async function getReadingSessions(input: unknown = {}) {
   const user = await requireAuth();
   const { getSessions } = getReadingUseCases();
   const parsed = getSessionsInputSchema.parse(input);
-  return getSessions.execute(user.id, parsed);
+  const sessions = await getSessions.execute(user.id, parsed);
+  return sessions.map(toReadingSessionView);
 }
 
 export async function getRecentReadingSessions(limit = 10) {
   const user = await requireAuth();
   const { getRecentSessions } = getReadingUseCases();
-  return getRecentSessions.execute(user.id, limit);
+  const sessions = await getRecentSessions.execute(user.id, limit);
+  return sessions.map(toReadingSessionView);
 }
 
 export async function getDailyTarget() {
@@ -70,12 +74,14 @@ export async function updateDailyTarget(target: number) {
 export async function getCurrentReading() {
   const user = await requireAuth();
   const { getCurrentReading } = getBookUseCases();
-  return getCurrentReading.execute(user.id);
+  const book = await getCurrentReading.execute(user.id);
+  return book ? toBookView(book) : null;
 }
 
 export async function getBooks(input: unknown = {}) {
   const user = await requireAuth();
   const { getBooks } = getBookUseCases();
   const parsed = getBooksInputSchema.parse(input);
-  return getBooks.execute(user.id, parsed);
+  const books = await getBooks.execute(user.id, parsed);
+  return books.map(toBookView);
 }

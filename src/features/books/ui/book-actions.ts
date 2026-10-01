@@ -19,6 +19,7 @@ import {
   DeleteBookUseCase,
   deleteBookInputSchema,
 } from "@/features/books/application";
+import { toBookView } from "./book-view";
 
 function getUseCases() {
   const repo = new DrizzleBookRepository();
@@ -38,48 +39,50 @@ export async function createBook(input: unknown) {
   const user = await requireAuth();
   const { createBook } = getUseCases();
   const parsed = createBookInputSchema.parse(input);
-  return createBook.execute(user.id, parsed);
+  await createBook.execute(user.id, parsed);
 }
 
 export async function getBooks(input: unknown = {}) {
   const user = await requireAuth();
   const { getBooks } = getUseCases();
   const parsed = getBooksInputSchema.parse(input);
-  return getBooks.execute(user.id, parsed);
+  const books = await getBooks.execute(user.id, parsed);
+  return books.map(toBookView);
 }
 
 export async function getCurrentReading() {
   const user = await requireAuth();
   const { getCurrentReading } = getUseCases();
-  return getCurrentReading.execute(user.id);
+  const book = await getCurrentReading.execute(user.id);
+  return book ? toBookView(book) : null;
 }
 
 export async function startBook(input: unknown) {
   const user = await requireAuth();
   const { startBook } = getUseCases();
   const parsed = startBookInputSchema.parse(input);
-  return startBook.execute(user.id, parsed);
+  await startBook.execute(user.id, parsed);
 }
 
 export async function updateBookProgress(input: unknown) {
   const user = await requireAuth();
   const { updateBookProgress } = getUseCases();
   const parsed = updateBookProgressInputSchema.parse(input);
-  return updateBookProgress.execute(user.id, parsed);
+  await updateBookProgress.execute(user.id, parsed);
 }
 
 export async function completeBook(input: unknown) {
   const user = await requireAuth();
   const { completeBook } = getUseCases();
   const parsed = completeBookInputSchema.parse(input);
-  return completeBook.execute(user.id, parsed);
+  await completeBook.execute(user.id, parsed);
 }
 
 export async function requeueBook(input: unknown) {
   const user = await requireAuth();
   const { requeueBook } = getUseCases();
   const parsed = requeueBookInputSchema.parse(input);
-  return requeueBook.execute(user.id, parsed);
+  await requeueBook.execute(user.id, parsed);
 }
 
 export async function deleteBook(input: unknown) {
