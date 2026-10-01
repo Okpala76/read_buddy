@@ -11,6 +11,10 @@ function createPool() {
     return null;
   }
 
+  const connectionUrl = new URL(env.DATABASE_URL);
+  // DATABASE_SSL is authoritative; pg otherwise lets sslmode override this object.
+  connectionUrl.searchParams.delete("sslmode");
+
   const ssl =
     env.DATABASE_SSL === "disable"
       ? false
@@ -22,7 +26,7 @@ function createPool() {
         };
 
   return new Pool({
-    connectionString: env.DATABASE_URL,
+    connectionString: connectionUrl.toString(),
     max: env.DATABASE_POOL_MAX,
     connectionTimeoutMillis: 5_000,
     idleTimeoutMillis: 30_000,
