@@ -17,6 +17,15 @@ function createPool() {
     connectionUrl.searchParams.set("sslmode", "verify-full");
   }
 
+  console.info("Database pool configured", {
+    host: connectionUrl.hostname,
+    port: connectionUrl.port || "5432",
+    database: connectionUrl.pathname.slice(1),
+    user: decodeURIComponent(connectionUrl.username),
+    sslMode: connectionUrl.searchParams.get("sslmode") ?? env.DATABASE_SSL,
+    poolMax: env.DATABASE_POOL_MAX,
+  });
+
   const ssl =
     env.DATABASE_SSL === "disable"
       ? false
