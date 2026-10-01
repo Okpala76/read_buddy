@@ -13,6 +13,36 @@ declare module "next-auth" {
   }
 }
 
+function getRootErrorDetails(error: Error) {
+  let current: unknown = error;
+  let rootError = error;
+  const seen = new Set<unknown>();
+
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+
+    if (current instanceof Error) {
+      rootError = current;
+      current = current.cause;
+    } else if ("err" in current) {
+      current = current.err;
+    } else {
+      break;
+    }
+  }
+
+  const code =
+    "code" in rootError && typeof rootError.code === "string"
+      ? rootError.code
+      : undefined;
+
+  return {
+    name: rootError.name,
+    message: rootError.message,
+    ...(code ? { code } : {}),
+  };
+}
+
 const isBuildTime = process.env.DATABASE_URL?.includes("dummy") === true;
 
 const authConfig = {
@@ -35,6 +65,13 @@ const authConfig = {
     strategy: isBuildTime ? "jwt" : "database",
   },
   secret: process.env.AUTH_SECRET,
+  logger: {
+    error(error) {
+      console.error("[auth][error]", error.name, error.message, {
+        rootCause: getRootErrorDetails(error),
+      });
+    },
+  },
   callbacks: {
     async session({ session, token, user }) {
       const userId = user?.id ?? token.sub;
