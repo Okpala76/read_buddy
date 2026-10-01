@@ -12,7 +12,6 @@ coverage/
 
 # local environment and secrets
 .env
-.env.local
 .env.*.local
 !.env.example
 
@@ -28,3 +27,5 @@ infra/pgbouncer/certs/*
 backups/
 
 .vercel
+.env.local
+.env.production

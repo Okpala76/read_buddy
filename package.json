@@ -18,6 +18,8 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:local": "drizzle-kit migrate --config=drizzle.config.ts",
+    "db:migrate:prod": "node scripts/migrate-production.mjs",
     "db:studio": "drizzle-kit studio",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },

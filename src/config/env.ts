@@ -1,19 +1,39 @@
 import { z } from "zod";
 
+const optionalString = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().min(1).optional(),
+);
+
+const optionalUrl = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.url().optional(),
+);
+
+const optionalEmail = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.email().optional(),
+);
+
 const serverEnvironmentSchema = z.object({
   DATABASE_URL: z.url().startsWith("postgresql://"),
+
   DATABASE_SSL: z
     .enum(["disable", "require", "verify-full"])
     .default("require"),
+
   DATABASE_POOL_MAX: z.coerce.number().int().positive().max(50).default(10),
-  DATABASE_CA_CERT: z.string().min(1).optional(),
+
+  DATABASE_CA_CERT: optionalString,
+
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
-  RESEND_API_KEY: z.string().min(1).optional(),
-  RESEND_FROM_EMAIL: z.email().optional(),
-  CRON_SECRET: z.string().min(1).optional(),
-  NEXT_PUBLIC_APP_URL: z.url().optional(),
+
+  RESEND_API_KEY: optionalString,
+  RESEND_FROM_EMAIL: optionalEmail,
+  CRON_SECRET: optionalString,
+  NEXT_PUBLIC_APP_URL: optionalUrl,
 });
 
 export const env = serverEnvironmentSchema.parse({
