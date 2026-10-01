@@ -1,16 +1,19 @@
+import type { Session } from "next-auth";
 import { describe, expect, it, vi } from "vitest";
 
 import { getCurrentUser, requireAuth } from "@/lib/auth/server";
 
-vi.mock("@/auth", () => ({
-  auth: vi.fn(),
+const { authMock } = vi.hoisted(() => ({
+  authMock: vi.fn<() => Promise<Session | null>>(),
 }));
 
-import { auth } from "@/auth";
+vi.mock("@/auth", () => ({
+  auth: authMock,
+}));
 
 describe("Server auth utilities", () => {
   it("getCurrentUser returns null when no session", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    authMock.mockResolvedValue(null);
 
     const user = await getCurrentUser();
 
@@ -18,7 +21,7 @@ describe("Server auth utilities", () => {
   });
 
   it("getCurrentUser returns user when session exists", async () => {
-    vi.mocked(auth).mockResolvedValue({
+    authMock.mockResolvedValue({
       user: {
         id: "user-123",
         email: "test@example.com",
@@ -39,13 +42,13 @@ describe("Server auth utilities", () => {
   });
 
   it("requireAuth throws when no user", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    authMock.mockResolvedValue(null);
 
     await expect(requireAuth()).rejects.toThrow("Unauthorized");
   });
 
   it("requireAuth returns user when authenticated", async () => {
-    vi.mocked(auth).mockResolvedValue({
+    authMock.mockResolvedValue({
       user: {
         id: "user-123",
         email: "test@example.com",

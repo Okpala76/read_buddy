@@ -1,24 +1,15 @@
-import NextAuth, {
-  type Session,
-  type SessionStrategy,
-  type User,
-} from "next-auth";
+import NextAuth, { type DefaultSession, type NextAuthConfig } from "next-auth";
 import GitHub from "next-auth/providers/github";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 
 import { db } from "@/db/client";
 import { accounts, sessions, users, verificationTokens } from "@/db/schema";
 
-interface ExtendedUser {
-  id: string;
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-}
-
 declare module "next-auth" {
   interface Session {
-    user: ExtendedUser;
+    user: {
+      id: string;
+    } & DefaultSession["user"];
   }
 }
 
@@ -41,15 +32,17 @@ const authConfig = {
     }),
   ],
   session: {
-    strategy: (isBuildTime ? "jwt" : "database") as SessionStrategy,
+    strategy: isBuildTime ? "jwt" : "database",
   },
   secret: process.env.AUTH_SECRET,
   callbacks: {
-    async session(params: { session: Session; user: User & { id: string } }) {
-      const { session, user } = params;
-      if (session.user) {
-        session.user.id = user.id;
+    async session({ session, token, user }) {
+      const userId = user?.id ?? token.sub;
+
+      if (session.user && userId) {
+        session.user.id = userId;
       }
+
       return session;
     },
   },
@@ -58,6 +51,6 @@ const authConfig = {
     error: "/auth/error",
   },
   trustHost: true,
-};
+} satisfies NextAuthConfig;
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);

@@ -25,12 +25,7 @@ console.log("Running Reading Buddy PRODUCTION database migrations...");
 
 const result = spawnSync(
   "pnpm",
-  [
-    "exec",
-    "drizzle-kit",
-    "migrate",
-    "--config=drizzle.prod.config.ts",
-  ],
+  ["exec", "drizzle-kit", "migrate", "--config=drizzle.prod.config.ts"],
   {
     stdio: "inherit",
     shell: true,
