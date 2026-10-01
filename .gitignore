@@ -26,3 +26,5 @@ coverage/
 infra/pgbouncer/certs/*
 !infra/pgbouncer/certs/README.md
 backups/
+
+.vercel
