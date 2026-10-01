@@ -12,8 +12,10 @@ function createPool() {
   }
 
   const connectionUrl = new URL(env.DATABASE_URL);
-  // DATABASE_SSL is authoritative; pg otherwise lets sslmode override this object.
-  connectionUrl.searchParams.delete("sslmode");
+  // Preserve pg 8's strict behavior without its deprecated sslmode=require alias.
+  if (connectionUrl.searchParams.get("sslmode") === "require") {
+    connectionUrl.searchParams.set("sslmode", "verify-full");
+  }
 
   const ssl =
     env.DATABASE_SSL === "disable"
