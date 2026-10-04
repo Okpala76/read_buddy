@@ -1,19 +1,40 @@
-import type { Session } from "next-auth";
 import { describe, expect, it, vi } from "vitest";
 
 import { getCurrentUser, requireAuth } from "@/lib/auth/server";
 
-const { authMock } = vi.hoisted(() => ({
-  authMock: vi.fn<() => Promise<Session | null>>(),
+vi.mock("server-only", () => ({}));
+
+const {
+  authMock,
+  authProtectMock,
+  currentUserMock,
+  findUserMock,
+  provisionUserMock,
+} = vi.hoisted(() => {
+  const authProtectMock = vi.fn().mockResolvedValue(undefined);
+
+  return {
+    authMock: Object.assign(vi.fn(), { protect: authProtectMock }),
+    authProtectMock,
+    currentUserMock: vi.fn(),
+    findUserMock: vi.fn(),
+    provisionUserMock: vi.fn(),
+  };
+});
+
+vi.mock("@clerk/nextjs/server", () => ({
+  auth: authMock,
+  currentUser: currentUserMock,
 }));
 
-vi.mock("@/auth", () => ({
-  auth: authMock,
+vi.mock("@/features/auth/infrastructure/drizzle-user-repository", () => ({
+  findLocalUserByClerkId: findUserMock,
+  provisionLocalUser: provisionUserMock,
 }));
 
 describe("Server auth utilities", () => {
   it("getCurrentUser returns null when no session", async () => {
-    authMock.mockResolvedValue(null);
+    authMock.mockResolvedValue({ userId: null });
 
     const user = await getCurrentUser();
 
@@ -21,14 +42,12 @@ describe("Server auth utilities", () => {
   });
 
   it("getCurrentUser returns user when session exists", async () => {
-    authMock.mockResolvedValue({
-      user: {
-        id: "user-123",
-        email: "test@example.com",
-        name: "Test User",
-        image: "https://example.com/avatar.png",
-      },
-      expires: "2025-01-01T00:00:00.000Z",
+    authMock.mockResolvedValue({ userId: "clerk-user-123" });
+    findUserMock.mockResolvedValue({
+      id: "user-123",
+      email: "test@example.com",
+      name: "Test User",
+      image: "https://example.com/avatar.png",
     });
 
     const user = await getCurrentUser();
@@ -42,19 +61,19 @@ describe("Server auth utilities", () => {
   });
 
   it("requireAuth throws when no user", async () => {
-    authMock.mockResolvedValue(null);
+    authMock.mockResolvedValue({ userId: null });
 
     await expect(requireAuth()).rejects.toThrow("Unauthorized");
+    expect(authProtectMock).toHaveBeenCalled();
   });
 
   it("requireAuth returns user when authenticated", async () => {
-    authMock.mockResolvedValue({
-      user: {
-        id: "user-123",
-        email: "test@example.com",
-        name: "Test User",
-      },
-      expires: "2025-01-01T00:00:00.000Z",
+    authMock.mockResolvedValue({ userId: "clerk-user-123" });
+    findUserMock.mockResolvedValue({
+      id: "user-123",
+      email: "test@example.com",
+      name: "Test User",
+      image: null,
     });
 
     const user = await requireAuth();
@@ -63,6 +82,41 @@ describe("Server auth utilities", () => {
       id: "user-123",
       email: "test@example.com",
       name: "Test User",
+      image: null,
+    });
+  });
+
+  it("provisions a local UUID user from a verified Clerk profile", async () => {
+    authMock.mockResolvedValue({ userId: "clerk-user-123" });
+    findUserMock.mockResolvedValue(null);
+    currentUserMock.mockResolvedValue({
+      fullName: "Test User",
+      firstName: "Test",
+      lastName: "User",
+      imageUrl: "https://example.com/avatar.png",
+      primaryEmailAddress: {
+        emailAddress: "Test@Example.com",
+        verification: { status: "verified" },
+      },
+    });
+    provisionUserMock.mockResolvedValue({
+      id: "local-uuid",
+      email: "test@example.com",
+      name: "Test User",
+      image: "https://example.com/avatar.png",
+    });
+
+    await expect(getCurrentUser()).resolves.toEqual({
+      id: "local-uuid",
+      email: "test@example.com",
+      name: "Test User",
+      image: "https://example.com/avatar.png",
+    });
+    expect(provisionUserMock).toHaveBeenCalledWith({
+      clerkUserId: "clerk-user-123",
+      email: "test@example.com",
+      name: "Test User",
+      image: "https://example.com/avatar.png",
     });
   });
 });

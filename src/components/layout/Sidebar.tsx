@@ -1,10 +1,10 @@
 "use client";
 
+import { SignOutButton } from "@clerk/nextjs";
 import { BookOpen, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { signOutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { isNavigationItemActive, productNavigation } from "./navigation";
@@ -53,16 +53,16 @@ export function Sidebar() {
       </nav>
 
       <div className="border-sidebar-border border-t p-4">
-        <form action={signOutAction}>
+        <SignOutButton redirectUrl="/">
           <Button
-            type="submit"
+            type="button"
             variant="ghost"
             className="text-sidebar-foreground/70 hover:text-sidebar-foreground w-full justify-start gap-3"
           >
             <LogOut className="size-5" aria-hidden="true" />
             Sign out
           </Button>
-        </form>
+        </SignOutButton>
       </div>
     </aside>
   );

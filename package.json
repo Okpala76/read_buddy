@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "cross-env DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy AUTH_SECRET=build-secret next build",
+    "build": "cross-env DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
@@ -24,7 +24,8 @@
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
-    "@auth/drizzle-adapter": "1.11.3",
+    "@clerk/nextjs": "7.9.10",
+    "@clerk/ui": "1.38.1",
     "@hookform/resolvers": "5.9.1",
     "@radix-ui/react-avatar": "1.2.6",
     "@radix-ui/react-dialog": "1.1.15",
@@ -43,12 +44,12 @@
     "drizzle-orm": "0.45.3",
     "lucide-react": "1.48.0",
     "next": "16.3.6",
-    "next-auth": "5.0.0-beta.32",
     "pg": "8.23.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-hook-form": "7.89.0",
     "recharts": "3.10.1",
+    "server-only": "0.0.1",
     "tailwind-merge": "^3.3.1",
     "zod": "4.6.5"
   },
@@ -73,6 +74,13 @@
     "vitest": "4.0.18"
   },
   "pnpm": {
+    "overrides": {
+      "@wallet-standard/app": "1.1.0",
+      "@wallet-standard/base": "1.1.0",
+      "@wallet-standard/errors": "0.1.1",
+      "@wallet-standard/features": "1.1.0",
+      "@wallet-standard/wallet": "1.1.0"
+    },
     "onlyBuiltDependencies": [
       "esbuild",
       "sharp"

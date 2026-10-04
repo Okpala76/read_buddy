@@ -1,10 +1,10 @@
-import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/AppShell";
+import { requireAuth } from "@/lib/auth/server";
 
 export default async function ProductLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const session = await auth();
+  await requireAuth();
 
-  return <AppShell user={session?.user}>{children}</AppShell>;
+  return <AppShell>{children}</AppShell>;
 }

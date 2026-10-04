@@ -1,32 +1,21 @@
-import { auth } from "@/auth";
+import { clerkMiddleware } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
-export const proxy = auth((req) => {
-  const isAuthenticated = !!req.auth;
-  const isAuthRoute =
-    req.nextUrl.pathname === "/auth" ||
-    req.nextUrl.pathname.startsWith("/auth/");
-  const isApiAuthRoute = req.nextUrl.pathname.startsWith("/api/auth");
-  const isCronRoute = req.nextUrl.pathname === "/api/cron/reminders";
-
-  if (isApiAuthRoute || isCronRoute) {
+export default clerkMiddleware((_auth, request) => {
+  if (request.nextUrl.hostname !== "read-buddy-eight.vercel.app") {
     return;
   }
 
-  if (!isAuthenticated && !isAuthRoute && req.nextUrl.pathname !== "/") {
-    const signInUrl = new URL("/auth/signin", req.nextUrl.origin);
-    signInUrl.searchParams.set(
-      "callbackUrl",
-      `${req.nextUrl.pathname}${req.nextUrl.search}`,
-    );
+  const canonicalUrl = request.nextUrl.clone();
+  canonicalUrl.hostname = "read-buddy.ogalandlord.com.ng";
 
-    return Response.redirect(signInUrl);
-  }
-
-  if (isAuthenticated && req.nextUrl.pathname === "/auth/signin") {
-    return Response.redirect(new URL("/dashboard", req.nextUrl.origin));
-  }
+  return NextResponse.redirect(canonicalUrl, 308);
 });
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)"],
+  matcher: [
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
+    "/__clerk/:path*",
+  ],
 };

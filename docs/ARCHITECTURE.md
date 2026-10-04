@@ -22,6 +22,7 @@ Local development runs `pnpm dev` on the host and PostgreSQL in Docker Compose. 
 src/
 |-- app/                         # routing, layouts, HTTP boundaries
 |-- features/
+|   |-- auth/
 |   |-- books/
 |   |-- reading/
 |   |-- analytics/
@@ -50,7 +51,7 @@ Dependencies point inward: UI and infrastructure depend on application/domain co
 - Server Components read through feature application queries backed by infrastructure implementations.
 - Client Components receive serializable data and do not import the database client.
 - Internal authenticated mutations use Server Actions that validate input with Zod, resolve the authenticated user, and invoke one application use case.
-- Route Handlers are reserved for actual HTTP boundaries: Auth.js callbacks, Vercel Cron, and provider webhooks.
+- Route Handlers are reserved for actual HTTP boundaries such as Vercel Cron and provider webhooks.
 - Errors are translated at the outer boundary; domain/application code does not depend on Next.js response types.
 
 ## Reading transaction
@@ -69,9 +70,9 @@ The database checks protect stored invariants, and row locking prevents concurre
 
 ## Authentication decision
 
-Use Auth.js with its Drizzle adapter and database sessions in phase 2. Begin with a single OAuth provider selected for the deployment, map Auth.js to the existing `users` table, and add the adapter's accounts, sessions, and verification-token tables in a reviewed migration. Every application query uses the server-validated session user ID; email is not an authorization key.
+Use Clerk for authentication. Clerk middleware protects product routes, and server-side Clerk APIs validate the active identity. The application maps `users.clerk_user_id` to the existing PostgreSQL UUID primary key before invoking a use case, so all ownership queries continue to use the local UUID. A verified primary email is required to provision a local user; email is never used as an authorization key.
 
-This foundation intentionally does not install or configure Auth.js before phase 2, because provider credentials and adapter tables should land together and be tested as one vertical slice.
+The legacy Auth.js adapter tables remain in the schema during the Clerk cutover so rollback does not require data recovery. They can be removed later through a separately reviewed cleanup migration after the rollback window closes.
 
 ## Redis decision
 
@@ -84,4 +85,4 @@ Do not use Redis in V1. PostgreSQL is sufficient for uniqueness, transactions, r
 - PostgreSQL constraints plus transactional use cases for critical invariants.
 - Historical sessions as the source for analytics; no duplicate counters.
 - UTC persistence with IANA timezone conversion at application boundaries.
-- Database sessions for revocation and server-side authorization.
+- Clerk-managed sessions with server-validated identity mapped to local UUID authorization.

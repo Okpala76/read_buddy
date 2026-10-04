@@ -8,16 +8,7 @@ import { Header } from "./Header";
 import { MobileNav } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 
-interface AppShellProps {
-  children: ReactNode;
-  user?: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  };
-}
-
-export function AppShell({ children, user }: AppShellProps) {
+export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [mobileNavState, setMobileNavState] = useState({
     pathname,
@@ -46,7 +37,7 @@ export function AppShell({ children, user }: AppShellProps) {
       <div className="bg-background min-h-svh lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
         <Sidebar />
         <div className="min-w-0">
-          <Header user={user} />
+          <Header />
           <main className="mx-auto w-full max-w-7xl min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
             {children}
           </main>

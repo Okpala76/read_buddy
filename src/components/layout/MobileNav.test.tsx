@@ -15,8 +15,8 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard",
 }));
 
-vi.mock("@/app/actions/auth", () => ({
-  signOutAction: vi.fn(),
+vi.mock("@clerk/nextjs", () => ({
+  SignOutButton: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 function OpenMobileNav() {

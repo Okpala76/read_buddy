@@ -6,7 +6,7 @@ All IDs are UUIDs and all event timestamps are stored as `timestamptz` in UTC.
 
 ### `users`
 
-Application owner record with normalized unique email, Auth.js-compatible profile fields, IANA timezone, daily page target, and timestamps. Auth.js adapter tables will reference this table in phase 2.
+Application owner record with a UUID primary key, unique Clerk user mapping, normalized unique email, profile fields, IANA timezone, daily page target, and timestamps. Feature tables reference the UUID; Clerk's string user ID is resolved only at the authentication boundary.
 
 ### `books`
 
@@ -68,5 +68,5 @@ After restore, run migration status checks, verify row counts and constraints, a
 ## Open database decisions
 
 - The production hostname, certificate authority, and backup destination are deployment-specific.
-- Authentication adapter tables arrive in phase 2.
+- Legacy Auth.js adapter tables are retained temporarily for rollback and require a later cleanup migration.
 - Before the first migration is considered shipped, use the generated SQL review to correct any portability or operational concerns.

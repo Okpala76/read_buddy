@@ -1,10 +1,10 @@
 "use client";
 
+import { SignOutButton } from "@clerk/nextjs";
 import { BookOpen, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { signOutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -61,16 +61,18 @@ export function MobileNav() {
       </nav>
 
       <Separator />
-      <form action={signOutAction} className="p-4">
-        <Button
-          type="submit"
-          variant="ghost"
-          className="text-muted-foreground hover:text-foreground w-full justify-start gap-3"
-        >
-          <LogOut className="size-5" aria-hidden="true" />
-          Sign out
-        </Button>
-      </form>
+      <div className="p-4">
+        <SignOutButton redirectUrl="/">
+          <Button
+            type="button"
+            variant="ghost"
+            className="text-muted-foreground hover:text-foreground w-full justify-start gap-3"
+          >
+            <LogOut className="size-5" aria-hidden="true" />
+            Sign out
+          </Button>
+        </SignOutButton>
+      </div>
     </SheetContent>
   );
 }

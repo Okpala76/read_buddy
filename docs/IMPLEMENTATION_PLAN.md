@@ -8,7 +8,7 @@ Acceptance criteria: Next.js, TypeScript, pnpm, Tailwind, shadcn/ui configuratio
 
 ## 2. Database/auth
 
-Acceptance criteria: PostgreSQL runs locally; the committed migration applies to a clean database; Auth.js uses its Drizzle adapter and database sessions; one OAuth provider supports sign-in/sign-out; protected routes resolve a server-validated user; ownership isolation has integration coverage.
+Acceptance criteria: PostgreSQL runs locally; committed migrations apply to a clean database; Clerk supports sign-up, sign-in, and sign-out; protected routes resolve a server-validated Clerk identity to the application's UUID user; ownership isolation has integration coverage.
 
 ## 3. Books
 

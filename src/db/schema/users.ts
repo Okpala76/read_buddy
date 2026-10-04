@@ -12,6 +12,7 @@ export const users = pgTable(
   "users",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    clerkUserId: text("clerk_user_id").unique(),
     email: text("email").notNull().unique(),
     emailVerified: timestamp("email_verified", { withTimezone: true }),
     name: text("name"),

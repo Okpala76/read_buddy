@@ -11,14 +11,14 @@ Phase 7: Reminders complete. Product feature implementation continues to Phase 8
 - Tailwind CSS and shadcn/ui configuration with semantic design tokens.
 - Zod-validated server environment and pooled Drizzle PostgreSQL client.
 - Initial schemas for users, books, reading sessions, reminder preferences, and reminder deliveries.
-- Auth.js adapter tables (accounts, sessions, verification_tokens).
+- Legacy Auth.js adapter tables retained for rollback (accounts, sessions, verification_tokens).
 - PostgreSQL/PgBouncer Docker Compose foundation.
 - Vitest and Testing Library foundation.
 - Architecture, database, design system, and phased implementation contracts.
-- Auth.js with GitHub OAuth provider and database sessions.
-- Protected routes with middleware-based authentication.
-- Server-side user resolution via `getCurrentUser()` and `requireAuth()`.
-- Sign-in page with GitHub OAuth.
+- Clerk authentication linked to the configured Clerk application.
+- Protected routes with Clerk proxy authentication.
+- Server-side Clerk identity resolution to local UUID users via `getCurrentUser()` and `requireAuth()`.
+- Clerk sign-in and sign-up pages with visible landing-page controls.
 - Dynamic dashboard page showing authenticated user.
 - Books domain layer: `Book` entity with status transitions (QUEUED → READING → COMPLETED), progress tracking, business rule validation.
 - Books application layer: use cases for create, list, get current reading, start, update progress, complete, requeue, delete with Zod validation.
@@ -31,7 +31,7 @@ Phase 7: Reminders complete. Product feature implementation continues to Phase 8
 - **Reading Sessions application layer**: `LogReadingUseCase` (transactional session logging with book progress update), `GetReadingSessionsUseCase`, `GetRecentSessionsUseCase`, `GetDailyTargetUseCase`, `UpdateDailyTargetUseCase` with Zod validation.
 - **Reading Sessions infrastructure layer**: `DrizzleReadingSessionRepository` with transactional `logReadingSession` using row-level locking (`FOR UPDATE`), overrun clamping, and atomic book progress update.
 - **Reading Sessions UI layer**: `ReadingPage` with `LogReadingForm` (mood selector, page input with daily target hint), `SessionList` with mood badges; Server Actions for all mutations.
-- **Dashboard/UI layer**: Responsive desktop/mobile shell with sidebar/header/content layout (`DashboardLayout`, `Sidebar`, `Header`, `MobileNav`). Dashboard page (`DashboardContent`) showing current reading book as primary visual element, daily target progress, quick actions, queued books list, and recent sessions list. Sign-out via Server Action. Mobile-first responsive navigation with Sheet-based drawer.
+- **Dashboard/UI layer**: Responsive desktop/mobile shell with sidebar/header/content layout (`DashboardLayout`, `Sidebar`, `Header`, `MobileNav`). Dashboard page (`DashboardContent`) showing current reading book as primary visual element, daily target progress, quick actions, queued books list, and recent sessions list. Clerk user and sign-out controls. Mobile-first responsive navigation with Sheet-based drawer.
 - **Analytics domain layer**: `toUserTimezoneDate`, `getDayStartInTimezone`, `getDayEndInTimezone`, `groupSessionsByDay`, `calculateStreak`, `filterSessionsByDateRange`, `getWeeklyData`, `getMonthlyData`, `computeAnalytics`, `toUserDateString`, `getDateRangePreset` — all using user's IANA timezone.
 - **Analytics application layer**: `GetAnalyticsUseCase` (presets: week/month/quarter/year/all + custom ranges), `GetStreakUseCase`, `GetDateRangeAnalyticsUseCase` with Zod validation.
 - **Analytics infrastructure layer**: `DrizzleAnalyticsRepository` implementing `AnalyticsRepository` port with `findSessionsByUserId` and `findSessionsByUserIdAndDateRange`.
@@ -47,22 +47,21 @@ Phase 7: Reminders complete. Product feature implementation continues to Phase 8
 
 ## Verification
 
-- `pnpm verify`: passed (format, lint, typecheck, 147 tests, and production build).
+- `pnpm verify`: passed (format, lint, typecheck, 153 tests, and production build).
 - `docker compose config --quiet`: passed with an injected local development password.
 - Baseline migration generation and SQL review: passed.
-- Auth.js adapter migration generation and SQL review: passed.
-- Migration application: applied to local PostgreSQL (all 3 migrations successful).
+- Clerk user-mapping migration generation and SQL review: passed.
+- Migration application: all committed migrations applied successfully to local PostgreSQL.
 
 ## Migrations
 
-- `0000_giant_callisto.sql` - Baseline schema (users, books, reading_sessions, reminder_preferences, reminder_deliveries)
-- `0001_burly_sasquatch.sql` - Auth.js adapter tables (accounts, sessions, verification_tokens)
-- `0002_sly_fox.sql` - Schema adjustments (users.image, sessions primary key, reading_sessions FK)
+- `0000_stormy_colossus.sql` - Consolidated baseline schema, including legacy Auth.js adapter tables
+- `0001_chilly_unus.sql` - Unique Clerk user ID mapping on application users
 
 ## Tests
 
 - Unit tests for `cn` utility (1 test)
-- Unit tests for server auth utilities (4 tests: getCurrentUser null/session, requireAuth throws/returns)
+- Unit tests for server auth utilities (5 tests: anonymous/existing/provisioned users and requireAuth behavior)
 - Unit tests for Book domain entity (25 tests: creation, validation, status transitions, progress, edge cases)
 - Unit tests for Books application use cases (22 tests: all CRUD operations, validation, error cases, one-READING invariant)
 - Unit tests for ReadingSession domain entity (9 tests: creation, validation, mood, reconstitution, persistence)
@@ -71,7 +70,7 @@ Phase 7: Reminders complete. Product feature implementation continues to Phase 8
 - Unit tests for Analytics application use cases (4 tests: all sessions, preset range, custom range, Zod validation)
 - Unit tests for Reminders domain (20 tests: preference creation/validation, enable/disable/time update, delivery creation/status transitions, attempt counting, retry logic)
 - Unit tests for Reminders application use cases (20 tests: preference CRUD, delivery history, scheduling idempotency, processing with preference gating, batch size limits, retry logic with max attempts)
-- All tests passing (147 total)
+- All tests passing (153 total)
 
 ## Intentionally absent
 
@@ -79,7 +78,7 @@ Phase 7: Reminders complete. Product feature implementation continues to Phase 8
 
 ## Known deployment inputs
 
-- OAuth provider and credentials (GitHub).
+- Clerk production instance and production publishable/secret keys.
 - Public PgBouncer hostname and TLS certificate chain.
 - Production secret-management mechanism and database credentials.
 - Encrypted off-host backup destination and retention policy owner.
@@ -88,8 +87,7 @@ Phase 7: Reminders complete. Product feature implementation continues to Phase 8
 
 ## Known issues
 
-- Middleware uses deprecated file convention (Next.js warns but functions correctly).
-- Build uses dummy DATABASE_URL and AUTH_SECRET; production requires real values.
+- Build uses a dummy `DATABASE_URL`; production requires a real value.
 
 ## Next phase
 
