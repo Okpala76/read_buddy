@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const input = {
       limit: limit ? parseInt(limit, 10) : undefined,
       offset: offset ? parseInt(offset, 10) : undefined,
-      status: status as
+      status: (status ?? undefined) as
         "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "SKIPPED" | undefined,
     };
 
