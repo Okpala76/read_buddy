@@ -1,22 +1,27 @@
 "use client";
 
 import { useEffect, useEffectEvent, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Bell, Clock } from "lucide-react";
+import { Loader2, Bell, Clock, Globe2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { isValidIanaTimezone } from "@/features/reminders/domain/iana-timezone";
 
 const reminderSchema = z.object({
   enabled: z.boolean(),
   reminderTime: z
     .string()
     .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format (HH:MM)"),
+  timezone: z
+    .string()
+    .trim()
+    .refine(isValidIanaTimezone, "Enter a valid IANA timezone"),
 });
 
 type ReminderFormData = z.infer<typeof reminderSchema>;
@@ -24,6 +29,7 @@ type ReminderFormData = z.infer<typeof reminderSchema>;
 interface ReminderPreference {
   enabled: boolean;
   reminderTime: string;
+  timezone: string;
   updatedAt: string;
 }
 
@@ -38,13 +44,21 @@ export function ReminderSettingsForm() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [suggestedTimezone, setSuggestedTimezone] = useState<string | null>(
+    null,
+  );
 
   const form = useForm<ReminderFormData>({
     resolver: zodResolver(reminderSchema),
     defaultValues: {
       enabled: false,
       reminderTime: "19:00",
+      timezone: "UTC",
     },
+  });
+  const selectedTimezone = useWatch({
+    control: form.control,
+    name: "timezone",
   });
 
   const [isEnabled, setIsEnabled] = useState(false);
@@ -77,10 +91,16 @@ export function ReminderSettingsForm() {
         const data = await response.json();
 
         if (mounted) {
+          const browserTimezone =
+            Intl.DateTimeFormat().resolvedOptions().timeZone;
+          if (isValidIanaTimezone(browserTimezone)) {
+            setSuggestedTimezone(browserTimezone);
+          }
           setPreference(data.updatedAt ? data : null);
           reset({
             enabled: data.enabled,
             reminderTime: data.reminderTime.slice(0, 5),
+            timezone: data.timezone,
           });
           setIsEnabled(data.enabled);
         }
@@ -108,6 +128,7 @@ export function ReminderSettingsForm() {
         body: JSON.stringify({
           enabled: data.enabled,
           reminderTime: `${data.reminderTime}:00`,
+          timezone: data.timezone,
         }),
       });
       if (!response.ok) throw new Error("Failed to save");
@@ -116,6 +137,7 @@ export function ReminderSettingsForm() {
       form.reset({
         enabled: preferenceData.enabled,
         reminderTime: preferenceData.reminderTime.slice(0, 5),
+        timezone: preferenceData.timezone,
       });
       setIsEnabled(preferenceData.enabled);
       showToast({
@@ -199,6 +221,47 @@ export function ReminderSettingsForm() {
               {form.formState.errors.reminderTime && (
                 <p className="text-destructive text-sm">
                   {form.formState.errors.reminderTime.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="timezone">Timezone</Label>
+              <div className="flex items-center gap-2">
+                <Globe2
+                  className="text-muted-foreground h-4 w-4 shrink-0"
+                  aria-hidden="true"
+                />
+                <Input
+                  id="timezone"
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Africa/Lagos"
+                  {...form.register("timezone")}
+                />
+              </div>
+              <p className="text-muted-foreground text-sm">
+                Reminder time uses this IANA timezone, including daylight saving
+                changes.
+              </p>
+              {suggestedTimezone && suggestedTimezone !== selectedTimezone && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    form.setValue("timezone", suggestedTimezone, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                >
+                  Use browser timezone: {suggestedTimezone}
+                </Button>
+              )}
+              {form.formState.errors.timezone && (
+                <p className="text-destructive text-sm">
+                  {form.formState.errors.timezone.message}
                 </p>
               )}
             </div>

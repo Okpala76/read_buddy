@@ -18,11 +18,15 @@ Append-only reading history. The composite foreign key `(book_id, user_id)` ensu
 
 ### `reminder_preferences`
 
-One row per user. Reminder time is interpreted using `users.timezone`; the enabled flag uses a PostgreSQL boolean.
+One row per user. `reminder_time` is a local wall-clock time interpreted using the user's IANA `users.timezone`; the enabled flag uses a PostgreSQL boolean. Raw UTC offsets are not accepted because they do not model daylight-saving transitions.
 
 ### `reminder_deliveries`
 
-Delivery audit/idempotency records. `(user_id, scheduled_for)` is unique, and the status/schedule index supports worker scans. No provider payload or message body is persisted.
+Delivery audit/idempotency records. `scheduled_for` is the absolute UTC instant produced from the user's local date, reminder time, and IANA timezone. `(user_id, scheduled_for)` is unique, and status/schedule plus status/retry indexes support worker scans. Scheduling uses a 15-minute grace window and conflict-safe insertion.
+
+Dispatch transitions due `PENDING` rows and eligible `FAILED` retries to `PROCESSING` through a bounded `FOR UPDATE SKIP LOCKED` claim. `locked_at` identifies the claim and supports recovery after 10 minutes; terminal updates must match the original claim timestamp. `next_attempt_at` schedules bounded retries. `skip_reason` records pre-send suppression separately from sanitized provider `error_code`, and `attempt_count` changes only after an actual provider call.
+
+`recipient_email`, `book_title`, `book_current_page`, `book_total_pages`, and `daily_page_target` form the minimal immutable email snapshot. They keep the Resend request stable across attempts without storing rendered HTML, text, or full provider responses.
 
 ## Migration workflow
 

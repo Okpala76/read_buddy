@@ -3,7 +3,7 @@
 import { requireAuth } from "@/lib/auth/server";
 import { DrizzleReminderPreferenceRepository } from "@/features/reminders/infrastructure";
 import {
-  GetReminderPreferenceUseCase,
+  GetReminderSettingsUseCase,
   UpdateReminderPreferenceUseCase,
   updateReminderPreferenceInputSchema,
 } from "@/features/reminders/application";
@@ -11,20 +11,31 @@ import {
 function getUseCases() {
   const repo = new DrizzleReminderPreferenceRepository();
   return {
-    getPreference: new GetReminderPreferenceUseCase(repo),
+    getSettings: new GetReminderSettingsUseCase(repo),
     updatePreference: new UpdateReminderPreferenceUseCase(repo),
   };
 }
 
 export async function getReminderPreference() {
   const user = await requireAuth();
-  const { getPreference } = getUseCases();
-  return getPreference.execute(user.id, {});
+  const { getSettings } = getUseCases();
+  const { preference, timezone } = await getSettings.execute(user.id);
+  return {
+    ...(preference?.toPersistence() ?? {
+      enabled: false,
+      reminderTime: "19:00:00",
+    }),
+    timezone,
+  };
 }
 
 export async function updateReminderPreference(input: unknown) {
   const user = await requireAuth();
   const { updatePreference } = getUseCases();
   const parsed = updateReminderPreferenceInputSchema.parse(input);
-  return updatePreference.execute(user.id, parsed);
+  const { preference, timezone } = await updatePreference.execute(
+    user.id,
+    parsed,
+  );
+  return { ...preference.toPersistence(), timezone };
 }

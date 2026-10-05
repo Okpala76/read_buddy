@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 7: Reminders complete. Product feature implementation continues to Phase 8.
+Phase 7: Reminder hardening in progress. Timezone-aware scheduling, concurrency-safe dispatch, deterministic Resend requests, provider idempotency, bounded retries, and production provider configuration are implemented. Production migration, deployment, and cron installation remain incomplete.
 
 ## Implemented
 
@@ -38,25 +38,31 @@ Phase 7: Reminders complete. Product feature implementation continues to Phase 8
 - **Analytics UI layer**: `DailyPagesChart` (area), `WeeklyChart` (bar), `MonthlyChart` (line) using Recharts; `StreakDisplay` cards. `AnalyticsPage` component fetching from `/api/analytics` and `/api/analytics/streak`.
 - **Analytics API routes**: `GET /api/analytics` (with preset/date-range query params), `GET /api/analytics/streak` — both resolving user's timezone from profile.
 - **Analytics Server Actions**: `getAnalytics`, `getStreak`, `getDateRangeAnalytics` using user's timezone.
-- **Reminders domain layer**: `ReminderPreference` entity with HH:MM:SS time validation, enable/disable/time update methods; `ReminderDelivery` entity with status transitions (PENDING → SENT/FAILED/SKIPPED), retry logic, attempt counting; `ReminderPreferenceRepository` and `ReminderDeliveryRepository` ports.
-- **Reminders application layer**: `GetReminderPreferenceUseCase`, `UpdateReminderPreferenceUseCase`, `GetReminderDeliveriesUseCase`, `ScheduleReminderDeliveryUseCase`, `ProcessReminderDeliveriesUseCase` (idempotent scheduling, preference-gated dispatch, batch processing), `RetryFailedDeliveriesUseCase` (max-attempt retry policy) with Zod validation.
-- **Reminders infrastructure layer**: `DrizzleReminderPreferenceRepository` (upsert), `DrizzleReminderDeliveryRepository` (find by user/scheduled, pending before date, status, save many), `ResendEmailService` (HTML/text email templates, dashboard link).
+- **Reminders domain layer**: guarded `PENDING → PROCESSING → SENT/FAILED/SKIPPED` transitions, claim recovery, skip reasons, and provider-attempt accounting.
+- **Reminders application layer**: preference/settings and delivery-history use cases, timezone-aware scheduling, stale-claim recovery, atomic batch claiming, current-state eligibility checks, bounded retry policy, sanitized failure handling, and claimed-delivery processing.
+- **Reminders infrastructure layer**: transactional preference/timezone persistence, tenant-scoped history, idempotent scheduling, PostgreSQL `FOR UPDATE SKIP LOCKED` claiming, guarded terminal writes, and an official-SDK `ResendEmailService` with deterministic provider idempotency keys and HTML/text payloads.
 - **Reminders UI layer**: `RemindersPage` with tabs for Settings and History; `ReminderSettingsForm` (enable toggle, time picker, toast notifications); `DeliveryHistory` (table with status badges, attempt count, error codes, provider message IDs).
-- **Reminders API routes**: `GET/POST /api/reminders` (preference CRUD with Zod), `GET /api/reminders/deliveries` (paginated, filterable history), `GET /api/cron/reminders` (authenticated cron, Bearer token, processes pending deliveries in batches).
+- **Reminders API routes**: `GET/POST /api/reminders` (preference and IANA timezone settings), `GET /api/reminders/deliveries` (tenant-scoped, paginated, filterable history), `GET /api/cron/reminders` (authenticated scheduling, stale recovery, atomic claiming, eligibility checks, and dispatch).
 - **Reminders Server Actions**: `getReminderPreference`, `updateReminderPreference` (user-scoped, Zod-validated).
+- **Resend production provider**: verified sending domain, domain-scoped send-only key, Vercel production variables, and one delivered controlled test email.
 
 ## Verification
 
-- `pnpm verify`: passed (format, lint, typecheck, 153 tests, and production build).
+- `pnpm verify`: passed (format, lint, typecheck, 199 tests, and production build).
 - `docker compose config --quiet`: passed with an injected local development password.
 - Baseline migration generation and SQL review: passed.
 - Clerk user-mapping migration generation and SQL review: passed.
 - Migration application: all committed migrations applied successfully to local PostgreSQL.
+- Batch 3 reminder migrations applied successfully to local PostgreSQL.
+- Batch 4 reminder snapshot/retry-index migration applied successfully to local PostgreSQL.
 
 ## Migrations
 
 - `0000_stormy_colossus.sql` - Consolidated baseline schema, including legacy Auth.js adapter tables
 - `0001_chilly_unus.sql` - Unique Clerk user ID mapping on application users
+- `0002_sloppy_bullseye.sql` - Reminder `PROCESSING` status
+- `0003_nice_bromley.sql` - Reminder claim, future retry, and skip metadata
+- `0004_oval_sway.sql` - Deterministic email snapshot and retry scan index
 
 ## Tests
 
@@ -68,9 +74,11 @@ Phase 7: Reminders complete. Product feature implementation continues to Phase 8
 - Unit tests for Reading Sessions application use cases (26 tests: log reading, get sessions, recent sessions, daily target, validation, error cases, transactional invariant)
 - Unit tests for Analytics domain (16 tests: timezone conversion, day boundaries, streak calculation, date-range filtering, weekly/monthly aggregation, computeAnalytics, presets)
 - Unit tests for Analytics application use cases (4 tests: all sessions, preset range, custom range, Zod validation)
-- Unit tests for Reminders domain (20 tests: preference creation/validation, enable/disable/time update, delivery creation/status transitions, attempt counting, retry logic)
-- Unit tests for Reminders application use cases (20 tests: preference CRUD, delivery history, scheduling idempotency, processing with preference gating, batch size limits, retry logic with max attempts)
-- All tests passing (153 total)
+- Reminder domain and application tests cover guarded state transitions, timezone settings, due-window scheduling, retry delays, eligibility suppression, crash recovery identity, and attempt accounting.
+- Reminder provider tests cover Resend envelopes, deterministic HTML/text payloads and idempotency keys, provider IDs, controlled missing configuration, and sanitized transient/permanent classification.
+- Reminder infrastructure integration tests use local PostgreSQL to verify concurrent initial/retry claims, terminal-state exclusion, stale recovery, claim-token protection, active-book checks, and timezone-aware reading suppression.
+- Reminder UI and cron tests cover settings validation, authenticated scheduling, and dispatch sequencing.
+- All regular tests passing (199 total); 7 PostgreSQL concurrency tests pass through the explicit local integration command.
 
 ## Intentionally absent
 
@@ -82,7 +90,6 @@ Phase 7: Reminders complete. Product feature implementation continues to Phase 8
 - Public PgBouncer hostname and TLS certificate chain.
 - Production secret-management mechanism and database credentials.
 - Encrypted off-host backup destination and retention policy owner.
-- Resend API key and verified sender domain.
 - CRON_SECRET for authenticated reminder dispatch.
 
 ## Known issues

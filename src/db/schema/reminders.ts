@@ -36,12 +36,20 @@ export const reminderDeliveries = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    recipientEmail: text("recipient_email").notNull(),
+    bookTitle: text("book_title"),
+    bookCurrentPage: integer("book_current_page"),
+    bookTotalPages: integer("book_total_pages"),
+    dailyPageTarget: integer("daily_page_target").notNull(),
     status: reminderDeliveryStatus("status").notNull().default("PENDING"),
     scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     attemptCount: integer("attempt_count").notNull().default(0),
     providerMessageId: text("provider_message_id"),
     errorCode: text("error_code"),
+    skipReason: text("skip_reason"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -58,9 +66,23 @@ export const reminderDeliveries = pgTable(
       table.status,
       table.scheduledFor,
     ),
+    index("reminder_deliveries_status_next_attempt_idx").on(
+      table.status,
+      table.nextAttemptAt,
+    ),
     check(
       "reminder_deliveries_attempt_count_check",
       sql`${table.attemptCount} >= 0`,
+    ),
+    check(
+      "reminder_deliveries_skip_reason_check",
+      sql`(
+        ${table.status} = 'SKIPPED'
+        and ${table.skipReason} is not null
+      ) or (
+        ${table.status} <> 'SKIPPED'
+        and ${table.skipReason} is null
+      )`,
     ),
   ],
 );

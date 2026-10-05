@@ -16,6 +16,7 @@ export const readingMood = pgEnum("reading_mood", [
 
 export const reminderDeliveryStatus = pgEnum("reminder_delivery_status", [
   "PENDING",
+  "PROCESSING",
   "SENT",
   "FAILED",
   "SKIPPED",

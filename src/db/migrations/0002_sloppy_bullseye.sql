@@ -1,0 +1,1 @@
+ALTER TYPE "public"."reminder_delivery_status" ADD VALUE 'PROCESSING' BEFORE 'SENT';

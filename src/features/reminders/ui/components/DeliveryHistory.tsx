@@ -5,6 +5,7 @@ import {
   CheckCircle,
   AlertCircle,
   Clock,
+  LoaderCircle,
   SkipForward,
   Send,
 } from "lucide-react";
@@ -13,12 +14,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export interface ReminderDelivery {
   id: string;
-  status: "PENDING" | "SENT" | "FAILED" | "SKIPPED";
+  status: "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "SKIPPED";
   scheduledFor: string;
+  nextAttemptAt: string | null;
   sentAt: string | null;
   attemptCount: number;
   providerMessageId: string | null;
   errorCode: string | null;
+  skipReason: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -67,6 +70,10 @@ export function DeliveryHistory({
         return (
           <SkipForward className="h-4 w-4 text-gray-600" aria-hidden="true" />
         );
+      case "PROCESSING":
+        return (
+          <LoaderCircle className="text-primary h-4 w-4" aria-hidden="true" />
+        );
       case "PENDING":
       default:
         return <Clock className="h-4 w-4 text-yellow-600" aria-hidden="true" />;
@@ -78,6 +85,7 @@ export function DeliveryHistory({
       SENT: "default" as const,
       FAILED: "destructive" as const,
       SKIPPED: "secondary" as const,
+      PROCESSING: "outline" as const,
       PENDING: "outline" as const,
     };
     return (
@@ -178,6 +186,17 @@ export function DeliveryHistory({
                         {delivery.attemptCount > 1 && (
                           <span>(attempt {delivery.attemptCount})</span>
                         )}
+                      </div>
+                    )}
+                    {delivery.nextAttemptAt && (
+                      <div>
+                        Retry:{" "}
+                        {new Date(delivery.nextAttemptAt).toLocaleString()}
+                      </div>
+                    )}
+                    {delivery.skipReason && (
+                      <div className="text-muted-foreground">
+                        {delivery.skipReason.replaceAll("_", " ").toLowerCase()}
                       </div>
                     )}
                     {delivery.providerMessageId && (

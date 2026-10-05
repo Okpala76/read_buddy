@@ -1,21 +1,14 @@
 import { config } from "@/config/env";
-import { db } from "@/db/client";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
 import {
-  DrizzleReminderDeliveryRepository,
-  DrizzleReminderPreferenceRepository,
+  DrizzleReminderDispatchRepository,
+  DrizzleReminderSchedulingRepository,
+  ResendEmailService,
 } from "@/features/reminders/infrastructure";
-import { ProcessReminderDeliveriesUseCase } from "@/features/reminders/application";
-import { resendEmailService } from "@/features/reminders/infrastructure";
+import {
+  ProcessReminderDeliveriesUseCase,
+  ScheduleDueRemindersUseCase,
+} from "@/features/reminders/application";
 import { NextResponse } from "next/server";
-
-function getDb() {
-  if (!db) {
-    throw new Error("Database not initialized");
-  }
-  return db;
-}
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -33,36 +26,22 @@ export async function GET(request: Request) {
   try {
     const now = new Date();
 
-    const deliveryRepo = new DrizzleReminderDeliveryRepository();
-    const prefRepo = new DrizzleReminderPreferenceRepository();
-
+    const schedulingRepo = new DrizzleReminderSchedulingRepository();
+    const dispatchRepo = new DrizzleReminderDispatchRepository();
+    const emailSender = new ResendEmailService();
+    const scheduleUseCase = new ScheduleDueRemindersUseCase(schedulingRepo);
     const processUseCase = new ProcessReminderDeliveriesUseCase(
-      deliveryRepo,
-      prefRepo,
-      async (userId: string, delivery: { id: string; scheduledFor: Date }) => {
-        const userResult = await getDb()
-          .select({ email: users.email, name: users.name })
-          .from(users)
-          .where(eq(users.id, userId))
-          .limit(1);
-
-        if (!userResult[0]?.email) {
-          throw new Error("User email not found");
-        }
-
-        return resendEmailService.sendReminder(
-          userResult[0].email,
-          userResult[0].name,
-          delivery.scheduledFor,
-        );
-      },
+      dispatchRepo,
+      emailSender,
     );
 
-    const result = await processUseCase.execute(now, 100);
+    const schedulingResult = await scheduleUseCase.execute(now);
+    const processingResult = await processUseCase.execute(now);
 
     return NextResponse.json({
       success: true,
-      ...result,
+      ...schedulingResult,
+      ...processingResult,
       timestamp: now.toISOString(),
     });
   } catch (error) {

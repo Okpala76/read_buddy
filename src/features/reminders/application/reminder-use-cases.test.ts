@@ -2,26 +2,42 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { ReminderPreference, ReminderDelivery } from "../domain";
 import {
   GetReminderPreferenceUseCase,
+  GetReminderSettingsUseCase,
   UpdateReminderPreferenceUseCase,
   GetReminderDeliveriesUseCase,
-  ScheduleReminderDeliveryUseCase,
+  ScheduleDueRemindersUseCase,
   ProcessReminderDeliveriesUseCase,
-  RetryFailedDeliveriesUseCase,
 } from "./reminder-use-cases";
+import type { ReminderEmailSender } from "./reminder-use-cases";
 import type {
+  ReminderDispatchRepository,
   ReminderPreferenceRepository,
   ReminderDeliveryRepository,
+  ReminderSchedulingRepository,
 } from "../domain";
+
+const deliverySnapshot = {
+  recipientEmail: "reader@example.com",
+  bookTitle: "The Pragmatic Reader",
+  bookCurrentPage: 40,
+  bookTotalPages: 200,
+  dailyPageTarget: 15,
+};
+
+function createPreferenceRepository(): ReminderPreferenceRepository {
+  return {
+    findByUserId: vi.fn().mockResolvedValue(null),
+    findTimezoneByUserId: vi.fn().mockResolvedValue("UTC"),
+    saveSettings: vi.fn(),
+  };
+}
 
 describe("GetReminderPreferenceUseCase", () => {
   let repo: ReminderPreferenceRepository;
   let useCase: GetReminderPreferenceUseCase;
 
   beforeEach(() => {
-    repo = {
-      findByUserId: vi.fn().mockResolvedValue(null),
-      save: vi.fn(),
-    };
+    repo = createPreferenceRepository();
     useCase = new GetReminderPreferenceUseCase(repo);
   });
 
@@ -48,15 +64,29 @@ describe("GetReminderPreferenceUseCase", () => {
   });
 });
 
+describe("GetReminderSettingsUseCase", () => {
+  it("returns the stored preference and timezone", async () => {
+    const repo = createPreferenceRepository();
+    const preference = ReminderPreference.create({
+      userId: "user-1",
+      enabled: true,
+      reminderTime: "19:00:00",
+    });
+    vi.mocked(repo.findByUserId).mockResolvedValue(preference);
+    vi.mocked(repo.findTimezoneByUserId).mockResolvedValue("Africa/Lagos");
+
+    const result = await new GetReminderSettingsUseCase(repo).execute("user-1");
+
+    expect(result).toEqual({ preference, timezone: "Africa/Lagos" });
+  });
+});
+
 describe("UpdateReminderPreferenceUseCase", () => {
   let repo: ReminderPreferenceRepository;
   let useCase: UpdateReminderPreferenceUseCase;
 
   beforeEach(() => {
-    repo = {
-      findByUserId: vi.fn().mockResolvedValue(null),
-      save: vi.fn(),
-    };
+    repo = createPreferenceRepository();
     useCase = new UpdateReminderPreferenceUseCase(repo);
   });
 
@@ -68,9 +98,9 @@ describe("UpdateReminderPreferenceUseCase", () => {
       reminderTime: "08:00:00",
     });
 
-    expect(result.enabled).toBe(true);
-    expect(result.reminderTime).toBe("08:00:00");
-    expect(repo.save).toHaveBeenCalled();
+    expect(result.preference.enabled).toBe(true);
+    expect(result.preference.reminderTime).toBe("08:00:00");
+    expect(repo.saveSettings).toHaveBeenCalledWith(result.preference, "UTC");
   });
 
   it("updates existing preference enabled status", async () => {
@@ -83,9 +113,9 @@ describe("UpdateReminderPreferenceUseCase", () => {
 
     const result = await useCase.execute("user-1", { enabled: true });
 
-    expect(result.enabled).toBe(true);
-    expect(result.reminderTime).toBe("19:00:00");
-    expect(repo.save).toHaveBeenCalled();
+    expect(result.preference.enabled).toBe(true);
+    expect(result.preference.reminderTime).toBe("19:00:00");
+    expect(repo.saveSettings).toHaveBeenCalled();
   });
 
   it("updates existing preference time", async () => {
@@ -100,9 +130,9 @@ describe("UpdateReminderPreferenceUseCase", () => {
       reminderTime: "07:30:00",
     });
 
-    expect(result.enabled).toBe(true);
-    expect(result.reminderTime).toBe("07:30:00");
-    expect(repo.save).toHaveBeenCalled();
+    expect(result.preference.enabled).toBe(true);
+    expect(result.preference.reminderTime).toBe("07:30:00");
+    expect(repo.saveSettings).toHaveBeenCalled();
   });
 
   it("validates time format", async () => {
@@ -111,6 +141,28 @@ describe("UpdateReminderPreferenceUseCase", () => {
     await expect(
       useCase.execute("user-1", { reminderTime: "invalid" }),
     ).rejects.toThrow();
+  });
+
+  it("saves a valid IANA timezone", async () => {
+    const result = await useCase.execute("user-1", {
+      timezone: "Africa/Lagos",
+    });
+
+    expect(result.timezone).toBe("Africa/Lagos");
+    expect(repo.saveSettings).toHaveBeenCalledWith(
+      result.preference,
+      "Africa/Lagos",
+    );
+  });
+
+  it("rejects raw offsets and invalid timezones", async () => {
+    await expect(
+      useCase.execute("user-1", { timezone: "UTC+1" }),
+    ).rejects.toThrow("Timezone must be a valid IANA timezone");
+    await expect(
+      useCase.execute("user-1", { timezone: "Not/A_Zone" }),
+    ).rejects.toThrow("Timezone must be a valid IANA timezone");
+    expect(repo.saveSettings).not.toHaveBeenCalled();
   });
 });
 
@@ -121,11 +173,7 @@ describe("GetReminderDeliveriesUseCase", () => {
   beforeEach(() => {
     repo = {
       findByUserId: vi.fn().mockResolvedValue([]),
-      findByStatus: vi.fn().mockResolvedValue([]),
-      findByUserIdAndScheduledFor: vi.fn().mockResolvedValue(null),
-      findPendingByScheduledBefore: vi.fn().mockResolvedValue([]),
-      save: vi.fn(),
-      saveMany: vi.fn(),
+      findByUserIdAndStatus: vi.fn().mockResolvedValue([]),
     };
     useCase = new GetReminderDeliveriesUseCase(repo);
   });
@@ -135,11 +183,13 @@ describe("GetReminderDeliveriesUseCase", () => {
       ReminderDelivery.create({
         id: "1",
         userId: "user-1",
+        ...deliverySnapshot,
         scheduledFor: new Date("2024-01-15T19:00:00Z"),
       }),
       ReminderDelivery.create({
         id: "2",
         userId: "user-1",
+        ...deliverySnapshot,
         scheduledFor: new Date("2024-01-16T19:00:00Z"),
       }),
     ];
@@ -156,23 +206,32 @@ describe("GetReminderDeliveriesUseCase", () => {
       ReminderDelivery.reconstitute({
         id: "1",
         userId: "user-1",
+        ...deliverySnapshot,
         status: "SENT",
         scheduledFor: new Date("2024-01-15T19:00:00Z"),
+        lockedAt: null,
+        nextAttemptAt: null,
         sentAt: new Date("2024-01-15T19:00:05Z"),
         attemptCount: 1,
         providerMessageId: "msg-1",
         errorCode: null,
+        skipReason: null,
         createdAt: new Date("2024-01-15T18:59:00Z"),
         updatedAt: new Date("2024-01-15T19:00:05Z"),
       }),
     ];
-    vi.mocked(repo.findByStatus).mockResolvedValue(deliveries);
+    vi.mocked(repo.findByUserIdAndStatus).mockResolvedValue(deliveries);
 
     const result = await useCase.execute("user-1", { status: "SENT" });
 
     expect(result).toHaveLength(1);
     expect(result[0].status).toBe("SENT");
-    expect(repo.findByStatus).toHaveBeenCalledWith("SENT", 50, 0);
+    expect(repo.findByUserIdAndStatus).toHaveBeenCalledWith(
+      "user-1",
+      "SENT",
+      50,
+      0,
+    );
   });
 
   it("respects limit and offset", async () => {
@@ -190,311 +249,387 @@ describe("GetReminderDeliveriesUseCase", () => {
   });
 });
 
-describe("ScheduleReminderDeliveryUseCase", () => {
-  let deliveryRepo: ReminderDeliveryRepository;
-  let prefRepo: ReminderPreferenceRepository;
-  let useCase: ScheduleReminderDeliveryUseCase;
+describe("ScheduleDueRemindersUseCase", () => {
+  let repository: ReminderSchedulingRepository;
+  let useCase: ScheduleDueRemindersUseCase;
 
   beforeEach(() => {
-    deliveryRepo = {
-      findByUserIdAndScheduledFor: vi.fn().mockResolvedValue(null),
-      save: vi.fn(),
-      findByUserId: vi.fn().mockResolvedValue([]),
-      findPendingByScheduledBefore: vi.fn().mockResolvedValue([]),
-      findByStatus: vi.fn().mockResolvedValue([]),
-      saveMany: vi.fn(),
+    repository = {
+      findEnabledCandidates: vi.fn().mockResolvedValue([]),
+      createDeliveryIfAbsent: vi.fn().mockResolvedValue(true),
     };
-    prefRepo = {
-      findByUserId: vi.fn().mockResolvedValue(null),
-      save: vi.fn(),
-    };
-    useCase = new ScheduleReminderDeliveryUseCase(deliveryRepo, prefRepo);
+    useCase = new ScheduleDueRemindersUseCase(repository);
   });
 
-  it("creates new delivery when none exists", async () => {
-    const scheduledFor = new Date("2024-01-15T19:00:00Z");
-    vi.mocked(deliveryRepo.findByUserIdAndScheduledFor).mockResolvedValue(null);
+  it("creates a due Lagos reminder at its UTC instant", async () => {
+    vi.mocked(repository.findEnabledCandidates).mockResolvedValue([
+      {
+        userId: "user-lagos",
+        ...deliverySnapshot,
+        reminderTime: "19:00:00",
+        timezone: "Africa/Lagos",
+        enabled: true,
+      },
+    ]);
 
-    const result = await useCase.execute("user-1", scheduledFor);
+    const result = await useCase.execute(new Date("2026-10-05T18:05:00.000Z"));
 
-    expect(result.userId).toBe("user-1");
-    expect(result.scheduledFor).toEqual(scheduledFor);
-    expect(result.status).toBe("PENDING");
-    expect(deliveryRepo.save).toHaveBeenCalled();
-  });
-
-  it("returns existing delivery when found", async () => {
-    const scheduledFor = new Date("2024-01-15T19:00:00Z");
-    const existing = ReminderDelivery.create({
-      id: "existing-1",
-      userId: "user-1",
-      scheduledFor,
-    });
-    vi.mocked(deliveryRepo.findByUserIdAndScheduledFor).mockResolvedValue(
-      existing,
+    expect(result).toEqual({ candidates: 1, due: 1, scheduled: 1 });
+    expect(repository.createDeliveryIfAbsent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-lagos",
+        scheduledFor: new Date("2026-10-05T18:00:00.000Z"),
+      }),
     );
+  });
 
-    const result = await useCase.execute("user-1", scheduledFor);
+  it("does not schedule disabled, future, or stale reminders", async () => {
+    vi.mocked(repository.findEnabledCandidates).mockResolvedValue([
+      {
+        userId: "disabled",
+        ...deliverySnapshot,
+        reminderTime: "19:00:00",
+        timezone: "Africa/Lagos",
+        enabled: false,
+      },
+      {
+        userId: "future",
+        ...deliverySnapshot,
+        reminderTime: "19:10:00",
+        timezone: "Africa/Lagos",
+        enabled: true,
+      },
+      {
+        userId: "stale",
+        ...deliverySnapshot,
+        reminderTime: "18:49:00",
+        timezone: "Africa/Lagos",
+        enabled: true,
+      },
+    ]);
 
-    expect(result).toEqual(existing);
-    expect(deliveryRepo.save).not.toHaveBeenCalled();
+    const result = await useCase.execute(new Date("2026-10-05T18:05:00.000Z"));
+
+    expect(result).toEqual({ candidates: 3, due: 0, scheduled: 0 });
+    expect(repository.createDeliveryIfAbsent).not.toHaveBeenCalled();
+  });
+
+  it("uses the local calendar date near midnight", async () => {
+    vi.mocked(repository.findEnabledCandidates).mockResolvedValue([
+      {
+        userId: "user-lagos",
+        ...deliverySnapshot,
+        reminderTime: "00:00:00",
+        timezone: "Africa/Lagos",
+        enabled: true,
+      },
+    ]);
+
+    await useCase.execute(new Date("2026-10-04T23:05:00.000Z"));
+
+    expect(repository.createDeliveryIfAbsent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scheduledFor: new Date("2026-10-04T23:00:00.000Z"),
+      }),
+    );
+  });
+
+  it("counts only the atomic insert on duplicate execution", async () => {
+    const insertedOccurrences = new Set<string>();
+    vi.mocked(repository.findEnabledCandidates).mockResolvedValue([
+      {
+        userId: "user-lagos",
+        ...deliverySnapshot,
+        reminderTime: "19:00:00",
+        timezone: "Africa/Lagos",
+        enabled: true,
+      },
+    ]);
+    vi.mocked(repository.createDeliveryIfAbsent).mockImplementation(
+      async (delivery) => {
+        const key = `${delivery.userId}:${delivery.scheduledFor.toISOString()}`;
+        if (insertedOccurrences.has(key)) return false;
+        insertedOccurrences.add(key);
+        return true;
+      },
+    );
+    const now = new Date("2026-10-05T18:05:00.000Z");
+
+    const first = await useCase.execute(now);
+    const second = await useCase.execute(now);
+
+    expect(first.scheduled).toBe(1);
+    expect(second.scheduled).toBe(0);
+    expect(insertedOccurrences.size).toBe(1);
   });
 });
 
 describe("ProcessReminderDeliveriesUseCase", () => {
-  let deliveryRepo: ReminderDeliveryRepository;
-  let prefRepo: ReminderPreferenceRepository;
-  let sendEmail: (
-    userId: string,
-    delivery: { id: string; scheduledFor: Date },
-  ) => Promise<{ messageId: string }>;
+  const now = new Date("2026-10-04T23:30:00.000Z");
+  let dispatchRepo: ReminderDispatchRepository;
+  let emailSender: ReminderEmailSender;
   let useCase: ProcessReminderDeliveriesUseCase;
 
+  function claimedDelivery(userId = "user-1", attemptCount = 0) {
+    const delivery = ReminderDelivery.create({
+      id: `delivery-${userId}`,
+      userId,
+      ...deliverySnapshot,
+      scheduledFor: new Date("2026-10-04T23:00:00.000Z"),
+    });
+    if (attemptCount === 0) return delivery.markProcessing(now);
+
+    return ReminderDelivery.reconstitute({
+      ...delivery.toPersistence(),
+      status: "FAILED",
+      attemptCount,
+      nextAttemptAt: now,
+      errorCode: "RESEND_TIMEOUT",
+    }).markProcessing(now);
+  }
+
   beforeEach(() => {
-    deliveryRepo = {
-      findPendingByScheduledBefore: vi.fn().mockResolvedValue([]),
-      save: vi.fn(),
-      findByUserIdAndScheduledFor: vi.fn().mockResolvedValue(null),
-      findByUserId: vi.fn().mockResolvedValue([]),
-      findByStatus: vi.fn().mockResolvedValue([]),
-      saveMany: vi.fn(),
+    dispatchRepo = {
+      recoverStaleClaims: vi.fn().mockResolvedValue(0),
+      claimDueDeliveries: vi.fn().mockResolvedValue([claimedDelivery()]),
+      findEligibility: vi.fn().mockResolvedValue({
+        timezone: "Africa/Lagos",
+        remindersEnabled: true,
+        hasActiveBook: true,
+      }),
+      hasReadingSessionBetween: vi.fn().mockResolvedValue(false),
+      saveClaimResult: vi.fn().mockResolvedValue(true),
     };
-    prefRepo = {
-      findByUserId: vi.fn().mockResolvedValue(null),
-      save: vi.fn(),
+    emailSender = {
+      sendReminder: vi.fn().mockResolvedValue({
+        status: "ACCEPTED",
+        providerMessageId: "msg-123",
+      }),
     };
-    sendEmail = vi
-      .fn<
-        (
-          userId: string,
-          delivery: { id: string; scheduledFor: Date },
-        ) => Promise<{
-          messageId: string;
-        }>
-      >()
-      .mockResolvedValue({ messageId: "msg-123" });
-    useCase = new ProcessReminderDeliveriesUseCase(
-      deliveryRepo,
-      prefRepo,
-      sendEmail,
-    );
+    useCase = new ProcessReminderDeliveriesUseCase(dispatchRepo, emailSender);
   });
 
-  it("processes pending deliveries and sends emails", async () => {
-    const delivery = ReminderDelivery.create({
-      id: "1",
-      userId: "user-1",
-      scheduledFor: new Date("2024-01-15T19:00:00Z"),
-    });
-    vi.mocked(deliveryRepo.findPendingByScheduledBefore).mockResolvedValue([
-      delivery,
-    ]);
-    vi.mocked(prefRepo.findByUserId).mockResolvedValue(
-      ReminderPreference.create({
-        userId: "user-1",
-        enabled: true,
-        reminderTime: "19:00:00",
-      }),
+  it("recovers stale claims and atomically claims a bounded batch", async () => {
+    vi.mocked(dispatchRepo.recoverStaleClaims).mockResolvedValue(2);
+
+    const result = await useCase.execute(now, 25);
+
+    expect(dispatchRepo.recoverStaleClaims).toHaveBeenCalledWith(
+      new Date("2026-10-04T23:20:00.000Z"),
+      now,
     );
+    expect(dispatchRepo.claimDueDeliveries).toHaveBeenCalledWith(now, 25, 3);
+    expect(result.recovered).toBe(2);
+    expect(result.claimed).toBe(1);
+  });
 
-    const result = await useCase.execute(new Date("2024-01-15T20:00:00Z"), 10);
+  it("sends one eligible claimed delivery", async () => {
+    const result = await useCase.execute(now);
 
-    expect(result.processed).toBe(1);
     expect(result.sent).toBe(1);
-    expect(result.failed).toBe(0);
+    expect(result.retryScheduled).toBe(0);
+    expect(result.terminalFailed).toBe(0);
     expect(result.skipped).toBe(0);
-    expect(sendEmail).toHaveBeenCalledWith("user-1", {
-      id: "1",
-      scheduledFor: delivery.scheduledFor,
+    expect(emailSender.sendReminder).toHaveBeenCalledWith({
+      deliveryId: "delivery-user-1",
+      ...deliverySnapshot,
+      scheduledFor: new Date("2026-10-04T23:00:00.000Z"),
     });
-    expect(deliveryRepo.save).toHaveBeenCalled();
+    expect(dispatchRepo.saveClaimResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attemptCount: 1,
+        status: "SENT",
+        nextAttemptAt: null,
+        sentAt: now,
+        providerMessageId: "msg-123",
+        errorCode: null,
+      }),
+      now,
+    );
   });
 
-  it("skips delivery when preference is disabled", async () => {
-    const delivery = ReminderDelivery.create({
-      id: "1",
-      userId: "user-1",
-      scheduledFor: new Date("2024-01-15T19:00:00Z"),
-    });
-    vi.mocked(deliveryRepo.findPendingByScheduledBefore).mockResolvedValue([
-      delivery,
+  it("skips with REMINDERS_DISABLED before calling the provider", async () => {
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([
+      claimedDelivery("user-1", 1),
     ]);
-    vi.mocked(prefRepo.findByUserId).mockResolvedValue(
-      ReminderPreference.create({
-        userId: "user-1",
-        enabled: false,
-        reminderTime: "19:00:00",
-      }),
-    );
+    vi.mocked(dispatchRepo.findEligibility).mockResolvedValue({
+      timezone: "Africa/Lagos",
+      remindersEnabled: false,
+      hasActiveBook: true,
+    });
 
-    const result = await useCase.execute(new Date("2024-01-15T20:00:00Z"), 10);
+    const result = await useCase.execute(now);
 
     expect(result.skipped).toBe(1);
-    expect(result.sent).toBe(0);
-    expect(sendEmail).not.toHaveBeenCalled();
+    expect(emailSender.sendReminder).not.toHaveBeenCalled();
+    expect(dispatchRepo.hasReadingSessionBetween).not.toHaveBeenCalled();
+    expect(dispatchRepo.saveClaimResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attemptCount: 1,
+        status: "SKIPPED",
+        skipReason: "REMINDERS_DISABLED",
+      }),
+      now,
+    );
   });
 
-  it("skips delivery when preference not found", async () => {
-    const delivery = ReminderDelivery.create({
-      id: "1",
-      userId: "user-1",
-      scheduledFor: new Date("2024-01-15T19:00:00Z"),
-    });
-    vi.mocked(deliveryRepo.findPendingByScheduledBefore).mockResolvedValue([
-      delivery,
+  it("skips when the user already read during their local day", async () => {
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([
+      claimedDelivery("user-1", 1),
     ]);
-    vi.mocked(prefRepo.findByUserId).mockResolvedValue(null);
+    vi.mocked(dispatchRepo.hasReadingSessionBetween).mockResolvedValue(true);
 
-    const result = await useCase.execute(new Date("2024-01-15T20:00:00Z"), 10);
+    const result = await useCase.execute(now);
 
     expect(result.skipped).toBe(1);
+    expect(dispatchRepo.hasReadingSessionBetween).toHaveBeenCalledWith(
+      "user-1",
+      new Date("2026-10-04T23:00:00.000Z"),
+      new Date("2026-10-05T23:00:00.000Z"),
+    );
+    expect(emailSender.sendReminder).not.toHaveBeenCalled();
+    expect(dispatchRepo.saveClaimResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attemptCount: 1,
+        skipReason: "ALREADY_READ_TODAY",
+      }),
+      now,
+    );
   });
 
-  it("marks delivery as failed when email fails", async () => {
-    const delivery = ReminderDelivery.create({
-      id: "1",
-      userId: "user-1",
-      scheduledFor: new Date("2024-01-15T19:00:00Z"),
-    });
-    vi.mocked(deliveryRepo.findPendingByScheduledBefore).mockResolvedValue([
-      delivery,
+  it("skips when the user has no active reading book", async () => {
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([
+      claimedDelivery("user-1", 1),
     ]);
-    vi.mocked(prefRepo.findByUserId).mockResolvedValue(
-      ReminderPreference.create({
-        userId: "user-1",
-        enabled: true,
-        reminderTime: "19:00:00",
+    vi.mocked(dispatchRepo.findEligibility).mockResolvedValue({
+      timezone: "Africa/Lagos",
+      remindersEnabled: true,
+      hasActiveBook: false,
+    });
+
+    const result = await useCase.execute(now);
+
+    expect(result.skipped).toBe(1);
+    expect(emailSender.sendReminder).not.toHaveBeenCalled();
+    expect(dispatchRepo.saveClaimResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attemptCount: 1,
+        skipReason: "NO_ACTIVE_BOOK",
       }),
+      now,
     );
-    vi.mocked(sendEmail).mockRejectedValue(new Error("RATE_LIMITED"));
+  });
 
-    const result = await useCase.execute(new Date("2024-01-15T20:00:00Z"), 10);
+  it("schedules a five-minute retry after the first transient failure", async () => {
+    vi.mocked(emailSender.sendReminder).mockResolvedValue({
+      status: "FAILED",
+      classification: "RETRYABLE",
+      errorCode: "RESEND_RATE_LIMIT",
+    });
 
-    expect(result.failed).toBe(1);
+    const result = await useCase.execute(now);
+
+    expect(result.retryScheduled).toBe(1);
+    expect(result.terminalFailed).toBe(0);
     expect(result.sent).toBe(0);
-  });
-
-  it("respects batch size limit", async () => {
-    const deliveries = Array.from({ length: 150 }, (_, i) =>
-      ReminderDelivery.create({
-        id: String(i),
-        userId: "user-1",
-        scheduledFor: new Date("2024-01-15T19:00:00Z"),
+    expect(dispatchRepo.saveClaimResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attemptCount: 1,
+        status: "FAILED",
+        nextAttemptAt: new Date("2026-10-04T23:35:00.000Z"),
+        errorCode: "RESEND_RATE_LIMIT",
       }),
+      now,
     );
-    // Mock to return only first 100 when batchSize is 100
-    vi.mocked(deliveryRepo.findPendingByScheduledBefore).mockImplementation(
-      async (_scheduledBefore: Date, limit: number) =>
-        deliveries.slice(0, limit),
-    );
-    vi.mocked(prefRepo.findByUserId).mockResolvedValue(
-      ReminderPreference.create({
-        userId: "user-1",
-        enabled: true,
-        reminderTime: "19:00:00",
+  });
+
+  it("schedules a thirty-minute retry after the second transient failure", async () => {
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([
+      claimedDelivery("user-1", 1),
+    ]);
+    vi.mocked(emailSender.sendReminder).mockResolvedValue({
+      status: "FAILED",
+      classification: "RETRYABLE",
+      errorCode: "RESEND_TIMEOUT",
+    });
+
+    const result = await useCase.execute(now);
+
+    expect(result.retryScheduled).toBe(1);
+    expect(dispatchRepo.saveClaimResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attemptCount: 2,
+        nextAttemptAt: new Date("2026-10-05T00:00:00.000Z"),
       }),
+      now,
     );
-
-    const result = await useCase.execute(new Date("2024-01-15T20:00:00Z"), 100);
-
-    expect(result.processed).toBe(100);
-  });
-});
-
-describe("RetryFailedDeliveriesUseCase", () => {
-  let deliveryRepo: ReminderDeliveryRepository;
-  let sendEmail: (
-    userId: string,
-    delivery: { id: string; scheduledFor: Date },
-  ) => Promise<{ messageId: string }>;
-  let useCase: RetryFailedDeliveriesUseCase;
-
-  beforeEach(() => {
-    deliveryRepo = {
-      findByStatus: vi.fn().mockResolvedValue([]),
-      save: vi.fn(),
-      findByUserIdAndScheduledFor: vi.fn().mockResolvedValue(null),
-      findPendingByScheduledBefore: vi.fn().mockResolvedValue([]),
-      findByUserId: vi.fn().mockResolvedValue([]),
-      saveMany: vi.fn(),
-    };
-    sendEmail = vi
-      .fn<
-        (
-          userId: string,
-          delivery: { id: string; scheduledFor: Date },
-        ) => Promise<{
-          messageId: string;
-        }>
-      >()
-      .mockResolvedValue({ messageId: "msg-retry-1" });
-    useCase = new RetryFailedDeliveriesUseCase(deliveryRepo, sendEmail);
   });
 
-  it("retries failed deliveries under max attempts", async () => {
-    const failedDelivery = ReminderDelivery.reconstitute({
-      id: "1",
-      userId: "user-1",
+  it("makes the third transient failure terminal", async () => {
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([
+      claimedDelivery("user-1", 2),
+    ]);
+    vi.mocked(emailSender.sendReminder).mockResolvedValue({
       status: "FAILED",
-      scheduledFor: new Date("2024-01-15T19:00:00Z"),
-      sentAt: null,
-      attemptCount: 1,
-      providerMessageId: null,
-      errorCode: "RATE_LIMITED",
-      createdAt: new Date("2024-01-15T18:59:00Z"),
-      updatedAt: new Date("2024-01-15T19:00:05Z"),
+      classification: "RETRYABLE",
+      errorCode: "RESEND_SERVER_ERROR",
     });
-    vi.mocked(deliveryRepo.findByStatus).mockResolvedValue([failedDelivery]);
 
-    const result = await useCase.execute(3);
+    const result = await useCase.execute(now);
 
-    expect(result.retried).toBe(1);
-    expect(result.sent).toBe(1);
-    expect(result.failed).toBe(0);
-    expect(sendEmail).toHaveBeenCalled();
+    expect(result.retryScheduled).toBe(0);
+    expect(result.terminalFailed).toBe(1);
+    expect(dispatchRepo.saveClaimResult).toHaveBeenCalledWith(
+      expect.objectContaining({ attemptCount: 3, nextAttemptAt: null }),
+      now,
+    );
   });
 
-  it("does not retry deliveries at max attempts", async () => {
-    const failedDelivery = ReminderDelivery.reconstitute({
-      id: "1",
-      userId: "user-1",
+  it("makes a permanent first failure terminal", async () => {
+    vi.mocked(emailSender.sendReminder).mockResolvedValue({
       status: "FAILED",
-      scheduledFor: new Date("2024-01-15T19:00:00Z"),
-      sentAt: null,
-      attemptCount: 3,
-      providerMessageId: null,
-      errorCode: "RATE_LIMITED",
-      createdAt: new Date("2024-01-15T18:59:00Z"),
-      updatedAt: new Date("2024-01-15T19:00:05Z"),
+      classification: "PERMANENT",
+      errorCode: "PROVIDER_AUTH_ERROR",
     });
-    vi.mocked(deliveryRepo.findByStatus).mockResolvedValue([failedDelivery]);
 
-    const result = await useCase.execute(3);
+    const result = await useCase.execute(now);
 
-    expect(result.retried).toBe(0);
-    expect(sendEmail).not.toHaveBeenCalled();
+    expect(result.terminalFailed).toBe(1);
+    expect(result.retryScheduled).toBe(0);
+    expect(dispatchRepo.saveClaimResult).toHaveBeenCalledWith(
+      expect.objectContaining({ attemptCount: 1, nextAttemptAt: null }),
+      now,
+    );
   });
 
-  it("marks as failed when retry fails", async () => {
-    const failedDelivery = ReminderDelivery.reconstitute({
-      id: "1",
-      userId: "user-1",
-      status: "FAILED",
-      scheduledFor: new Date("2024-01-15T19:00:00Z"),
-      sentAt: null,
-      attemptCount: 1,
-      providerMessageId: null,
-      errorCode: "RATE_LIMITED",
-      createdAt: new Date("2024-01-15T18:59:00Z"),
-      updatedAt: new Date("2024-01-15T19:00:05Z"),
-    });
-    vi.mocked(deliveryRepo.findByStatus).mockResolvedValue([failedDelivery]);
-    vi.mocked(sendEmail).mockRejectedValue(new Error("TIMEOUT"));
+  it("does not increment attempts when claim-result ownership was lost", async () => {
+    vi.mocked(dispatchRepo.saveClaimResult).mockResolvedValue(false);
 
-    const result = await useCase.execute(3);
+    const result = await useCase.execute(now);
 
-    expect(result.retried).toBe(1);
-    expect(result.sent).toBe(0);
-    expect(result.failed).toBe(1);
+    expect(result.unresolved).toBe(1);
+    expect(dispatchRepo.saveClaimResult).toHaveBeenCalledWith(
+      expect.objectContaining({ attemptCount: 1 }),
+      now,
+    );
+  });
+
+  it("reuses the same delivery identity when provider acceptance was not persisted", async () => {
+    vi.mocked(dispatchRepo.saveClaimResult)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+
+    const first = await useCase.execute(now);
+    const second = await useCase.execute(now);
+
+    expect(first.unresolved).toBe(1);
+    expect(second.sent).toBe(1);
+    expect(emailSender.sendReminder).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(emailSender.sendReminder).mock.calls[1]).toEqual(
+      vi.mocked(emailSender.sendReminder).mock.calls[0],
+    );
+    expect(
+      vi.mocked(emailSender.sendReminder).mock.calls[0][0].deliveryId,
+    ).toBe("delivery-user-1");
   });
 });

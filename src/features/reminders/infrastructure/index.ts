@@ -1,5 +1,12 @@
 export {
   DrizzleReminderPreferenceRepository,
   DrizzleReminderDeliveryRepository,
+  DrizzleReminderDispatchRepository,
+  DrizzleReminderSchedulingRepository,
 } from "./drizzle-reminder-repository";
-export { ResendEmailService, resendEmailService } from "./resend-email";
+export {
+  ResendEmailService,
+  resendEmailService,
+  buildReminderEmail,
+  classifyEmailFailure,
+} from "./resend-email";

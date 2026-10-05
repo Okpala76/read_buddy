@@ -10,11 +10,6 @@ const optionalUrl = z.preprocess(
   z.url().optional(),
 );
 
-const optionalEmail = z.preprocess(
-  (value) => (value === "" ? undefined : value),
-  z.email().optional(),
-);
-
 const serverEnvironmentSchema = z.object({
   DATABASE_URL: z.url().startsWith("postgresql://"),
 
@@ -31,7 +26,7 @@ const serverEnvironmentSchema = z.object({
     .default("development"),
 
   RESEND_API_KEY: optionalString,
-  RESEND_FROM_EMAIL: optionalEmail,
+  RESEND_FROM_EMAIL: optionalString,
   CRON_SECRET: optionalString,
   NEXT_PUBLIC_APP_URL: optionalUrl,
 });
@@ -55,7 +50,7 @@ export const config = {
   DATABASE_CA_CERT: env.DATABASE_CA_CERT,
   NODE_ENV: env.NODE_ENV,
   RESEND_API_KEY: env.RESEND_API_KEY,
-  RESEND_FROM_EMAIL: env.RESEND_FROM_EMAIL ?? "noreply@readbuddy.local",
+  RESEND_FROM_EMAIL: env.RESEND_FROM_EMAIL,
   CRON_SECRET: env.CRON_SECRET,
   NEXT_PUBLIC_APP_URL: env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
 };

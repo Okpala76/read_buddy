@@ -2,7 +2,7 @@ import { requireAuth } from "@/lib/auth/server";
 import { updateReminderPreferenceInputSchema } from "@/features/reminders/application";
 import { DrizzleReminderPreferenceRepository } from "@/features/reminders/infrastructure";
 import {
-  GetReminderPreferenceUseCase,
+  GetReminderSettingsUseCase,
   UpdateReminderPreferenceUseCase,
 } from "@/features/reminders/application";
 import { NextRequest, NextResponse } from "next/server";
@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 function getUseCases() {
   const repo = new DrizzleReminderPreferenceRepository();
   return {
-    getPreference: new GetReminderPreferenceUseCase(repo),
+    getSettings: new GetReminderSettingsUseCase(repo),
     updatePreference: new UpdateReminderPreferenceUseCase(repo),
   };
 }
@@ -18,17 +18,18 @@ function getUseCases() {
 export async function GET() {
   try {
     const user = await requireAuth();
-    const { getPreference } = getUseCases();
-    const preference = await getPreference.execute(user.id, {});
+    const { getSettings } = getUseCases();
+    const { preference, timezone } = await getSettings.execute(user.id);
 
     if (!preference) {
       return NextResponse.json({
         enabled: false,
         reminderTime: "19:00:00",
+        timezone,
       });
     }
 
-    return NextResponse.json(preference.toPersistence());
+    return NextResponse.json({ ...preference.toPersistence(), timezone });
   } catch (error) {
     console.error("Get reminder preference error:", error);
     return NextResponse.json(
@@ -46,9 +47,12 @@ export async function POST(request: NextRequest) {
     const parsed = updateReminderPreferenceInputSchema.parse(body);
 
     const { updatePreference } = getUseCases();
-    const preference = await updatePreference.execute(user.id, parsed);
+    const { preference, timezone } = await updatePreference.execute(
+      user.id,
+      parsed,
+    );
 
-    return NextResponse.json(preference.toPersistence());
+    return NextResponse.json({ ...preference.toPersistence(), timezone });
   } catch (error) {
     console.error("Update reminder preference error:", error);
     if (error instanceof Error && error.name === "ZodError") {

@@ -1,128 +1,222 @@
-import { config } from "@/config/env";
+import {
+  Resend,
+  type CreateEmailOptions,
+  type CreateEmailRequestOptions,
+  type CreateEmailResponse,
+} from "resend";
 
-interface ResendSendOptions {
-  from: string;
-  to: string;
+import { config } from "@/config/env";
+import type {
+  ReminderEmailFailureCode,
+  ReminderEmailInput,
+  ReminderEmailSendResult,
+  ReminderEmailSender,
+} from "@/features/reminders/application";
+
+interface ResendClient {
+  emails: {
+    send(
+      payload: CreateEmailOptions,
+      requestOptions?: CreateEmailRequestOptions,
+    ): Promise<CreateEmailResponse>;
+  };
+}
+
+interface ResendErrorLike {
+  name?: unknown;
+  statusCode?: unknown;
+  code?: unknown;
+}
+
+export interface ClassifiedEmailFailure {
+  classification: "RETRYABLE" | "PERMANENT";
+  errorCode: ReminderEmailFailureCode;
+}
+
+export interface ReminderEmailContent {
   subject: string;
   html: string;
-  text?: string;
+  text: string;
 }
 
-interface ResendApiResponse {
-  id: string;
-}
+const RETRYABLE_CONFLICTS = new Set([
+  "concurrent_idempotent_requests",
+  "resource_locked",
+]);
 
-export interface ResendResponse {
-  id: string;
-  messageId: string;
-}
-
-export class ResendEmailService {
-  private readonly apiKey: string;
-  private readonly fromEmail: string;
-
-  constructor() {
-    this.apiKey = config.RESEND_API_KEY ?? "";
-    this.fromEmail = config.RESEND_FROM_EMAIL ?? "noreply@readbuddy.local";
+function errorFields(error: unknown): {
+  name: string;
+  statusCode: number | null;
+  code: string;
+} {
+  if (!error || typeof error !== "object") {
+    return { name: "", statusCode: null, code: "" };
   }
 
-  async send(options: ResendSendOptions): Promise<ResendResponse> {
-    if (!this.apiKey) {
-      throw new Error("RESEND_API_KEY not configured");
-    }
+  const value = error as ResendErrorLike;
+  return {
+    name: typeof value.name === "string" ? value.name : "",
+    statusCode: typeof value.statusCode === "number" ? value.statusCode : null,
+    code: typeof value.code === "string" ? value.code : "",
+  };
+}
 
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: options.from ?? this.fromEmail,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-      }),
-    });
+export function classifyEmailFailure(error: unknown): ClassifiedEmailFailure {
+  const { name, statusCode, code } = errorFields(error);
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(
-        `Resend API error: ${response.status} ${error.message ?? "Unknown error"}`,
-      );
-    }
+  if (
+    name === "AbortError" ||
+    name === "TimeoutError" ||
+    code === "ETIMEDOUT"
+  ) {
+    return { classification: "RETRYABLE", errorCode: "RESEND_TIMEOUT" };
+  }
 
-    const data = (await response.json()) as ResendApiResponse;
-    return { id: data.id, messageId: data.id };
+  if (statusCode === 429 || name === "rate_limit_exceeded") {
+    return { classification: "RETRYABLE", errorCode: "RESEND_RATE_LIMIT" };
+  }
+
+  if (statusCode !== null && statusCode >= 500) {
+    return { classification: "RETRYABLE", errorCode: "RESEND_SERVER_ERROR" };
+  }
+
+  if (statusCode === 409 && RETRYABLE_CONFLICTS.has(name)) {
+    return {
+      classification: "RETRYABLE",
+      errorCode: "RESEND_TEMPORARY_CONFLICT",
+    };
+  }
+
+  if (statusCode === 409 || name === "invalid_idempotent_request") {
+    return {
+      classification: "PERMANENT",
+      errorCode: "RESEND_IDEMPOTENCY_CONFLICT",
+    };
+  }
+
+  if (statusCode === 401 || statusCode === 403) {
+    return {
+      classification: "PERMANENT",
+      errorCode: "PROVIDER_AUTH_ERROR",
+    };
+  }
+
+  if (statusCode !== null && statusCode >= 400 && statusCode < 500) {
+    return {
+      classification: "PERMANENT",
+      errorCode: "RESEND_INVALID_REQUEST",
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      classification: "RETRYABLE",
+      errorCode: "RESEND_NETWORK_ERROR",
+    };
+  }
+
+  return {
+    classification: "RETRYABLE",
+    errorCode: "UNKNOWN_PROVIDER_ERROR",
+  };
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+export function buildReminderEmail(
+  input: ReminderEmailInput,
+  appUrl: string,
+): ReminderEmailContent {
+  const bookTitle = input.bookTitle ?? "your current book";
+  const progress =
+    input.bookCurrentPage !== null && input.bookTotalPages !== null
+      ? `You are on page ${input.bookCurrentPage} of ${input.bookTotalPages}.`
+      : "Your current book is waiting for you.";
+  const dashboardUrl = new URL("/dashboard", appUrl).toString();
+
+  return {
+    subject: `Time to read: ${bookTitle}`,
+    html: `<!DOCTYPE html>
+<html lang="en">
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 24px;">
+    <h1 style="font-size: 24px; margin-bottom: 16px;">Time for a reading break</h1>
+    <p>Your next pages in <strong>${escapeHtml(bookTitle)}</strong> are ready.</p>
+    <p>${escapeHtml(progress)}</p>
+    <p>Today's reading target is <strong>${input.dailyPageTarget} pages</strong>.</p>
+    <p><a href="${escapeHtml(dashboardUrl)}" style="display: inline-block; padding: 12px 20px; border-radius: 6px; background: #1d4ed8; color: #ffffff; text-decoration: none;">Open Read Buddy</a></p>
+    <p style="font-size: 12px; color: #6b7280;">You received this transactional email because reading reminders are enabled in Read Buddy.</p>
+  </body>
+</html>`,
+    text: `Time for a reading break
+
+Your next pages in ${bookTitle} are ready.
+${progress}
+Today's reading target is ${input.dailyPageTarget} pages.
+
+Open Read Buddy: ${dashboardUrl}
+
+You received this transactional email because reading reminders are enabled in Read Buddy.`,
+  };
+}
+
+export class ResendEmailService implements ReminderEmailSender {
+  private readonly client: ResendClient | null;
+
+  constructor(
+    private readonly settings: {
+      apiKey?: string;
+      fromEmail?: string;
+      appUrl?: string;
+      client?: ResendClient;
+    } = {},
+  ) {
+    const apiKey = settings.apiKey ?? config.RESEND_API_KEY;
+    this.client = settings.client ?? (apiKey ? new Resend(apiKey) : null);
   }
 
   async sendReminder(
-    to: string,
-    userName: string | null,
-    scheduledFor: Date,
-  ): Promise<ResendResponse> {
-    const greeting = userName ? `Hi ${userName},` : "Hi there,";
-    const dateStr = scheduledFor.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    });
-    const timeStr = scheduledFor.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZoneName: "short",
-    });
+    input: ReminderEmailInput,
+  ): Promise<ReminderEmailSendResult> {
+    const fromEmail = this.settings.fromEmail ?? config.RESEND_FROM_EMAIL;
+    if (!this.client || !fromEmail) {
+      return {
+        status: "FAILED",
+        classification: "PERMANENT",
+        errorCode: "PROVIDER_CONFIG_ERROR",
+      };
+    }
 
-    const subject = `📚 Reading Reminder for ${dateStr}`;
-    const html = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  </head>
-  <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 12px; padding: 32px; text-align: center; margin-bottom: 24px;">
-      <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">📚 Reading Reminder</h1>
-    </div>
-    <div style="background: #f9fafb; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-      <p style="font-size: 18px; margin: 0 0 16px;">${greeting}</p>
-      <p style="font-size: 16px; margin: 0 0 16px;">It's time for your daily reading session!</p>
-      <div style="background: white; border-radius: 8px; padding: 16px; border: 1px solid #e5e7eb;">
-        <p style="margin: 0 0 8px; font-size: 14px; color: #6b7280;">Scheduled for</p>
-        <p style="margin: 0; font-size: 20px; font-weight: 600; color: #1f2937;">${dateStr} at ${timeStr}</p>
-      </div>
-    </div>
-    <div style="text-align: center;">
-      <a href="${config.NEXT_PUBLIC_APP_URL}/dashboard" style="display: inline-block; background: #3b82f6; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Open Read Buddy</a>
-    </div>
-    <p style="font-size: 12px; color: #9ca3af; text-align: center; margin-top: 24px;">You received this because you enabled reading reminders in Read Buddy.</p>
-  </body>
-</html>
-    `;
+    const content = buildReminderEmail(
+      input,
+      this.settings.appUrl ?? config.NEXT_PUBLIC_APP_URL,
+    );
 
-    const text = `
-${greeting}
+    try {
+      const { data, error } = await this.client.emails.send(
+        {
+          from: fromEmail,
+          to: input.recipientEmail,
+          ...content,
+        },
+        { idempotencyKey: `reading-reminder/${input.deliveryId}` },
+      );
 
-It's time for your daily reading session!
+      if (error) {
+        return { status: "FAILED", ...classifyEmailFailure(error) };
+      }
 
-Scheduled for: ${dateStr} at ${timeStr}
-
-Open Read Buddy: ${config.NEXT_PUBLIC_APP_URL}/dashboard
-
-You received this because you enabled reading reminders in Read Buddy.
-    `.trim();
-
-    const response = await this.send({
-      from: this.fromEmail,
-      to,
-      subject,
-      html,
-      text,
-    });
-
-    return response;
+      return { status: "ACCEPTED", providerMessageId: data.id };
+    } catch (error) {
+      return { status: "FAILED", ...classifyEmailFailure(error) };
+    }
   }
 }
 

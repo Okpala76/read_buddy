@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
     const input = {
       limit: limit ? parseInt(limit, 10) : undefined,
       offset: offset ? parseInt(offset, 10) : undefined,
-      status: status as "PENDING" | "SENT" | "FAILED" | "SKIPPED" | undefined,
+      status: status as
+        "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "SKIPPED" | undefined,
     };
 
     const parsed = getReminderDeliveriesInputSchema.parse(input);
@@ -31,7 +32,21 @@ export async function GET(request: NextRequest) {
     const { getDeliveries } = getUseCases();
     const deliveries = await getDeliveries.execute(user.id, parsed);
 
-    return NextResponse.json(deliveries.map((d) => d.toPersistence()));
+    return NextResponse.json(
+      deliveries.map((delivery) => ({
+        id: delivery.id,
+        status: delivery.status,
+        scheduledFor: delivery.scheduledFor,
+        nextAttemptAt: delivery.nextAttemptAt,
+        sentAt: delivery.sentAt,
+        attemptCount: delivery.attemptCount,
+        providerMessageId: delivery.providerMessageId,
+        errorCode: delivery.errorCode,
+        skipReason: delivery.skipReason,
+        createdAt: delivery.createdAt,
+        updatedAt: delivery.updatedAt,
+      })),
+    );
   } catch (error) {
     console.error("Get reminder deliveries error:", error);
     if (error instanceof Error && error.name === "ZodError") {

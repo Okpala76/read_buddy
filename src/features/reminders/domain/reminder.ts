@@ -1,11 +1,16 @@
 export enum ReminderDeliveryStatus {
   PENDING = "PENDING",
+  PROCESSING = "PROCESSING",
   SENT = "SENT",
   FAILED = "FAILED",
   SKIPPED = "SKIPPED",
 }
 
-export type DeliveryStatusValue = "PENDING" | "SENT" | "FAILED" | "SKIPPED";
+export type DeliveryStatusValue =
+  "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "SKIPPED";
+
+export type ReminderSkipReasonValue =
+  "REMINDERS_DISABLED" | "ALREADY_READ_TODAY" | "NO_ACTIVE_BOOK";
 
 export interface ReminderPreferenceProps {
   userId: string;
@@ -97,12 +102,20 @@ export class ReminderPreference {
 export interface ReminderDeliveryProps {
   id: string;
   userId: string;
+  recipientEmail: string;
+  bookTitle: string | null;
+  bookCurrentPage: number | null;
+  bookTotalPages: number | null;
+  dailyPageTarget: number;
   status: DeliveryStatusValue;
   scheduledFor: Date;
+  lockedAt: Date | null;
+  nextAttemptAt: Date | null;
   sentAt: Date | null;
   attemptCount: number;
   providerMessageId: string | null;
   errorCode: string | null;
+  skipReason: ReminderSkipReasonValue | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -117,15 +130,23 @@ export class ReminderDelivery {
   static create(props: {
     id: string;
     userId: string;
+    recipientEmail: string;
+    bookTitle: string | null;
+    bookCurrentPage: number | null;
+    bookTotalPages: number | null;
+    dailyPageTarget: number;
     scheduledFor: Date;
   }): ReminderDelivery {
     return new ReminderDelivery({
       ...props,
       status: "PENDING",
+      lockedAt: null,
+      nextAttemptAt: null,
       sentAt: null,
       attemptCount: 0,
       providerMessageId: null,
       errorCode: null,
+      skipReason: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -143,12 +164,40 @@ export class ReminderDelivery {
     return this.props.userId;
   }
 
+  get recipientEmail(): string {
+    return this.props.recipientEmail;
+  }
+
+  get bookTitle(): string | null {
+    return this.props.bookTitle;
+  }
+
+  get bookCurrentPage(): number | null {
+    return this.props.bookCurrentPage;
+  }
+
+  get bookTotalPages(): number | null {
+    return this.props.bookTotalPages;
+  }
+
+  get dailyPageTarget(): number {
+    return this.props.dailyPageTarget;
+  }
+
   get status(): DeliveryStatusValue {
     return this.props.status;
   }
 
   get scheduledFor(): Date {
     return this.props.scheduledFor;
+  }
+
+  get lockedAt(): Date | null {
+    return this.props.lockedAt;
+  }
+
+  get nextAttemptAt(): Date | null {
+    return this.props.nextAttemptAt;
   }
 
   get sentAt(): Date | null {
@@ -167,6 +216,10 @@ export class ReminderDelivery {
     return this.props.errorCode;
   }
 
+  get skipReason(): ReminderSkipReasonValue | null {
+    return this.props.skipReason;
+  }
+
   get createdAt(): Date {
     return this.props.createdAt;
   }
@@ -175,71 +228,165 @@ export class ReminderDelivery {
     return this.props.updatedAt;
   }
 
-  markSent(providerMessageId: string): ReminderDelivery {
+  markProcessing(lockedAt: Date): ReminderDelivery {
+    if (this.props.status !== "PENDING" && this.props.status !== "FAILED") {
+      throw new Error(
+        `Cannot claim reminder delivery from ${this.props.status}`,
+      );
+    }
+    if (Number.isNaN(lockedAt.getTime())) {
+      throw new Error("Claim time must be a valid date");
+    }
+    if (
+      this.props.status === "FAILED" &&
+      (!this.props.nextAttemptAt || this.props.nextAttemptAt > lockedAt)
+    ) {
+      throw new Error("Cannot claim reminder delivery before its retry is due");
+    }
+
+    return new ReminderDelivery({
+      ...this.props,
+      status: "PROCESSING",
+      lockedAt,
+      updatedAt: new Date(),
+    });
+  }
+
+  markSent(
+    providerMessageId: string,
+    sentAt: Date = new Date(),
+  ): ReminderDelivery {
+    this.assertStatus("PROCESSING", "mark as sent");
     return new ReminderDelivery({
       ...this.props,
       status: "SENT",
-      sentAt: new Date(),
+      lockedAt: null,
+      nextAttemptAt: null,
+      sentAt,
+      attemptCount: this.props.attemptCount + 1,
       providerMessageId,
-      updatedAt: new Date(),
+      errorCode: null,
+      skipReason: null,
+      updatedAt: sentAt,
     });
   }
 
-  markFailed(errorCode: string): ReminderDelivery {
+  markFailed(
+    errorCode: string,
+    nextAttemptAt: Date | null,
+    failedAt: Date = new Date(),
+  ): ReminderDelivery {
+    this.assertStatus("PROCESSING", "mark as failed");
     return new ReminderDelivery({
       ...this.props,
       status: "FAILED",
+      lockedAt: null,
+      nextAttemptAt,
       attemptCount: this.props.attemptCount + 1,
+      providerMessageId: null,
       errorCode,
-      updatedAt: new Date(),
+      skipReason: null,
+      updatedAt: failedAt,
     });
   }
 
-  markSkipped(): ReminderDelivery {
+  markSkipped(
+    skipReason: ReminderSkipReasonValue,
+    skippedAt: Date = new Date(),
+  ): ReminderDelivery {
+    this.assertStatus("PROCESSING", "mark as skipped");
     return new ReminderDelivery({
       ...this.props,
       status: "SKIPPED",
-      updatedAt: new Date(),
+      lockedAt: null,
+      nextAttemptAt: null,
+      errorCode: null,
+      skipReason,
+      updatedAt: skippedAt,
     });
   }
 
-  incrementAttempt(): ReminderDelivery {
+  recoverClaim(recoveredAt: Date = new Date()): ReminderDelivery {
+    this.assertStatus("PROCESSING", "recover");
     return new ReminderDelivery({
       ...this.props,
-      attemptCount: this.props.attemptCount + 1,
-      updatedAt: new Date(),
+      status: this.props.attemptCount === 0 ? "PENDING" : "FAILED",
+      lockedAt: null,
+      updatedAt: recoveredAt,
     });
   }
 
   toPersistence(): ReminderDeliveryProps {
     return { ...this.props };
   }
+
+  private assertStatus(expected: DeliveryStatusValue, action: string): void {
+    if (this.props.status !== expected) {
+      throw new Error(
+        `Cannot ${action} reminder delivery from ${this.props.status}`,
+      );
+    }
+  }
 }
 
 export interface ReminderPreferenceRepository {
   findByUserId(userId: string): Promise<ReminderPreference | null>;
-  save(preference: ReminderPreference): Promise<void>;
+  findTimezoneByUserId(userId: string): Promise<string>;
+  saveSettings(preference: ReminderPreference, timezone: string): Promise<void>;
+}
+
+export interface ReminderSchedulingCandidate {
+  userId: string;
+  recipientEmail: string;
+  bookTitle: string | null;
+  bookCurrentPage: number | null;
+  bookTotalPages: number | null;
+  dailyPageTarget: number;
+  reminderTime: string;
+  timezone: string;
+  enabled: boolean;
+}
+
+export interface ReminderSchedulingRepository {
+  findEnabledCandidates(): Promise<ReminderSchedulingCandidate[]>;
+  createDeliveryIfAbsent(delivery: ReminderDelivery): Promise<boolean>;
 }
 
 export interface ReminderDeliveryRepository {
-  findByUserIdAndScheduledFor(
-    userId: string,
-    scheduledFor: Date,
-  ): Promise<ReminderDelivery | null>;
   findByUserId(
     userId: string,
     limit?: number,
     offset?: number,
   ): Promise<ReminderDelivery[]>;
-  findPendingByScheduledBefore(
-    scheduledBefore: Date,
-    limit: number,
-  ): Promise<ReminderDelivery[]>;
-  findByStatus(
+  findByUserIdAndStatus(
+    userId: string,
     status: DeliveryStatusValue,
     limit?: number,
     offset?: number,
   ): Promise<ReminderDelivery[]>;
-  save(delivery: ReminderDelivery): Promise<void>;
-  saveMany(deliveries: ReminderDelivery[]): Promise<void>;
+}
+
+export interface ReminderDispatchEligibility {
+  timezone: string;
+  remindersEnabled: boolean;
+  hasActiveBook: boolean;
+}
+
+export interface ReminderDispatchRepository {
+  recoverStaleClaims(staleBefore: Date, recoveredAt: Date): Promise<number>;
+  claimDueDeliveries(
+    now: Date,
+    limit: number,
+    maxAttempts: number,
+  ): Promise<ReminderDelivery[]>;
+  findEligibility(userId: string): Promise<ReminderDispatchEligibility>;
+  hasReadingSessionBetween(
+    userId: string,
+    start: Date,
+    end: Date,
+  ): Promise<boolean>;
+  saveClaimResult(
+    delivery: ReminderDelivery,
+    claimedAt: Date,
+  ): Promise<boolean>;
 }
