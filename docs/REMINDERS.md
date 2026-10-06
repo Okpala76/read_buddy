@@ -2,7 +2,7 @@
 
 Reminder delivery is implemented through Resend, behind the application-layer `ReminderEmailSender` port. The official `resend` Node SDK is used only by the infrastructure adapter.
 
-The Resend sending domain and required Vercel production variables are configured. VPS cron installation, `CRON_SECRET`, production migration application, and deployment belong to Batch 5.
+The Resend sending domain, Vercel production variables, production migrations, and VPS scheduler are configured.
 
 ## Sender Configuration
 
@@ -13,6 +13,44 @@ The Resend sending domain and required Vercel production variables are configure
 - The production API key uses Resend `sending_access` and is restricted to the sending domain.
 
 The Resend CLI is the supported tool for inspecting and verifying the account and domain. Domain creation or verification must not be reported as successful until the authenticated CLI confirms it.
+
+## Production Scheduling
+
+The gochi VPS invokes `GET /api/cron/reminders` every five minutes. The endpoint requires `Authorization: Bearer <CRON_SECRET>` and performs scheduling, stale-claim recovery, atomic claiming, current-state eligibility checks, and dispatch. The VPS calls the canonical custom domain directly so an HTTP redirect cannot strip the authorization header.
+
+The scheduler installation is intentionally small and does not require a repository checkout, Node.js process, or additional container:
+
+- Secret environment file: `/home/gochi/read_buddy/secrets/reminder-cron.env`, mode `600`
+- Invocation script: `/home/gochi/read_buddy/scripts/run-reminder-cron.sh`, mode `700`
+- Schedule: every five minutes under the gochi user's crontab
+- Overlap protection: `/usr/bin/flock -n /tmp/read-buddy-reminders.lock`
+- Operational log tag: `read-buddy-reminders`
+
+The script uses strict shell behavior, HTTPS, connection and request timeouts, curl failure handling, and concise success/failure messages. It must never print the authorization header, secret value, recipient address, or response body during normal cron execution.
+
+## Operations
+
+Run one scheduler cycle from the VPS without exposing the secret:
+
+```sh
+/home/gochi/read_buddy/scripts/run-reminder-cron.sh
+```
+
+Inspect recent scheduler outcomes:
+
+```sh
+journalctl -t read-buddy-reminders --since "1 hour ago" --no-pager
+```
+
+To safely stop all scheduled sends while preserving user settings and delivery history, comment out or remove only the reminder line with `crontab -e`. To stop reminders for one account, disable reminders in the application's Reminders settings. Do not delete historical delivery rows.
+
+If invocation fails, check in this order:
+
+1. Confirm the canonical application URL responds over HTTPS.
+2. Check `journalctl` for the script's HTTP status or curl failure category.
+3. Confirm the secret and script permissions remain `600` and `700` respectively.
+4. Confirm Vercel Production has `CRON_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `NEXT_PUBLIC_APP_URL` without printing their values.
+5. Inspect Vercel function logs and tenant-scoped delivery history. Never place secrets, raw provider responses, or recipient addresses in tickets or logs.
 
 ## Deterministic Requests
 
@@ -54,4 +92,6 @@ Failure history is visible through `status`, `attempt_count`, `error_code`, and 
 
 On Resend acceptance, the delivery stores `data.id` as `provider_message_id`, records `sent_at`, and clears `next_attempt_at`, `locked_at`, and `error_code`.
 
-`SENT` means Resend accepted the request. It does not guarantee inbox delivery. Delivery, bounce, complaint, and delayed-delivery webhooks are a future enhancement and are not implemented in Batch 4.
+`SENT` means Resend accepted the request. It does not guarantee inbox delivery. Delivery, bounce, complaint, and delayed-delivery webhooks are a future enhancement and are not implemented.
+
+The production acceptance check observed one scheduled occurrence remain one database row with `attempt_count = 1` across subsequent scheduler cycles. Resend independently reported its terminal event as `delivered`. Live forced retry, stress, and skip scenarios were intentionally not performed against production; automated tests cover those paths.

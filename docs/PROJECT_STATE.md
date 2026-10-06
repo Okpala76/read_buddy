@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 7: Reminder hardening in progress. Timezone-aware scheduling, concurrency-safe dispatch, deterministic Resend requests, provider idempotency, bounded retries, and production provider configuration are implemented. Production migration, deployment, and cron installation remain incomplete.
+Phase 7: Reminders complete. Timezone-aware scheduling, concurrency-safe dispatch, deterministic Resend requests, provider idempotency, bounded retries, production migrations, deployment, and protected VPS scheduling are implemented and verified.
 
 ## Implemented
 
@@ -45,16 +45,22 @@ Phase 7: Reminder hardening in progress. Timezone-aware scheduling, concurrency-
 - **Reminders API routes**: `GET/POST /api/reminders` (preference and IANA timezone settings), `GET /api/reminders/deliveries` (tenant-scoped, paginated, filterable history), `GET /api/cron/reminders` (authenticated scheduling, stale recovery, atomic claiming, eligibility checks, and dispatch).
 - **Reminders Server Actions**: `getReminderPreference`, `updateReminderPreference` (user-scoped, Zod-validated).
 - **Resend production provider**: verified sending domain, domain-scoped send-only key, Vercel production variables, and one delivered controlled test email.
+- **Production reminder scheduler**: authenticated five-minute VPS cron with overlap protection, strict HTTPS invocation, protected secret storage, concise system logs, and no additional application checkout or service.
+- **Production reminder acceptance**: one due occurrence reached `SENT` with one provider attempt, remained one row across later scheduler cycles, and was independently reported as `delivered` by Resend.
 
 ## Verification
 
-- `pnpm verify`: passed (format, lint, typecheck, 199 tests, and production build).
+- `pnpm verify`: passed (format, lint, typecheck, 200 tests, and production build).
 - `docker compose config --quiet`: passed with an injected local development password.
 - Baseline migration generation and SQL review: passed.
 - Clerk user-mapping migration generation and SQL review: passed.
 - Migration application: all committed migrations applied successfully to local PostgreSQL.
 - Batch 3 reminder migrations applied successfully to local PostgreSQL.
 - Batch 4 reminder snapshot/retry-index migration applied successfully to local PostgreSQL.
+- All five committed migrations applied successfully to production PostgreSQL with no unknown migration hashes.
+- Production reminder endpoint authentication passed unauthenticated (`401`) and authenticated (`200`) checks.
+- PostgreSQL activity showed application connections using only `read_buddy_app`; Vercel Production has no admin database variable.
+- Seven opt-in PostgreSQL concurrency integration tests passed against local PostgreSQL.
 
 ## Migrations
 
@@ -78,7 +84,7 @@ Phase 7: Reminder hardening in progress. Timezone-aware scheduling, concurrency-
 - Reminder provider tests cover Resend envelopes, deterministic HTML/text payloads and idempotency keys, provider IDs, controlled missing configuration, and sanitized transient/permanent classification.
 - Reminder infrastructure integration tests use local PostgreSQL to verify concurrent initial/retry claims, terminal-state exclusion, stale recovery, claim-token protection, active-book checks, and timezone-aware reading suppression.
 - Reminder UI and cron tests cover settings validation, authenticated scheduling, and dispatch sequencing.
-- All regular tests passing (199 total); 7 PostgreSQL concurrency tests pass through the explicit local integration command.
+- All regular tests passing (200 total); 7 PostgreSQL concurrency tests pass through the explicit local integration command.
 
 ## Intentionally absent
 
@@ -90,7 +96,6 @@ Phase 7: Reminder hardening in progress. Timezone-aware scheduling, concurrency-
 - Public PgBouncer hostname and TLS certificate chain.
 - Production secret-management mechanism and database credentials.
 - Encrypted off-host backup destination and retention policy owner.
-- CRON_SECRET for authenticated reminder dispatch.
 
 ## Known issues
 
