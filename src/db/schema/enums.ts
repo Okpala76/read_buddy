@@ -26,3 +26,8 @@ export const reminderDeliveryChannel = pgEnum("reminder_delivery_channel", [
   "EMAIL",
   "PUSH",
 ]);
+
+export const reminderNotificationKind = pgEnum("reminder_notification_kind", [
+  "DAILY_REMINDER",
+  "STREAK_RESCUE",
+]);

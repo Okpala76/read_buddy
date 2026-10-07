@@ -30,6 +30,7 @@ import {
   type ReminderSchedulingRepository,
   type ReminderSkipReasonValue,
   type ReminderDeliveryChannel,
+  type ReminderNotificationKind,
 } from "../domain";
 
 function getDb() {
@@ -47,6 +48,10 @@ function toPreferenceDomain(
     enabled: row.enabled,
     emailEnabled: row.emailEnabled,
     reminderTime: row.reminderTime,
+    streakRescueEnabled: row.streakRescueEnabled,
+    streakRescueTime: row.streakRescueTime,
+    quietHoursStart: row.quietHoursStart,
+    quietHoursEnd: row.quietHoursEnd,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   });
@@ -65,6 +70,7 @@ function toDeliveryDomain(
     dailyPageTarget: row.dailyPageTarget,
     status: row.status as DeliveryStatusValue,
     deliveryChannel: row.deliveryChannel as ReminderDeliveryChannel | null,
+    notificationKind: row.notificationKind as ReminderNotificationKind,
     scheduledFor: row.scheduledFor,
     lockedAt: row.lockedAt,
     nextAttemptAt: row.nextAttemptAt,
@@ -84,6 +90,10 @@ function toPreferencePersistence(props: ReminderPreferenceProps) {
     enabled: props.enabled,
     emailEnabled: props.emailEnabled,
     reminderTime: props.reminderTime,
+    streakRescueEnabled: props.streakRescueEnabled,
+    streakRescueTime: props.streakRescueTime,
+    quietHoursStart: props.quietHoursStart,
+    quietHoursEnd: props.quietHoursEnd,
     createdAt: props.createdAt,
     updatedAt: props.updatedAt,
   };
@@ -100,6 +110,7 @@ function toDeliveryPersistence(props: ReminderDeliveryProps) {
     dailyPageTarget: props.dailyPageTarget,
     status: props.status,
     deliveryChannel: props.deliveryChannel,
+    notificationKind: props.notificationKind,
     scheduledFor: props.scheduledFor,
     lockedAt: props.lockedAt,
     nextAttemptAt: props.nextAttemptAt,
@@ -180,6 +191,10 @@ export class DrizzleReminderSchedulingRepository implements ReminderSchedulingRe
         reminderTime: reminderPreferences.reminderTime,
         timezone: users.timezone,
         enabled: reminderPreferences.enabled,
+        streakRescueEnabled: reminderPreferences.streakRescueEnabled,
+        streakRescueTime: reminderPreferences.streakRescueTime,
+        quietHoursStart: reminderPreferences.quietHoursStart,
+        quietHoursEnd: reminderPreferences.quietHoursEnd,
       })
       .from(reminderPreferences)
       .innerJoin(users, eq(users.id, reminderPreferences.userId))
@@ -335,6 +350,9 @@ export class DrizzleReminderDispatchRepository implements ReminderDispatchReposi
           timezone: users.timezone,
           remindersEnabled: reminderPreferences.enabled,
           emailEnabled: reminderPreferences.emailEnabled,
+          streakRescueEnabled: reminderPreferences.streakRescueEnabled,
+          quietHoursStart: reminderPreferences.quietHoursStart,
+          quietHoursEnd: reminderPreferences.quietHoursEnd,
         })
         .from(users)
         .leftJoin(reminderPreferences, eq(reminderPreferences.userId, users.id))
@@ -355,6 +373,9 @@ export class DrizzleReminderDispatchRepository implements ReminderDispatchReposi
       timezone: settings[0].timezone,
       remindersEnabled: settings[0].remindersEnabled ?? false,
       emailEnabled: settings[0].emailEnabled ?? true,
+      streakRescueEnabled: settings[0].streakRescueEnabled ?? true,
+      quietHoursStart: settings[0].quietHoursStart ?? "22:30:00",
+      quietHoursEnd: settings[0].quietHoursEnd ?? "07:00:00",
       hasActiveBook: activeBook.length === 1,
     };
   }

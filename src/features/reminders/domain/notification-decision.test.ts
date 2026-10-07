@@ -9,6 +9,10 @@ const eligible = {
   hasActiveBook: true,
   pushAvailable: false,
   selectedChannel: null,
+  notificationKind: "DAILY_REMINDER" as const,
+  streakRescueEnabled: true,
+  streakStatus: "AT_RISK" as const,
+  inQuietHours: false,
 } as const;
 
 describe("NotificationDecisionEngine", () => {
@@ -91,5 +95,69 @@ describe("NotificationDecisionEngine", () => {
         selectedChannel: "EMAIL",
       }),
     ).toEqual({ action: "EMAIL", reason: "EMAIL_SELECTED" });
+  });
+
+  it("skips STREAK_RESCUE when streak is ACTIVE", () => {
+    expect(
+      engine.decide({
+        ...eligible,
+        notificationKind: "STREAK_RESCUE",
+        streakStatus: "ACTIVE",
+      }),
+    ).toEqual({ action: "SKIP", reason: "ALREADY_READ_TODAY" });
+  });
+
+  it("skips STREAK_RESCUE when streak is BROKEN", () => {
+    expect(
+      engine.decide({
+        ...eligible,
+        notificationKind: "STREAK_RESCUE",
+        streakStatus: "BROKEN",
+      }),
+    ).toEqual({ action: "SKIP", reason: "STREAK_BROKEN" });
+  });
+
+  it("skips STREAK_RESCUE when streak rescue is disabled", () => {
+    expect(
+      engine.decide({
+        ...eligible,
+        notificationKind: "STREAK_RESCUE",
+        streakStatus: "AT_RISK",
+        streakRescueEnabled: false,
+      }),
+    ).toEqual({ action: "SKIP", reason: "REMINDERS_DISABLED" });
+  });
+
+  it("skips STREAK_RESCUE during quiet hours", () => {
+    expect(
+      engine.decide({
+        ...eligible,
+        notificationKind: "STREAK_RESCUE",
+        streakStatus: "AT_RISK",
+        inQuietHours: true,
+      }),
+    ).toEqual({ action: "SKIP", reason: "QUIET_HOURS" });
+  });
+
+  it("selects PUSH for STREAK_RESCUE when push available", () => {
+    expect(
+      engine.decide({
+        ...eligible,
+        notificationKind: "STREAK_RESCUE",
+        streakStatus: "AT_RISK",
+        pushAvailable: true,
+      }),
+    ).toEqual({ action: "PUSH", reason: "PUSH_SELECTED" });
+  });
+
+  it("falls back to EMAIL for STREAK_RESCUE when push unavailable", () => {
+    expect(
+      engine.decide({
+        ...eligible,
+        notificationKind: "STREAK_RESCUE",
+        streakStatus: "AT_RISK",
+        pushAvailable: false,
+      }),
+    ).toEqual({ action: "EMAIL", reason: "PUSH_UNAVAILABLE_EMAIL_FALLBACK" });
   });
 });

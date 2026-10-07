@@ -10,6 +10,7 @@ export interface LocalUser {
   email: string;
   name: string | null;
   image: string | null;
+  timezone: string;
 }
 
 interface ProvisionLocalUserInput {
@@ -24,6 +25,7 @@ const localUserColumns = {
   email: users.email,
   name: users.name,
   image: users.image,
+  timezone: users.timezone,
 };
 
 function getDatabase() {
@@ -117,4 +119,15 @@ export async function provisionLocalUser(
   }
 
   return user;
+}
+
+export async function findUserTimezoneById(userId: string): Promise<string> {
+  const database = getDatabase();
+  const [user] = await database
+    .select({ timezone: users.timezone })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  return user?.timezone ?? "UTC";
 }

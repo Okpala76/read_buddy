@@ -17,6 +17,11 @@ describe("ReminderPreference domain", () => {
       expect(pref.userId).toBe("user-1");
       expect(pref.enabled).toBe(true);
       expect(pref.reminderTime).toBe("19:00:00");
+      expect(pref.emailEnabled).toBe(true);
+      expect(pref.streakRescueEnabled).toBe(true);
+      expect(pref.streakRescueTime).toBe("21:30:00");
+      expect(pref.quietHoursStart).toBe("22:30:00");
+      expect(pref.quietHoursEnd).toBe("07:00:00");
       expect(pref.createdAt).toBeInstanceOf(Date);
       expect(pref.updatedAt).toBeInstanceOf(Date);
     });
@@ -29,6 +34,7 @@ describe("ReminderPreference domain", () => {
       });
 
       expect(pref.enabled).toBe(false);
+      expect(pref.streakRescueEnabled).toBe(true);
     });
 
     it("throws on invalid time format (missing seconds)", () => {
@@ -69,6 +75,10 @@ describe("ReminderPreference domain", () => {
         enabled: true,
         emailEnabled: true,
         reminderTime: "19:00:00",
+        streakRescueEnabled: true,
+        streakRescueTime: "21:30:00",
+        quietHoursStart: "22:30:00",
+        quietHoursEnd: "07:00:00",
         createdAt: new Date("2024-01-15T10:00:00Z"),
         updatedAt: new Date("2024-01-15T10:00:00Z"),
       };
@@ -78,6 +88,10 @@ describe("ReminderPreference domain", () => {
       expect(pref.userId).toBe("user-1");
       expect(pref.enabled).toBe(true);
       expect(pref.reminderTime).toBe("19:00:00");
+      expect(pref.streakRescueEnabled).toBe(true);
+      expect(pref.streakRescueTime).toBe("21:30:00");
+      expect(pref.quietHoursStart).toBe("22:30:00");
+      expect(pref.quietHoursEnd).toBe("07:00:00");
     });
   });
 
@@ -155,6 +169,10 @@ describe("ReminderPreference domain", () => {
         enabled: true,
         emailEnabled: true,
         reminderTime: "19:00:00",
+        streakRescueEnabled: true,
+        streakRescueTime: "21:30:00",
+        quietHoursStart: "22:30:00",
+        quietHoursEnd: "07:00:00",
         createdAt: pref.createdAt,
         updatedAt: pref.updatedAt,
       });
@@ -182,6 +200,7 @@ describe("ReminderDelivery domain", () => {
       expect(delivery.id).toBe("delivery-1");
       expect(delivery.userId).toBe("user-1");
       expect(delivery.status).toBe("PENDING");
+      expect(delivery.notificationKind).toBe("DAILY_REMINDER");
       expect(delivery.scheduledFor).toEqual(baseProps.scheduledFor);
       expect(delivery.lockedAt).toBeNull();
       expect(delivery.nextAttemptAt).toBeNull();
@@ -201,6 +220,7 @@ describe("ReminderDelivery domain", () => {
         ...baseProps,
         status: "SENT" as const,
         deliveryChannel: "EMAIL" as const,
+        notificationKind: "DAILY_REMINDER" as const,
         lockedAt: null,
         nextAttemptAt: null,
         sentAt: new Date("2024-01-15T19:00:05Z"),
@@ -216,6 +236,7 @@ describe("ReminderDelivery domain", () => {
 
       expect(delivery.id).toBe("delivery-1");
       expect(delivery.status).toBe("SENT");
+      expect(delivery.notificationKind).toBe("DAILY_REMINDER");
       expect(delivery.sentAt).toEqual(props.sentAt);
       expect(delivery.attemptCount).toBe(1);
       expect(delivery.providerMessageId).toBe("msg-123");
@@ -384,6 +405,7 @@ describe("ReminderDelivery domain", () => {
         dailyPageTarget: 15,
         status: "PENDING",
         deliveryChannel: null,
+        notificationKind: "DAILY_REMINDER",
         scheduledFor: baseProps.scheduledFor,
         lockedAt: null,
         nextAttemptAt: null,

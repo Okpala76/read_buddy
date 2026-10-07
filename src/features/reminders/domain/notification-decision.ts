@@ -1,6 +1,7 @@
 import type {
   ReminderDeliveryChannel,
   ReminderSkipReasonValue,
+  ReminderNotificationKind,
 } from "./reminder";
 
 export type NotificationDecision =
@@ -24,6 +25,10 @@ export interface NotificationDecisionInput {
   hasActiveBook: boolean;
   pushAvailable: boolean;
   selectedChannel: ReminderDeliveryChannel | null;
+  notificationKind: ReminderNotificationKind;
+  streakRescueEnabled: boolean;
+  streakStatus: "ACTIVE" | "AT_RISK" | "BROKEN";
+  inQuietHours: boolean;
 }
 
 export class NotificationDecisionEngine {
@@ -31,11 +36,33 @@ export class NotificationDecisionEngine {
     if (!input.remindersEnabled) {
       return { action: "SKIP", reason: "REMINDERS_DISABLED" };
     }
-    if (input.alreadyReadToday) {
-      return { action: "SKIP", reason: "ALREADY_READ_TODAY" };
-    }
-    if (!input.hasActiveBook) {
-      return { action: "SKIP", reason: "NO_ACTIVE_BOOK" };
+
+    // For STREAK_RESCUE, check streak-specific eligibility
+    if (input.notificationKind === "STREAK_RESCUE") {
+      if (!input.streakRescueEnabled) {
+        return { action: "SKIP", reason: "REMINDERS_DISABLED" };
+      }
+      if (input.streakStatus !== "AT_RISK") {
+        return {
+          action: "SKIP",
+          reason:
+            input.streakStatus === "ACTIVE"
+              ? "ALREADY_READ_TODAY"
+              : "STREAK_BROKEN",
+        };
+      }
+      if (input.inQuietHours) {
+        return { action: "SKIP", reason: "QUIET_HOURS" };
+      }
+      // For STREAK_RESCUE, the "already read today" check is implicitly covered by streakStatus !== AT_RISK
+    } else {
+      // DAILY_REMINDER checks
+      if (input.alreadyReadToday) {
+        return { action: "SKIP", reason: "ALREADY_READ_TODAY" };
+      }
+      if (!input.hasActiveBook) {
+        return { action: "SKIP", reason: "NO_ACTIVE_BOOK" };
+      }
     }
 
     if (input.selectedChannel === "PUSH") {

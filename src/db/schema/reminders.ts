@@ -15,6 +15,7 @@ import {
 import {
   reminderDeliveryChannel,
   reminderDeliveryStatus,
+  reminderNotificationKind,
 } from "@/db/schema/enums";
 import { users } from "@/db/schema/users";
 
@@ -25,6 +26,10 @@ export const reminderPreferences = pgTable("reminder_preferences", {
   enabled: boolean("enabled").notNull().default(true),
   emailEnabled: boolean("email_enabled").notNull().default(true),
   reminderTime: time("reminder_time").notNull().default("19:00:00"),
+  streakRescueEnabled: boolean("streak_rescue_enabled").notNull().default(true),
+  streakRescueTime: time("streak_rescue_time").notNull().default("21:30:00"),
+  quietHoursStart: time("quiet_hours_start").notNull().default("22:30:00"),
+  quietHoursEnd: time("quiet_hours_end").notNull().default("07:00:00"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -47,6 +52,9 @@ export const reminderDeliveries = pgTable(
     dailyPageTarget: integer("daily_page_target").notNull(),
     status: reminderDeliveryStatus("status").notNull().default("PENDING"),
     deliveryChannel: reminderDeliveryChannel("delivery_channel"),
+    notificationKind: reminderNotificationKind("notification_kind")
+      .notNull()
+      .default("DAILY_REMINDER"),
     scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
     lockedAt: timestamp("locked_at", { withTimezone: true }),
     nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
@@ -63,9 +71,10 @@ export const reminderDeliveries = pgTable(
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("reminder_deliveries_user_scheduled_unique").on(
+    uniqueIndex("reminder_deliveries_user_scheduled_kind_unique").on(
       table.userId,
       table.scheduledFor,
+      table.notificationKind,
     ),
     index("reminder_deliveries_status_scheduled_idx").on(
       table.status,

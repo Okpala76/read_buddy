@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Temporal } from "@js-temporal/polyfill";
 import {
   getReminderOccurrence,
   getLocalDayBounds,
@@ -187,31 +188,72 @@ export class ScheduleDueRemindersUseCase {
         continue;
       }
 
-      const scheduledFor = getReminderOccurrence(
+      // Schedule DAILY_REMINDER
+      const dailyScheduledFor = getReminderOccurrence(
         now,
         candidate.reminderTime,
         candidate.timezone,
       );
-      const scheduledAt = scheduledFor.getTime();
+      const dailyScheduledAt = dailyScheduledFor.getTime();
 
-      if (scheduledAt > now.getTime() || scheduledAt <= graceWindowStart) {
-        continue;
+      if (
+        dailyScheduledAt <= now.getTime() &&
+        dailyScheduledAt > graceWindowStart
+      ) {
+        due++;
+        const dailyDelivery = ReminderDelivery.create({
+          id: crypto.randomUUID(),
+          userId: candidate.userId,
+          recipientEmail: candidate.recipientEmail,
+          bookTitle: candidate.bookTitle,
+          bookCurrentPage: candidate.bookCurrentPage,
+          bookTotalPages: candidate.bookTotalPages,
+          dailyPageTarget: candidate.dailyPageTarget,
+          scheduledFor: dailyScheduledFor,
+          notificationKind: "DAILY_REMINDER",
+        });
+
+        if (
+          await this.schedulingRepository.createDeliveryIfAbsent(dailyDelivery)
+        ) {
+          scheduled++;
+        }
       }
 
-      due++;
-      const delivery = ReminderDelivery.create({
-        id: crypto.randomUUID(),
-        userId: candidate.userId,
-        recipientEmail: candidate.recipientEmail,
-        bookTitle: candidate.bookTitle,
-        bookCurrentPage: candidate.bookCurrentPage,
-        bookTotalPages: candidate.bookTotalPages,
-        dailyPageTarget: candidate.dailyPageTarget,
-        scheduledFor,
-      });
+      // Schedule STREAK_RESCUE if enabled
+      if (candidate.streakRescueEnabled) {
+        const rescueScheduledFor = getReminderOccurrence(
+          now,
+          candidate.streakRescueTime,
+          candidate.timezone,
+        );
+        const rescueScheduledAt = rescueScheduledFor.getTime();
 
-      if (await this.schedulingRepository.createDeliveryIfAbsent(delivery)) {
-        scheduled++;
+        if (
+          rescueScheduledAt <= now.getTime() &&
+          rescueScheduledAt > graceWindowStart
+        ) {
+          due++;
+          const rescueDelivery = ReminderDelivery.create({
+            id: crypto.randomUUID(),
+            userId: candidate.userId,
+            recipientEmail: candidate.recipientEmail,
+            bookTitle: candidate.bookTitle,
+            bookCurrentPage: candidate.bookCurrentPage,
+            bookTotalPages: candidate.bookTotalPages,
+            dailyPageTarget: candidate.dailyPageTarget,
+            scheduledFor: rescueScheduledFor,
+            notificationKind: "STREAK_RESCUE",
+          });
+
+          if (
+            await this.schedulingRepository.createDeliveryIfAbsent(
+              rescueDelivery,
+            )
+          ) {
+            scheduled++;
+          }
+        }
       }
     }
 
@@ -224,6 +266,7 @@ export class ProcessReminderDeliveriesUseCase {
     private readonly dispatchRepository: ReminderDispatchRepository,
     private readonly emailSender: ReminderEmailSender,
     private readonly pushSender: ReminderPushSender,
+    private readonly streakService: ReminderStreakService,
     private readonly decisionEngine = new NotificationDecisionEngine(),
   ) {}
 
@@ -283,6 +326,8 @@ export class ProcessReminderDeliveriesUseCase {
       let eligibility: ReminderDispatchEligibility;
       let alreadyReadToday = false;
       let pushAvailable = false;
+      let streakStatus: "ACTIVE" | "AT_RISK" | "BROKEN" = "BROKEN";
+      let inQuietHours = false;
       try {
         eligibility = await this.dispatchRepository.findEligibility(
           delivery.userId,
@@ -305,6 +350,45 @@ export class ProcessReminderDeliveriesUseCase {
             );
           }
         }
+
+        // For STREAK_RESCUE, check streak status and quiet hours
+        if (delivery.notificationKind === "STREAK_RESCUE") {
+          const streakResult = await this.streakService.getStreak(
+            delivery.userId,
+            now,
+          );
+          streakStatus = streakResult.status;
+
+          // Check quiet hours for STREAK_RESCUE
+          const localNow = Temporal.Instant.fromEpochMilliseconds(
+            now.getTime(),
+          ).toZonedDateTimeISO(eligibility.timezone);
+          const currentTime = localNow.toPlainTime();
+          const [startHour, startMinute] = eligibility.quietHoursStart
+            .split(":")
+            .map(Number);
+          const [endHour, endMinute] = eligibility.quietHoursEnd
+            .split(":")
+            .map(Number);
+          const quietStart = Temporal.PlainTime.from({
+            hour: startHour,
+            minute: startMinute,
+          });
+          const quietEnd = Temporal.PlainTime.from({
+            hour: endHour,
+            minute: endMinute,
+          });
+
+          if (Temporal.PlainTime.compare(quietStart, quietEnd) < 0) {
+            inQuietHours =
+              Temporal.PlainTime.compare(currentTime, quietStart) >= 0 &&
+              Temporal.PlainTime.compare(currentTime, quietEnd) < 0;
+          } else {
+            inQuietHours =
+              Temporal.PlainTime.compare(currentTime, quietStart) >= 0 ||
+              Temporal.PlainTime.compare(currentTime, quietEnd) < 0;
+          }
+        }
       } catch {
         unresolved++;
         continue;
@@ -317,6 +401,10 @@ export class ProcessReminderDeliveriesUseCase {
         hasActiveBook: eligibility.hasActiveBook,
         pushAvailable,
         selectedChannel: delivery.deliveryChannel,
+        notificationKind: delivery.notificationKind,
+        streakRescueEnabled: eligibility.streakRescueEnabled,
+        streakStatus,
+        inQuietHours,
       });
 
       if (decision.action === "SKIP") {
@@ -561,3 +649,28 @@ type ReminderProviderSendResult =
         | ReminderPushFailureCode
         | "PUSH_NO_ACTIVE_SUBSCRIPTIONS";
     };
+
+export interface GetReadingStreakInput {
+  now?: Date;
+}
+
+export interface ReadingStreakResult {
+  count: number;
+  status: "ACTIVE" | "AT_RISK" | "BROKEN";
+}
+
+export interface ReminderStreakService {
+  getStreak(userId: string, now: Date): Promise<ReadingStreakResult>;
+}
+
+export class GetReadingStreakUseCase {
+  constructor(private readonly streakService: ReminderStreakService) {}
+
+  async execute(
+    userId: string,
+    input: GetReadingStreakInput = {},
+  ): Promise<ReadingStreakResult> {
+    const now = input.now ?? new Date();
+    return this.streakService.getStreak(userId, now);
+  }
+}

@@ -212,6 +212,7 @@ describe("GetReminderDeliveriesUseCase", () => {
         ...deliverySnapshot,
         status: "SENT",
         deliveryChannel: "EMAIL",
+        notificationKind: "DAILY_REMINDER",
         scheduledFor: new Date("2024-01-15T19:00:00Z"),
         lockedAt: null,
         nextAttemptAt: null,
@@ -273,6 +274,10 @@ describe("ScheduleDueRemindersUseCase", () => {
         reminderTime: "19:00:00",
         timezone: "Africa/Lagos",
         enabled: true,
+        streakRescueEnabled: true,
+        streakRescueTime: "21:30:00",
+        quietHoursStart: "22:30:00",
+        quietHoursEnd: "07:00:00",
       },
     ]);
 
@@ -295,6 +300,10 @@ describe("ScheduleDueRemindersUseCase", () => {
         reminderTime: "19:00:00",
         timezone: "Africa/Lagos",
         enabled: false,
+        streakRescueEnabled: true,
+        streakRescueTime: "21:30:00",
+        quietHoursStart: "22:30:00",
+        quietHoursEnd: "07:00:00",
       },
       {
         userId: "future",
@@ -302,6 +311,10 @@ describe("ScheduleDueRemindersUseCase", () => {
         reminderTime: "19:10:00",
         timezone: "Africa/Lagos",
         enabled: true,
+        streakRescueEnabled: true,
+        streakRescueTime: "21:30:00",
+        quietHoursStart: "22:30:00",
+        quietHoursEnd: "07:00:00",
       },
       {
         userId: "stale",
@@ -309,6 +322,10 @@ describe("ScheduleDueRemindersUseCase", () => {
         reminderTime: "18:49:00",
         timezone: "Africa/Lagos",
         enabled: true,
+        streakRescueEnabled: true,
+        streakRescueTime: "21:30:00",
+        quietHoursEnd: "07:00:00",
+        quietHoursStart: "22:30:00",
       },
     ]);
 
@@ -326,6 +343,10 @@ describe("ScheduleDueRemindersUseCase", () => {
         reminderTime: "00:00:00",
         timezone: "Africa/Lagos",
         enabled: true,
+        streakRescueEnabled: true,
+        streakRescueTime: "21:30:00",
+        quietHoursStart: "22:30:00",
+        quietHoursEnd: "07:00:00",
       },
     ]);
 
@@ -347,6 +368,10 @@ describe("ScheduleDueRemindersUseCase", () => {
         reminderTime: "19:00:00",
         timezone: "Africa/Lagos",
         enabled: true,
+        streakRescueEnabled: true,
+        streakRescueTime: "21:30:00",
+        quietHoursStart: "22:30:00",
+        quietHoursEnd: "07:00:00",
       },
     ]);
     vi.mocked(repository.createDeliveryIfAbsent).mockImplementation(
@@ -402,6 +427,9 @@ describe("ProcessReminderDeliveriesUseCase", () => {
         timezone: "Africa/Lagos",
         remindersEnabled: true,
         emailEnabled: true,
+        streakRescueEnabled: true,
+        quietHoursStart: "22:30:00",
+        quietHoursEnd: "07:00:00",
         hasActiveBook: true,
       }),
       hasReadingSessionBetween: vi.fn().mockResolvedValue(false),
@@ -419,10 +447,14 @@ describe("ProcessReminderDeliveriesUseCase", () => {
       hasActiveSubscription: vi.fn().mockResolvedValue(false),
       sendReminder: vi.fn(),
     };
+    const streakService = {
+      getStreak: vi.fn().mockResolvedValue({ count: 0, status: "BROKEN" }),
+    };
     useCase = new ProcessReminderDeliveriesUseCase(
       dispatchRepo,
       emailSender,
       pushSender,
+      streakService,
     );
   });
 
@@ -473,6 +505,9 @@ describe("ProcessReminderDeliveriesUseCase", () => {
       timezone: "Africa/Lagos",
       remindersEnabled: false,
       emailEnabled: true,
+      streakRescueEnabled: true,
+      quietHoursStart: "22:30:00",
+      quietHoursEnd: "07:00:00",
       hasActiveBook: true,
     });
 
@@ -523,6 +558,9 @@ describe("ProcessReminderDeliveriesUseCase", () => {
       timezone: "Africa/Lagos",
       remindersEnabled: true,
       emailEnabled: true,
+      streakRescueEnabled: true,
+      quietHoursStart: "22:30:00",
+      quietHoursEnd: "07:00:00",
       hasActiveBook: false,
     });
 
@@ -685,6 +723,9 @@ describe("ProcessReminderDeliveriesUseCase", () => {
       timezone: "Africa/Lagos",
       remindersEnabled: true,
       emailEnabled: false,
+      streakRescueEnabled: true,
+      quietHoursStart: "22:30:00",
+      quietHoursEnd: "07:00:00",
       hasActiveBook: true,
     });
     vi.mocked(pushSender.hasActiveSubscription).mockResolvedValue(true);
@@ -707,6 +748,9 @@ describe("ProcessReminderDeliveriesUseCase", () => {
       timezone: "Africa/Lagos",
       remindersEnabled: true,
       emailEnabled: false,
+      streakRescueEnabled: true,
+      quietHoursStart: "22:30:00",
+      quietHoursEnd: "07:00:00",
       hasActiveBook: true,
     });
 

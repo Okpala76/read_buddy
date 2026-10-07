@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 const cronMocks = vi.hoisted(() => ({
   scheduleExecute: vi.fn(),
   processExecute: vi.fn(),
@@ -7,11 +9,25 @@ const cronMocks = vi.hoisted(() => ({
 
 vi.mock("@/config/env", () => ({
   config: { CRON_SECRET: "test-cron-secret" },
+  env: {
+    DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy",
+    DATABASE_SSL: "require",
+    DATABASE_POOL_MAX: 10,
+    NODE_ENV: "test",
+    RESEND_API_KEY: undefined,
+    RESEND_FROM_EMAIL: undefined,
+    CRON_SECRET: "test-cron-secret",
+    NEXT_PUBLIC_APP_URL: "http://localhost:3000",
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: undefined,
+    VAPID_PRIVATE_KEY: undefined,
+    VAPID_SUBJECT: undefined,
+  },
 }));
 
 vi.mock("@/features/reminders/infrastructure", () => ({
   DrizzleReminderDispatchRepository: class {},
   DrizzleReminderSchedulingRepository: class {},
+  DrizzleReminderStreakRepository: class {},
   ResendEmailService: class {},
 }));
 
@@ -22,6 +38,7 @@ vi.mock("@/features/reminders/application", () => ({
   ProcessReminderDeliveriesUseCase: class {
     execute = cronMocks.processExecute;
   },
+  ReadingStreakService: class {},
 }));
 
 vi.mock("@/features/push-notifications/infrastructure", () => ({

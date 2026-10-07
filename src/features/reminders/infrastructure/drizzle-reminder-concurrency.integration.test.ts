@@ -346,6 +346,9 @@ describe.runIf(runIntegrationTests)(
         timezone: "Africa/Lagos",
         remindersEnabled: true,
         emailEnabled: true,
+        streakRescueEnabled: true,
+        quietHoursStart: "22:30:00",
+        quietHoursEnd: "07:00:00",
         hasActiveBook: true,
       });
       expect(readDuringLagosDay).toBe(true);

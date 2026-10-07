@@ -9,19 +9,48 @@ export enum ReminderDeliveryStatus {
 export type DeliveryStatusValue =
   "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "SKIPPED";
 
+export type ReminderDeliveryChannel = "EMAIL" | "PUSH";
+
+export type ReminderNotificationKind = "DAILY_REMINDER" | "STREAK_RESCUE";
+
 export type ReminderSkipReasonValue =
   | "REMINDERS_DISABLED"
   | "ALREADY_READ_TODAY"
   | "NO_ACTIVE_BOOK"
-  | "NO_ENABLED_CHANNEL";
+  | "NO_ENABLED_CHANNEL"
+  | "QUIET_HOURS"
+  | "STREAK_BROKEN";
 
-export type ReminderDeliveryChannel = "EMAIL" | "PUSH";
+export interface ReadingSessionDate {
+  readAt: Date;
+}
+
+export interface ReminderStreakService {
+  getStreak(
+    userId: string,
+    now: Date,
+  ): Promise<{
+    count: number;
+    status: "ACTIVE" | "AT_RISK" | "BROKEN";
+  }>;
+}
+
+export interface ReminderStreakRepository {
+  findRecentReadingDates(
+    userId: string,
+    limit: number,
+  ): Promise<Array<{ readAt: Date }>>;
+}
 
 export interface ReminderPreferenceProps {
   userId: string;
   enabled: boolean;
   emailEnabled: boolean;
   reminderTime: string;
+  streakRescueEnabled: boolean;
+  streakRescueTime: string;
+  quietHoursStart: string;
+  quietHoursEnd: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,14 +67,40 @@ export class ReminderPreference {
     enabled: boolean;
     emailEnabled?: boolean;
     reminderTime: string;
+    streakRescueEnabled?: boolean;
+    streakRescueTime?: string;
+    quietHoursStart?: string;
+    quietHoursEnd?: string;
   }): ReminderPreference {
     if (!/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/.test(props.reminderTime)) {
       throw new Error("Reminder time must be in HH:MM:SS format");
+    }
+    if (
+      props.streakRescueTime &&
+      !/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/.test(props.streakRescueTime)
+    ) {
+      throw new Error("Streak rescue time must be in HH:MM:SS format");
+    }
+    if (
+      props.quietHoursStart &&
+      !/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/.test(props.quietHoursStart)
+    ) {
+      throw new Error("Quiet hours start must be in HH:MM:SS format");
+    }
+    if (
+      props.quietHoursEnd &&
+      !/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/.test(props.quietHoursEnd)
+    ) {
+      throw new Error("Quiet hours end must be in HH:MM:SS format");
     }
 
     return new ReminderPreference({
       ...props,
       emailEnabled: props.emailEnabled ?? true,
+      streakRescueEnabled: props.streakRescueEnabled ?? true,
+      streakRescueTime: props.streakRescueTime ?? "21:30:00",
+      quietHoursStart: props.quietHoursStart ?? "22:30:00",
+      quietHoursEnd: props.quietHoursEnd ?? "07:00:00",
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -69,6 +124,22 @@ export class ReminderPreference {
 
   get emailEnabled(): boolean {
     return this.props.emailEnabled;
+  }
+
+  get streakRescueEnabled(): boolean {
+    return this.props.streakRescueEnabled;
+  }
+
+  get streakRescueTime(): string {
+    return this.props.streakRescueTime;
+  }
+
+  get quietHoursStart(): string {
+    return this.props.quietHoursStart;
+  }
+
+  get quietHoursEnd(): string {
+    return this.props.quietHoursEnd;
   }
 
   get createdAt(): Date {
@@ -114,6 +185,43 @@ export class ReminderPreference {
     });
   }
 
+  updateStreakRescueEnabled(streakRescueEnabled: boolean): ReminderPreference {
+    return new ReminderPreference({
+      ...this.props,
+      streakRescueEnabled,
+      updatedAt: new Date(),
+    });
+  }
+
+  updateStreakRescueTime(streakRescueTime: string): ReminderPreference {
+    if (!/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/.test(streakRescueTime)) {
+      throw new Error("Streak rescue time must be in HH:MM:SS format");
+    }
+    return new ReminderPreference({
+      ...this.props,
+      streakRescueTime,
+      updatedAt: new Date(),
+    });
+  }
+
+  updateQuietHours(
+    quietHoursStart: string,
+    quietHoursEnd: string,
+  ): ReminderPreference {
+    if (!/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/.test(quietHoursStart)) {
+      throw new Error("Quiet hours start must be in HH:MM:SS format");
+    }
+    if (!/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/.test(quietHoursEnd)) {
+      throw new Error("Quiet hours end must be in HH:MM:SS format");
+    }
+    return new ReminderPreference({
+      ...this.props,
+      quietHoursStart,
+      quietHoursEnd,
+      updatedAt: new Date(),
+    });
+  }
+
   toPersistence(): ReminderPreferenceProps {
     return { ...this.props };
   }
@@ -129,6 +237,7 @@ export interface ReminderDeliveryProps {
   dailyPageTarget: number;
   status: DeliveryStatusValue;
   deliveryChannel: ReminderDeliveryChannel | null;
+  notificationKind: ReminderNotificationKind;
   scheduledFor: Date;
   lockedAt: Date | null;
   nextAttemptAt: Date | null;
@@ -157,11 +266,13 @@ export class ReminderDelivery {
     bookTotalPages: number | null;
     dailyPageTarget: number;
     scheduledFor: Date;
+    notificationKind?: ReminderNotificationKind;
   }): ReminderDelivery {
     return new ReminderDelivery({
       ...props,
       status: "PENDING",
       deliveryChannel: null,
+      notificationKind: props.notificationKind ?? "DAILY_REMINDER",
       lockedAt: null,
       nextAttemptAt: null,
       sentAt: null,
@@ -216,6 +327,10 @@ export class ReminderDelivery {
 
   get deliveryChannel(): ReminderDeliveryChannel | null {
     return this.props.deliveryChannel;
+  }
+
+  get notificationKind(): ReminderNotificationKind {
+    return this.props.notificationKind;
   }
 
   get lockedAt(): Date | null {
@@ -395,6 +510,10 @@ export interface ReminderSchedulingCandidate {
   reminderTime: string;
   timezone: string;
   enabled: boolean;
+  streakRescueEnabled: boolean;
+  streakRescueTime: string;
+  quietHoursStart: string;
+  quietHoursEnd: string;
 }
 
 export interface ReminderSchedulingRepository {
@@ -421,6 +540,9 @@ export interface ReminderDispatchEligibility {
   remindersEnabled: boolean;
   emailEnabled: boolean;
   hasActiveBook: boolean;
+  streakRescueEnabled: boolean;
+  quietHoursStart: string;
+  quietHoursEnd: string;
 }
 
 export interface ReminderDispatchRepository {
@@ -451,4 +573,21 @@ export interface ReminderDispatchRepository {
     delivery: ReminderDelivery,
     claimedAt: Date,
   ): Promise<boolean>;
+}
+
+export interface ReminderStreakRepository {
+  findRecentReadingDates(
+    userId: string,
+    limit: number,
+  ): Promise<Array<{ readAt: Date }>>;
+}
+
+export interface ReminderStreakService {
+  getStreak(
+    userId: string,
+    now: Date,
+  ): Promise<{
+    count: number;
+    status: "ACTIVE" | "AT_RISK" | "BROKEN";
+  }>;
 }
