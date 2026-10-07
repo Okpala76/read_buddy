@@ -47,10 +47,13 @@ Phase 7: Reminders complete. Timezone-aware scheduling, concurrency-safe dispatc
 - **Resend production provider**: verified sending domain, domain-scoped send-only key, Vercel production variables, and one delivered controlled test email.
 - **Production reminder scheduler**: authenticated five-minute VPS cron with overlap protection, strict HTTPS invocation, protected secret storage, concise system logs, and no additional application checkout or service.
 - **Production reminder acceptance**: one due occurrence reached `SENT` with one provider attempt, remained one row across later scheduler cycles, and was independently reported as `delivered` by Resend.
+- **PWA Phase 1**: installable standalone manifest, application icons, conservative Serwist service worker, and safe branded offline fallback.
 
 ## Verification
 
-- `pnpm verify`: passed (format, lint, typecheck, 200 tests, and production build).
+- `pnpm verify`: passed (format, lint, typecheck, 211 tests, and production build); the build generated the PWA manifest and Serwist worker.
+- Local Lighthouse 11.7.1 PWA audit scored 1.0 with installable manifest, service worker, theme color, splash screen, viewport, and maskable icon checks passing.
+- Local production browser verification confirmed root-scope worker control, no private page/API cache entries, safe offline fallback, and recovery without clearing site data.
 - `docker compose config --quiet`: passed with an injected local development password.
 - Baseline migration generation and SQL review: passed.
 - Clerk user-mapping migration generation and SQL review: passed.
@@ -89,6 +92,8 @@ Phase 7: Reminders complete. Timezone-aware scheduling, concurrency-safe dispatc
 ## Intentionally absent
 
 - Redis.
+- Push notifications and notification permission prompts.
+- Offline data mutation, queued writes, background sync, and private-data caching.
 
 ## Known deployment inputs
 
