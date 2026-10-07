@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 7: Reminders complete. Timezone-aware scheduling, concurrency-safe dispatch, deterministic Resend requests, provider idempotency, bounded retries, production migrations, deployment, and protected VPS scheduling are implemented and verified.
+PWA Phase 2A: Web Push foundation complete. Production VAPID configuration, migration, deployment, and controlled Chrome acceptance are verified. Automated push reminders remain outside this phase.
 
 ## Implemented
 
@@ -48,10 +48,11 @@ Phase 7: Reminders complete. Timezone-aware scheduling, concurrency-safe dispatc
 - **Production reminder scheduler**: authenticated five-minute VPS cron with overlap protection, strict HTTPS invocation, protected secret storage, concise system logs, and no additional application checkout or service.
 - **Production reminder acceptance**: one due occurrence reached `SENT` with one provider attempt, remained one row across later scheduler cycles, and was independently reported as `delivered` by Resend.
 - **PWA Phase 1**: installable standalone manifest, application icons, conservative Serwist service worker, and safe branded offline fallback.
+- **PWA Phase 2A Web Push foundation**: authenticated per-device subscription registration, ownership-safe account switching, current-device test push, soft revocation, VAPID rotation handling, supported-provider endpoint validation, Node-only `web-push` delivery, and defensive push/click handling in the existing Serwist worker.
 
 ## Verification
 
-- `pnpm verify`: passed (format, lint, typecheck, 211 tests, and production build); the build generated the PWA manifest and Serwist worker.
+- `pnpm verify`: passed (format, lint, typecheck, 262 tests, and production build); the build generated the PWA manifest and Serwist worker with Web Push handlers.
 - Local Lighthouse 11.7.1 PWA audit scored 1.0 with installable manifest, service worker, theme color, splash screen, viewport, and maskable icon checks passing.
 - Local production browser verification confirmed root-scope worker control, no private page/API cache entries, safe offline fallback, and recovery without clearing site data.
 - `docker compose config --quiet`: passed with an injected local development password.
@@ -60,10 +61,14 @@ Phase 7: Reminders complete. Timezone-aware scheduling, concurrency-safe dispatc
 - Migration application: all committed migrations applied successfully to local PostgreSQL.
 - Batch 3 reminder migrations applied successfully to local PostgreSQL.
 - Batch 4 reminder snapshot/retry-index migration applied successfully to local PostgreSQL.
-- All five committed migrations applied successfully to production PostgreSQL with no unknown migration hashes.
+- All six versioned migrations applied successfully to production PostgreSQL with no unknown migration hashes.
+- Push migration `0005_nappy_mac_gargan.sql` applied and constraint-checked locally and in production.
+- A rollback-only local PostgreSQL tenant check confirmed user B cannot read or revoke user A's endpoint, matching browser keys can reassign it during an account switch, and mismatched keys cannot claim it.
 - Production reminder endpoint authentication passed unauthenticated (`401`) and authenticated (`200`) checks.
 - PostgreSQL activity showed application connections using only `read_buddy_app`; Vercel Production has no admin database variable.
 - Seven opt-in PostgreSQL concurrency integration tests passed against local PostgreSQL.
+- Vercel Production contains the complete VAPID tuple, with the private key stored as a secret; deployment `dpl_CH3LPzan1CjnQuDZ4C4m9RgVhtM2` is Ready on the canonical custom domain.
+- Controlled production Chrome acceptance passed enable, permission, subscription persistence, OS notification display, `/dashboard` click-through, and current-device disable. The database retained one soft-revoked row and no active test subscription.
 
 ## Migrations
 
@@ -72,6 +77,7 @@ Phase 7: Reminders complete. Timezone-aware scheduling, concurrency-safe dispatc
 - `0002_sloppy_bullseye.sql` - Reminder `PROCESSING` status
 - `0003_nice_bromley.sql` - Reminder claim, future retry, and skip metadata
 - `0004_oval_sway.sql` - Deterministic email snapshot and retry scan index
+- `0005_nappy_mac_gargan.sql` - User-owned Web Push subscriptions and endpoint uniqueness
 
 ## Tests
 
@@ -87,12 +93,13 @@ Phase 7: Reminders complete. Timezone-aware scheduling, concurrency-safe dispatc
 - Reminder provider tests cover Resend envelopes, deterministic HTML/text payloads and idempotency keys, provider IDs, controlled missing configuration, and sanitized transient/permanent classification.
 - Reminder infrastructure integration tests use local PostgreSQL to verify concurrent initial/retry claims, terminal-state exclusion, stale recovery, claim-token protection, active-book checks, and timezone-aware reading suppression.
 - Reminder UI and cron tests cover settings validation, authenticated scheduling, and dispatch sequencing.
-- All regular tests passing (200 total); 7 PostgreSQL concurrency tests pass through the explicit local integration command.
+- Web Push tests cover tenant isolation, key-proven account reassignment, supported endpoints, provider classification and timeout, authenticated Server Actions, permission UX, and service-worker source integration.
+- All regular tests passing (262 total); 7 PostgreSQL reminder concurrency tests pass through the explicit local integration command.
 
 ## Intentionally absent
 
 - Redis.
-- Push notifications and notification permission prompts.
+- Automated push reminder delivery and push/email channel selection.
 - Offline data mutation, queued writes, background sync, and private-data caching.
 
 ## Known deployment inputs
@@ -108,4 +115,4 @@ Phase 7: Reminders complete. Timezone-aware scheduling, concurrency-safe dispatc
 
 ## Next phase
 
-Phase 8: Production hardening/deployment. Vercel reaches PgBouncer over verified TLS; migrations run once during deployment; observability and alerts cover app/database failures; encrypted off-host backups run automatically; a restore drill and production smoke test succeed.
+Phase 8: Production hardening/deployment. Complete observability and alerts, encrypted off-host backups, restore drills, and remaining production smoke coverage. Physical-device iOS Web Push verification remains pending.

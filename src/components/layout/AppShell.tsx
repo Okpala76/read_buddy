@@ -4,11 +4,18 @@ import { type ReactNode, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { Sheet } from "@/components/ui/sheet";
+import { PushSubscriptionReconciler } from "@/features/push-notifications/ui/PushSubscriptionReconciler";
 import { Header } from "./Header";
 import { MobileNav } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  vapidPublicKey,
+}: {
+  children: ReactNode;
+  vapidPublicKey: string;
+}) {
   const pathname = usePathname();
   const [mobileNavState, setMobileNavState] = useState({
     pathname,
@@ -34,6 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+      <PushSubscriptionReconciler vapidPublicKey={vapidPublicKey} />
       <div className="bg-background min-h-svh lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
         <Sidebar />
         <div className="min-w-0">

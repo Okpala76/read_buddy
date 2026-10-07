@@ -28,6 +28,10 @@ Dispatch transitions due `PENDING` rows and eligible `FAILED` retries to `PROCES
 
 `recipient_email`, `book_title`, `book_current_page`, `book_total_pages`, and `daily_page_target` form the minimal immutable email snapshot. They keep the Resend request stable across attempts without storing rendered HTML, text, or full provider responses.
 
+### `push_subscriptions`
+
+User-owned browser/device Web Push subscriptions. Each endpoint is globally unique and stores its `p256dh` and `auth` encryption keys, optional user agent, lifecycle timestamps, and soft-revocation timestamp. A user may have multiple active endpoints, while atomic endpoint upsert prevents duplicates and reassigns a shared browser endpoint to the currently authenticated internal user UUID only when its stored encryption keys prove possession. The user FK cascades on account deletion, and `user_id` is indexed for future user-scoped delivery scans.
+
 ## Migration workflow
 
 ```text

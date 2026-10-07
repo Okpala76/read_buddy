@@ -185,7 +185,7 @@ export function ReminderSettingsForm() {
               <div className="space-y-1">
                 <Label htmlFor="enabled">Enable Daily Reminder</Label>
                 <p className="text-muted-foreground text-sm">
-                  Get notified at your chosen time each day
+                  Get an email reminder at your chosen time each day
                 </p>
               </div>
               <Controller

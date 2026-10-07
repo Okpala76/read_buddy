@@ -1,8 +1,9 @@
 # Progressive Web App
 
-Reading Buddy PWA Phase 1 adds installability and a safe offline fallback. It
-does not add offline data writes, background synchronization, or push
-notifications.
+Reading Buddy PWA Phase 1 adds installability and a safe offline fallback. PWA
+Phase 2A adds the user-driven Web Push foundation described in
+`docs/PUSH_NOTIFICATIONS.md`. Offline writes and background synchronization
+remain out of scope.
 
 ## Architecture
 
@@ -121,8 +122,8 @@ If a worker from a previous production-mode test still controls localhost:
 
 ## Phase 1 Limitations
 
-- No push notifications, notification permission prompt, VAPID keys, or Web
-  Push subscriptions.
+- No automated push reminder decisions, email fallback selection, or push retry
+  queue. Phase 2A supports only explicit current-device test notifications.
 - No background sync, IndexedDB data model, queued mutations, or offline
   reading-session writes.
 - No private dashboard or analytics response caching.

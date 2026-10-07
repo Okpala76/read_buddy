@@ -14,6 +14,10 @@ import {
   isSensitivePathname,
   isStaticAssetRequest,
 } from "@/lib/pwa/cache-policy";
+import {
+  normalizePushNotificationPayload,
+  resolveNotificationUrl,
+} from "@/features/push-notifications/domain/push-notification";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -64,6 +68,70 @@ const serwist = new Serwist({
       },
     ],
   },
+});
+
+self.addEventListener("push", (event) => {
+  let rawPayload: unknown;
+  try {
+    rawPayload = event.data?.json();
+  } catch {
+    rawPayload = undefined;
+  }
+
+  const payload = normalizePushNotificationPayload(
+    rawPayload,
+    self.location.origin,
+  );
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      tag: payload.tag,
+      data: { url: payload.url },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const notificationData = event.notification.data as
+    Record<string, unknown> | undefined;
+  const targetUrl = resolveNotificationUrl(
+    notificationData?.url,
+    self.location.origin,
+  );
+
+  event.waitUntil(
+    (async () => {
+      const windowClients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      const exactClient = windowClients.find(
+        (client) => client.url === targetUrl,
+      );
+      const appClient =
+        exactClient ??
+        windowClients.find((client) => {
+          try {
+            return new URL(client.url).origin === self.location.origin;
+          } catch {
+            return false;
+          }
+        });
+
+      if (appClient) {
+        if (appClient.url !== targetUrl) {
+          await appClient.navigate(targetUrl);
+        }
+        await appClient.focus();
+        return;
+      }
+
+      await self.clients.openWindow(targetUrl);
+    })(),
+  );
 });
 
 serwist.addEventListeners();

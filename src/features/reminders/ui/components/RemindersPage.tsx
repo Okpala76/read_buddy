@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { Bell, History } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PushNotificationSettings } from "@/features/push-notifications/ui/PushNotificationSettings";
 import { ReminderSettingsForm } from "./ReminderSettingsForm";
 import { DeliveryHistory, type ReminderDelivery } from "./DeliveryHistory";
 
-export function RemindersPage() {
+export function RemindersPage({ vapidPublicKey }: { vapidPublicKey: string }) {
   const [deliveries, setDeliveries] = useState<ReminderDelivery[]>([]);
   const [isLoadingDeliveries, setIsLoadingDeliveries] = useState(true);
 
@@ -54,7 +55,10 @@ export function RemindersPage() {
         </TabsList>
 
         <TabsContent value="settings" className="mt-4">
-          <ReminderSettingsForm />
+          <div className="space-y-4">
+            <ReminderSettingsForm />
+            <PushNotificationSettings vapidPublicKey={vapidPublicKey} />
+          </div>
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">

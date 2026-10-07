@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { config } from "@/config/env";
 import { requireAuth } from "@/lib/auth/server";
 
 export default async function ProductLayout({
@@ -6,5 +7,9 @@ export default async function ProductLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   await requireAuth();
 
-  return <AppShell>{children}</AppShell>;
+  return (
+    <AppShell vapidPublicKey={config.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""}>
+      {children}
+    </AppShell>
+  );
 }
