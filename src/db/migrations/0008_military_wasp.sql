@@ -1,0 +1,1 @@
+ALTER TABLE "reminder_preferences" ADD COLUMN "adaptive_timing_enabled" boolean DEFAULT false NOT NULL;

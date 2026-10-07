@@ -3,6 +3,8 @@ import {
   DrizzleReminderDispatchRepository,
   DrizzleReminderSchedulingRepository,
   DrizzleReminderStreakRepository,
+  DrizzleReadingBehaviorProfileRepository,
+  DrizzleReminderPreferenceRepository,
   ResendEmailService,
 } from "@/features/reminders/infrastructure";
 import { findUserTimezoneById } from "@/features/auth/infrastructure/drizzle-user-repository";
@@ -11,6 +13,7 @@ import {
   ProcessReminderDeliveriesUseCase,
   ReadingStreakService,
   ScheduleDueRemindersUseCase,
+  GetEffectiveReminderTimeUseCaseImpl,
 } from "@/features/reminders/application";
 import { NextResponse } from "next/server";
 
@@ -33,12 +36,21 @@ export async function GET(request: Request) {
     const schedulingRepo = new DrizzleReminderSchedulingRepository();
     const dispatchRepo = new DrizzleReminderDispatchRepository();
     const streakRepo = new DrizzleReminderStreakRepository();
+    const profileRepo = new DrizzleReadingBehaviorProfileRepository();
+    const preferenceRepo = new DrizzleReminderPreferenceRepository();
     const emailSender = new ResendEmailService();
     const pushSender = new ScheduledPushNotificationService();
     const streakService = new ReadingStreakService(streakRepo, (userId) =>
       findUserTimezoneById(userId),
     );
-    const scheduleUseCase = new ScheduleDueRemindersUseCase(schedulingRepo);
+    const effectiveTimeUseCase = new GetEffectiveReminderTimeUseCaseImpl(
+      preferenceRepo,
+      profileRepo,
+    );
+    const scheduleUseCase = new ScheduleDueRemindersUseCase(
+      schedulingRepo,
+      effectiveTimeUseCase,
+    );
     const processUseCase = new ProcessReminderDeliveriesUseCase(
       dispatchRepo,
       emailSender,

@@ -28,6 +28,8 @@ vi.mock("@/features/reminders/infrastructure", () => ({
   DrizzleReminderDispatchRepository: class {},
   DrizzleReminderSchedulingRepository: class {},
   DrizzleReminderStreakRepository: class {},
+  DrizzleReadingBehaviorProfileRepository: class {},
+  DrizzleReminderPreferenceRepository: class {},
   ResendEmailService: class {},
 }));
 
@@ -39,6 +41,7 @@ vi.mock("@/features/reminders/application", () => ({
     execute = cronMocks.processExecute;
   },
   ReadingStreakService: class {},
+  GetEffectiveReminderTimeUseCaseImpl: class {},
 }));
 
 vi.mock("@/features/push-notifications/infrastructure", () => ({

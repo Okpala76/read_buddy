@@ -52,6 +52,7 @@ function toPreferenceDomain(
     streakRescueTime: row.streakRescueTime,
     quietHoursStart: row.quietHoursStart,
     quietHoursEnd: row.quietHoursEnd,
+    adaptiveTimingEnabled: row.adaptiveTimingEnabled,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   });
@@ -94,6 +95,7 @@ function toPreferencePersistence(props: ReminderPreferenceProps) {
     streakRescueTime: props.streakRescueTime,
     quietHoursStart: props.quietHoursStart,
     quietHoursEnd: props.quietHoursEnd,
+    adaptiveTimingEnabled: props.adaptiveTimingEnabled,
     createdAt: props.createdAt,
     updatedAt: props.updatedAt,
   };
@@ -170,6 +172,11 @@ export class DrizzleReminderPreferenceRepository implements ReminderPreferenceRe
             enabled: data.enabled,
             emailEnabled: data.emailEnabled,
             reminderTime: data.reminderTime,
+            streakRescueEnabled: data.streakRescueEnabled,
+            streakRescueTime: data.streakRescueTime,
+            quietHoursStart: data.quietHoursStart,
+            quietHoursEnd: data.quietHoursEnd,
+            adaptiveTimingEnabled: data.adaptiveTimingEnabled,
             updatedAt: data.updatedAt,
           },
         });
@@ -195,6 +202,7 @@ export class DrizzleReminderSchedulingRepository implements ReminderSchedulingRe
         streakRescueTime: reminderPreferences.streakRescueTime,
         quietHoursStart: reminderPreferences.quietHoursStart,
         quietHoursEnd: reminderPreferences.quietHoursEnd,
+        adaptiveTimingEnabled: reminderPreferences.adaptiveTimingEnabled,
       })
       .from(reminderPreferences)
       .innerJoin(users, eq(users.id, reminderPreferences.userId))
@@ -353,6 +361,7 @@ export class DrizzleReminderDispatchRepository implements ReminderDispatchReposi
           streakRescueEnabled: reminderPreferences.streakRescueEnabled,
           quietHoursStart: reminderPreferences.quietHoursStart,
           quietHoursEnd: reminderPreferences.quietHoursEnd,
+          adaptiveTimingEnabled: reminderPreferences.adaptiveTimingEnabled,
         })
         .from(users)
         .leftJoin(reminderPreferences, eq(reminderPreferences.userId, users.id))
@@ -376,6 +385,7 @@ export class DrizzleReminderDispatchRepository implements ReminderDispatchReposi
       streakRescueEnabled: settings[0].streakRescueEnabled ?? true,
       quietHoursStart: settings[0].quietHoursStart ?? "22:30:00",
       quietHoursEnd: settings[0].quietHoursEnd ?? "07:00:00",
+      adaptiveTimingEnabled: settings[0].adaptiveTimingEnabled ?? false,
       hasActiveBook: activeBook.length === 1,
     };
   }

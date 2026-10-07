@@ -79,6 +79,7 @@ describe("ReminderPreference domain", () => {
         streakRescueTime: "21:30:00",
         quietHoursStart: "22:30:00",
         quietHoursEnd: "07:00:00",
+        adaptiveTimingEnabled: false,
         createdAt: new Date("2024-01-15T10:00:00Z"),
         updatedAt: new Date("2024-01-15T10:00:00Z"),
       };
@@ -173,6 +174,7 @@ describe("ReminderPreference domain", () => {
         streakRescueTime: "21:30:00",
         quietHoursStart: "22:30:00",
         quietHoursEnd: "07:00:00",
+        adaptiveTimingEnabled: false,
         createdAt: pref.createdAt,
         updatedAt: pref.updatedAt,
       });

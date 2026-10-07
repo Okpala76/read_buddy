@@ -21,6 +21,13 @@ export type ReminderSkipReasonValue =
   | "QUIET_HOURS"
   | "STREAK_BROKEN";
 
+export type AdaptiveTimeSource =
+  | "MANUAL"
+  | "INSUFFICIENT_HISTORY"
+  | "OVERALL_ADAPTIVE"
+  | "WEEKDAY_ADAPTIVE"
+  | "WEEKEND_ADAPTIVE";
+
 export interface ReadingSessionDate {
   readAt: Date;
 }
@@ -51,6 +58,7 @@ export interface ReminderPreferenceProps {
   streakRescueTime: string;
   quietHoursStart: string;
   quietHoursEnd: string;
+  adaptiveTimingEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,6 +79,7 @@ export class ReminderPreference {
     streakRescueTime?: string;
     quietHoursStart?: string;
     quietHoursEnd?: string;
+    adaptiveTimingEnabled?: boolean;
   }): ReminderPreference {
     if (!/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/.test(props.reminderTime)) {
       throw new Error("Reminder time must be in HH:MM:SS format");
@@ -101,6 +110,7 @@ export class ReminderPreference {
       streakRescueTime: props.streakRescueTime ?? "21:30:00",
       quietHoursStart: props.quietHoursStart ?? "22:30:00",
       quietHoursEnd: props.quietHoursEnd ?? "07:00:00",
+      adaptiveTimingEnabled: props.adaptiveTimingEnabled ?? false,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -140,6 +150,10 @@ export class ReminderPreference {
 
   get quietHoursEnd(): string {
     return this.props.quietHoursEnd;
+  }
+
+  get adaptiveTimingEnabled(): boolean {
+    return this.props.adaptiveTimingEnabled;
   }
 
   get createdAt(): Date {
@@ -218,6 +232,16 @@ export class ReminderPreference {
       ...this.props,
       quietHoursStart,
       quietHoursEnd,
+      updatedAt: new Date(),
+    });
+  }
+
+  updateAdaptiveTimingEnabled(
+    adaptiveTimingEnabled: boolean,
+  ): ReminderPreference {
+    return new ReminderPreference({
+      ...this.props,
+      adaptiveTimingEnabled,
       updatedAt: new Date(),
     });
   }
@@ -514,6 +538,7 @@ export interface ReminderSchedulingCandidate {
   streakRescueTime: string;
   quietHoursStart: string;
   quietHoursEnd: string;
+  adaptiveTimingEnabled: boolean;
 }
 
 export interface ReminderSchedulingRepository {
@@ -590,4 +615,40 @@ export interface ReminderStreakService {
     count: number;
     status: "ACTIVE" | "AT_RISK" | "BROKEN";
   }>;
+}
+
+export interface ReadingBehaviorProfileRepository {
+  findByUserId(userId: string): Promise<ReadingBehaviorProfile | null>;
+  upsert(profile: ReadingBehaviorProfile): Promise<void>;
+  findRecentReadingDates(
+    userId: string,
+    limit: number,
+  ): Promise<Array<ReadingSessionDate>>;
+  getUserTimezone(userId: string): Promise<string>;
+}
+
+export interface ReadingBehaviorProfile {
+  userId: string;
+  sampleDays: number;
+  typicalReadingMinute: number;
+  weekdaySampleDays: number;
+  weekdayTypicalMinute: number | null;
+  weekendSampleDays: number;
+  weekendTypicalMinute: number | null;
+  windowStart: Date;
+  computedAt: Date;
+}
+
+export interface ReadingSessionDate {
+  readAt: Date;
+}
+
+export interface EffectiveReminderTimeResult {
+  time: string;
+  source: AdaptiveTimeSource;
+  sampleDays: number;
+}
+
+export interface GetEffectiveReminderTimeUseCase {
+  execute(userId: string, now: Date): Promise<EffectiveReminderTimeResult>;
 }

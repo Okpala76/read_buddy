@@ -14,6 +14,7 @@ import {
   type ReminderDispatchEligibility,
   type ReminderSchedulingRepository,
 } from "../domain";
+import { GetEffectiveReminderTimeUseCase } from "./get-effective-reminder-time";
 
 export const getReminderPreferenceInputSchema = z.object({});
 
@@ -34,6 +35,7 @@ export const updateReminderPreferenceInputSchema = z.object({
     .string()
     .regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/)
     .optional(),
+  adaptiveTimingEnabled: z.boolean().optional(),
   timezone: ianaTimezoneSchema.optional(),
 });
 
@@ -121,6 +123,11 @@ export class UpdateReminderPreferenceUseCase {
       if (parsed.emailEnabled !== undefined) {
         preference = preference.updateEmailEnabled(parsed.emailEnabled);
       }
+      if (parsed.adaptiveTimingEnabled !== undefined) {
+        preference = preference.updateAdaptiveTimingEnabled(
+          parsed.adaptiveTimingEnabled,
+        );
+      }
     }
 
     const timezone = parsed.timezone ?? storedTimezone;
@@ -166,6 +173,7 @@ export const REMINDER_RETRY_DELAYS_MS = [
 export class ScheduleDueRemindersUseCase {
   constructor(
     private readonly schedulingRepository: ReminderSchedulingRepository,
+    private readonly effectiveTimeUseCase: GetEffectiveReminderTimeUseCase,
   ) {}
 
   async execute(now: Date): Promise<{
@@ -188,10 +196,15 @@ export class ScheduleDueRemindersUseCase {
         continue;
       }
 
+      const effectiveTime = await this.effectiveTimeUseCase.execute(
+        candidate.userId,
+        now,
+      );
+
       // Schedule DAILY_REMINDER
       const dailyScheduledFor = getReminderOccurrence(
         now,
-        candidate.reminderTime,
+        effectiveTime.time,
         candidate.timezone,
       );
       const dailyScheduledAt = dailyScheduledFor.getTime();

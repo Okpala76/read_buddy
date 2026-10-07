@@ -30,6 +30,9 @@ export const reminderPreferences = pgTable("reminder_preferences", {
   streakRescueTime: time("streak_rescue_time").notNull().default("21:30:00"),
   quietHoursStart: time("quiet_hours_start").notNull().default("22:30:00"),
   quietHoursEnd: time("quiet_hours_end").notNull().default("07:00:00"),
+  adaptiveTimingEnabled: boolean("adaptive_timing_enabled")
+    .notNull()
+    .default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

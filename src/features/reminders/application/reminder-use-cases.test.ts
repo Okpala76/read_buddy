@@ -8,6 +8,7 @@ import {
   ScheduleDueRemindersUseCase,
   ProcessReminderDeliveriesUseCase,
 } from "./reminder-use-cases";
+import { GetEffectiveReminderTimeUseCase } from "../application";
 import type {
   ReminderEmailSender,
   ReminderPushSender,
@@ -256,14 +257,23 @@ describe("GetReminderDeliveriesUseCase", () => {
 
 describe("ScheduleDueRemindersUseCase", () => {
   let repository: ReminderSchedulingRepository;
+  let effectiveTimeUseCase: GetEffectiveReminderTimeUseCase;
   let useCase: ScheduleDueRemindersUseCase;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     repository = {
       findEnabledCandidates: vi.fn().mockResolvedValue([]),
       createDeliveryIfAbsent: vi.fn().mockResolvedValue(true),
     };
-    useCase = new ScheduleDueRemindersUseCase(repository);
+    effectiveTimeUseCase = {
+      execute: vi.fn().mockResolvedValue({
+        time: "19:00:00",
+        source: "MANUAL",
+        sampleDays: 0,
+      }),
+    };
+    useCase = new ScheduleDueRemindersUseCase(repository, effectiveTimeUseCase);
   });
 
   it("creates a due Lagos reminder at its UTC instant", async () => {
@@ -278,8 +288,15 @@ describe("ScheduleDueRemindersUseCase", () => {
         streakRescueTime: "21:30:00",
         quietHoursStart: "22:30:00",
         quietHoursEnd: "07:00:00",
+        adaptiveTimingEnabled: true,
       },
     ]);
+    // Mock effective time to return the preferred time for this test
+    vi.mocked(effectiveTimeUseCase.execute).mockResolvedValue({
+      time: "19:00:00",
+      source: "MANUAL",
+      sampleDays: 0,
+    });
 
     const result = await useCase.execute(new Date("2026-10-05T18:05:00.000Z"));
 
@@ -304,6 +321,7 @@ describe("ScheduleDueRemindersUseCase", () => {
         streakRescueTime: "21:30:00",
         quietHoursStart: "22:30:00",
         quietHoursEnd: "07:00:00",
+        adaptiveTimingEnabled: true,
       },
       {
         userId: "future",
@@ -315,6 +333,7 @@ describe("ScheduleDueRemindersUseCase", () => {
         streakRescueTime: "21:30:00",
         quietHoursStart: "22:30:00",
         quietHoursEnd: "07:00:00",
+        adaptiveTimingEnabled: true,
       },
       {
         userId: "stale",
@@ -326,8 +345,21 @@ describe("ScheduleDueRemindersUseCase", () => {
         streakRescueTime: "21:30:00",
         quietHoursEnd: "07:00:00",
         quietHoursStart: "22:30:00",
+        adaptiveTimingEnabled: true,
       },
     ]);
+    // Use a mock implementation that returns different times based on userId
+    vi.mocked(effectiveTimeUseCase.execute).mockImplementation(
+      async (userId: string) => {
+        if (userId === "future") {
+          return { time: "19:10:00", source: "MANUAL", sampleDays: 0 };
+        }
+        if (userId === "stale") {
+          return { time: "18:49:00", source: "MANUAL", sampleDays: 0 };
+        }
+        return { time: "19:00:00", source: "MANUAL", sampleDays: 0 };
+      },
+    );
 
     const result = await useCase.execute(new Date("2026-10-05T18:05:00.000Z"));
 
@@ -347,8 +379,15 @@ describe("ScheduleDueRemindersUseCase", () => {
         streakRescueTime: "21:30:00",
         quietHoursStart: "22:30:00",
         quietHoursEnd: "07:00:00",
+        adaptiveTimingEnabled: true,
       },
     ]);
+    // Mock effective time to return the preferred time
+    vi.mocked(effectiveTimeUseCase.execute).mockResolvedValue({
+      time: "00:00:00",
+      source: "MANUAL",
+      sampleDays: 0,
+    });
 
     await useCase.execute(new Date("2026-10-04T23:05:00.000Z"));
 
@@ -372,6 +411,7 @@ describe("ScheduleDueRemindersUseCase", () => {
         streakRescueTime: "21:30:00",
         quietHoursStart: "22:30:00",
         quietHoursEnd: "07:00:00",
+        adaptiveTimingEnabled: true,
       },
     ]);
     vi.mocked(repository.createDeliveryIfAbsent).mockImplementation(

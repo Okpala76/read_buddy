@@ -5,3 +5,4 @@ export * from "./reading-sessions";
 export * from "./reminders";
 export * from "./push-subscriptions";
 export * from "./users";
+export * from "./reading-behavior-profiles";
