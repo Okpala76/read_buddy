@@ -62,6 +62,13 @@ class InMemoryPushSubscriptionRepository implements PushSubscriptionRepository {
       : null;
   }
 
+  async listActiveForUser(userId: string) {
+    return [...this.subscriptions.values()].filter(
+      (subscription) =>
+        subscription.userId === userId && !subscription.revokedAt,
+    );
+  }
+
   async revokeForUser(userId: string, endpoint: string, now: Date) {
     const subscription = await this.findActiveForUser(userId, endpoint);
     if (!subscription) return false;

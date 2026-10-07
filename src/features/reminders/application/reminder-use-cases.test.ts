@@ -8,7 +8,10 @@ import {
   ScheduleDueRemindersUseCase,
   ProcessReminderDeliveriesUseCase,
 } from "./reminder-use-cases";
-import type { ReminderEmailSender } from "./reminder-use-cases";
+import type {
+  ReminderEmailSender,
+  ReminderPushSender,
+} from "./reminder-use-cases";
 import type {
   ReminderDispatchRepository,
   ReminderPreferenceRepository,
@@ -208,6 +211,7 @@ describe("GetReminderDeliveriesUseCase", () => {
         userId: "user-1",
         ...deliverySnapshot,
         status: "SENT",
+        deliveryChannel: "EMAIL",
         scheduledFor: new Date("2024-01-15T19:00:00Z"),
         lockedAt: null,
         nextAttemptAt: null,
@@ -368,6 +372,7 @@ describe("ProcessReminderDeliveriesUseCase", () => {
   const now = new Date("2026-10-04T23:30:00.000Z");
   let dispatchRepo: ReminderDispatchRepository;
   let emailSender: ReminderEmailSender;
+  let pushSender: ReminderPushSender;
   let useCase: ProcessReminderDeliveriesUseCase;
 
   function claimedDelivery(userId = "user-1", attemptCount = 0) {
@@ -382,6 +387,7 @@ describe("ProcessReminderDeliveriesUseCase", () => {
     return ReminderDelivery.reconstitute({
       ...delivery.toPersistence(),
       status: "FAILED",
+      deliveryChannel: "EMAIL",
       attemptCount,
       nextAttemptAt: now,
       errorCode: "RESEND_TIMEOUT",
@@ -395,9 +401,12 @@ describe("ProcessReminderDeliveriesUseCase", () => {
       findEligibility: vi.fn().mockResolvedValue({
         timezone: "Africa/Lagos",
         remindersEnabled: true,
+        emailEnabled: true,
         hasActiveBook: true,
       }),
       hasReadingSessionBetween: vi.fn().mockResolvedValue(false),
+      selectChannel: vi.fn().mockResolvedValue(true),
+      fallbackToEmail: vi.fn().mockResolvedValue(true),
       saveClaimResult: vi.fn().mockResolvedValue(true),
     };
     emailSender = {
@@ -406,7 +415,15 @@ describe("ProcessReminderDeliveriesUseCase", () => {
         providerMessageId: "msg-123",
       }),
     };
-    useCase = new ProcessReminderDeliveriesUseCase(dispatchRepo, emailSender);
+    pushSender = {
+      hasActiveSubscription: vi.fn().mockResolvedValue(false),
+      sendReminder: vi.fn(),
+    };
+    useCase = new ProcessReminderDeliveriesUseCase(
+      dispatchRepo,
+      emailSender,
+      pushSender,
+    );
   });
 
   it("recovers stale claims and atomically claims a bounded batch", async () => {
@@ -455,6 +472,7 @@ describe("ProcessReminderDeliveriesUseCase", () => {
     vi.mocked(dispatchRepo.findEligibility).mockResolvedValue({
       timezone: "Africa/Lagos",
       remindersEnabled: false,
+      emailEnabled: true,
       hasActiveBook: true,
     });
 
@@ -504,6 +522,7 @@ describe("ProcessReminderDeliveriesUseCase", () => {
     vi.mocked(dispatchRepo.findEligibility).mockResolvedValue({
       timezone: "Africa/Lagos",
       remindersEnabled: true,
+      emailEnabled: true,
       hasActiveBook: false,
     });
 
@@ -631,5 +650,161 @@ describe("ProcessReminderDeliveriesUseCase", () => {
     expect(
       vi.mocked(emailSender.sendReminder).mock.calls[0][0].deliveryId,
     ).toBe("delivery-user-1");
+  });
+
+  it("selects PUSH for an eligible user with an active subscription", async () => {
+    vi.mocked(pushSender.hasActiveSubscription).mockResolvedValue(true);
+    vi.mocked(pushSender.sendReminder).mockResolvedValue({
+      status: "ACCEPTED",
+      providerMessageId: "web-push/delivery-user-1",
+      attempted: 2,
+      accepted: 1,
+      invalidated: 1,
+    });
+
+    const result = await useCase.execute(now);
+
+    expect(dispatchRepo.selectChannel).toHaveBeenCalledWith(
+      "delivery-user-1",
+      now,
+      "PUSH",
+      now,
+    );
+    expect(pushSender.sendReminder).toHaveBeenCalledWith(
+      "user-1",
+      "delivery-user-1",
+    );
+    expect(emailSender.sendReminder).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({ sentPush: 1, sentEmail: 0, pushSelected: 1 }),
+    );
+  });
+
+  it("uses PUSH when email is disabled", async () => {
+    vi.mocked(dispatchRepo.findEligibility).mockResolvedValue({
+      timezone: "Africa/Lagos",
+      remindersEnabled: true,
+      emailEnabled: false,
+      hasActiveBook: true,
+    });
+    vi.mocked(pushSender.hasActiveSubscription).mockResolvedValue(true);
+    vi.mocked(pushSender.sendReminder).mockResolvedValue({
+      status: "ACCEPTED",
+      providerMessageId: "web-push/delivery-user-1",
+      attempted: 1,
+      accepted: 1,
+      invalidated: 0,
+    });
+
+    const result = await useCase.execute(now);
+
+    expect(result.sentPush).toBe(1);
+    expect(emailSender.sendReminder).not.toHaveBeenCalled();
+  });
+
+  it("skips without a provider call when no channel is enabled", async () => {
+    vi.mocked(dispatchRepo.findEligibility).mockResolvedValue({
+      timezone: "Africa/Lagos",
+      remindersEnabled: true,
+      emailEnabled: false,
+      hasActiveBook: true,
+    });
+
+    const result = await useCase.execute(now);
+
+    expect(result.skipped).toBe(1);
+    expect(emailSender.sendReminder).not.toHaveBeenCalled();
+    expect(pushSender.sendReminder).not.toHaveBeenCalled();
+    expect(dispatchRepo.saveClaimResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attemptCount: 0,
+        status: "SKIPPED",
+        skipReason: "NO_ENABLED_CHANNEL",
+      }),
+      now,
+    );
+  });
+
+  it("falls back to EMAIL when newly selected push targets are all gone", async () => {
+    vi.mocked(pushSender.hasActiveSubscription).mockResolvedValue(true);
+    vi.mocked(pushSender.sendReminder).mockResolvedValue({
+      status: "NO_ACTIVE_SUBSCRIPTIONS",
+      attempted: 2,
+      invalidated: 2,
+    });
+
+    const result = await useCase.execute(now);
+
+    expect(dispatchRepo.fallbackToEmail).toHaveBeenCalledWith(
+      "delivery-user-1",
+      now,
+      now,
+    );
+    expect(emailSender.sendReminder).toHaveBeenCalledOnce();
+    expect(result).toEqual(
+      expect.objectContaining({
+        sentPush: 0,
+        sentEmail: 1,
+        pushFallbackToEmail: 1,
+      }),
+    );
+  });
+
+  it("keeps a persisted PUSH channel on temporary failure retries", async () => {
+    const retry = ReminderDelivery.reconstitute({
+      ...claimedDelivery().toPersistence(),
+      status: "FAILED",
+      deliveryChannel: "PUSH",
+      lockedAt: null,
+      attemptCount: 1,
+      nextAttemptAt: now,
+      errorCode: "PUSH_TEMPORARY_FAILURE",
+    }).markProcessing(now);
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([retry]);
+    vi.mocked(pushSender.sendReminder).mockResolvedValue({
+      status: "FAILED",
+      classification: "RETRYABLE",
+      errorCode: "PUSH_TEMPORARY_FAILURE",
+      attempted: 1,
+      invalidated: 0,
+    });
+
+    const result = await useCase.execute(now);
+
+    expect(pushSender.hasActiveSubscription).not.toHaveBeenCalled();
+    expect(dispatchRepo.selectChannel).not.toHaveBeenCalled();
+    expect(emailSender.sendReminder).not.toHaveBeenCalled();
+    expect(result.retryScheduled).toBe(1);
+    expect(dispatchRepo.saveClaimResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deliveryChannel: "PUSH",
+        attemptCount: 2,
+      }),
+      now,
+    );
+  });
+
+  it("does not switch a persisted PUSH channel to email after an uncertain prior attempt", async () => {
+    const retry = ReminderDelivery.reconstitute({
+      ...claimedDelivery().toPersistence(),
+      status: "FAILED",
+      deliveryChannel: "PUSH",
+      lockedAt: null,
+      attemptCount: 1,
+      nextAttemptAt: now,
+      errorCode: "PUSH_TEMPORARY_FAILURE",
+    }).markProcessing(now);
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([retry]);
+    vi.mocked(pushSender.sendReminder).mockResolvedValue({
+      status: "NO_ACTIVE_SUBSCRIPTIONS",
+      attempted: 0,
+      invalidated: 0,
+    });
+
+    const result = await useCase.execute(now);
+
+    expect(dispatchRepo.fallbackToEmail).not.toHaveBeenCalled();
+    expect(emailSender.sendReminder).not.toHaveBeenCalled();
+    expect(result.terminalFailed).toBe(1);
   });
 });

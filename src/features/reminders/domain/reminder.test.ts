@@ -67,6 +67,7 @@ describe("ReminderPreference domain", () => {
       const props = {
         userId: "user-1",
         enabled: true,
+        emailEnabled: true,
         reminderTime: "19:00:00",
         createdAt: new Date("2024-01-15T10:00:00Z"),
         updatedAt: new Date("2024-01-15T10:00:00Z"),
@@ -100,6 +101,7 @@ describe("ReminderPreference domain", () => {
       const pref = ReminderPreference.create({
         userId: "user-1",
         enabled: true,
+        emailEnabled: true,
         reminderTime: "19:00:00",
       });
 
@@ -151,6 +153,7 @@ describe("ReminderPreference domain", () => {
       expect(props).toEqual({
         userId: "user-1",
         enabled: true,
+        emailEnabled: true,
         reminderTime: "19:00:00",
         createdAt: pref.createdAt,
         updatedAt: pref.updatedAt,
@@ -197,6 +200,7 @@ describe("ReminderDelivery domain", () => {
       const props = {
         ...baseProps,
         status: "SENT" as const,
+        deliveryChannel: "EMAIL" as const,
         lockedAt: null,
         nextAttemptAt: null,
         sentAt: new Date("2024-01-15T19:00:05Z"),
@@ -379,6 +383,7 @@ describe("ReminderDelivery domain", () => {
         bookTotalPages: 200,
         dailyPageTarget: 15,
         status: "PENDING",
+        deliveryChannel: null,
         scheduledFor: baseProps.scheduledFor,
         lockedAt: null,
         nextAttemptAt: null,

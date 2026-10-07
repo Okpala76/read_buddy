@@ -3,7 +3,7 @@ import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { users } from "@/db/schema";
+import { reminderPreferences, users } from "@/db/schema";
 
 export interface LocalUser {
   id: string;
@@ -82,17 +82,29 @@ export async function provisionLocalUser(
       return linkedUser;
     }
   } else {
-    const [createdUser] = await database
-      .insert(users)
-      .values({
-        clerkUserId: input.clerkUserId,
-        email: input.email,
-        emailVerified: new Date(),
-        name: input.name,
-        image: input.image,
-      })
-      .onConflictDoNothing()
-      .returning(localUserColumns);
+    const createdUser = await database.transaction(async (transaction) => {
+      const [created] = await transaction
+        .insert(users)
+        .values({
+          clerkUserId: input.clerkUserId,
+          email: input.email,
+          emailVerified: new Date(),
+          name: input.name,
+          image: input.image,
+        })
+        .onConflictDoNothing()
+        .returning(localUserColumns);
+
+      if (created) {
+        await transaction.insert(reminderPreferences).values({
+          userId: created.id,
+          enabled: true,
+          emailEnabled: true,
+        });
+      }
+
+      return created;
+    });
 
     if (createdUser) {
       return createdUser;

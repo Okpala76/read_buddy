@@ -86,3 +86,37 @@ Do not use Redis in V1. PostgreSQL is sufficient for uniqueness, transactions, r
 - Historical sessions as the source for analytics; no duplicate counters.
 - UTC persistence with IANA timezone conversion at application boundaries.
 - Clerk-managed sessions with server-validated identity mapped to local UUID authorization.
+
+## Notification decision engine (Phase 2B)
+
+The VPS cron invokes `/api/cron/reminders` every five minutes. The orchestration flow is:
+
+```text
+VPS cron (5 min)
+   ↓
+GET /api/cron/reminders
+   ↓
+Schedule due occurrences  (idempotent by user_id + scheduled_for)
+   ↓
+Recover stale claims     (10 min lease)
+   ↓
+Claim ready deliveries   (FOR UPDATE SKIP LOCKED)
+   ↓
+Current-state eligibility (reminders enabled, not read today, active book)
+   ↓
+NotificationDecisionEngine
+   ├── PUSH   (active push subscriptions + push intent)
+   ├── EMAIL  (fallback)
+   └── SKIP   (eligibility failure or no enabled channel)
+   ↓
+Provider dispatch (Resend or Web Push)
+```
+
+Key properties:
+
+- **Single logical reminder = single delivery row**. Channel is decided once, persisted as `delivery_channel`, and reused on retries. No cross-channel duplication.
+- **Push fan-out is aggregate**: one logical PUSH delivery attempts all active user subscriptions; at least one accepted = SENT. Gone endpoints are revoked; temporary failures retained.
+- **Email fallback is pre-dispatch only**: occurs when no active push subscriptions exist, or an all-gone fan-out is detected. A partial push success never triggers email.
+- **Idempotency**: Resend uses `reading-reminder/<delivery-id>`; Web Push uses stable `tag` (notification replacement, not provider-level exactly-once).
+- **Retry**: existing email policy (3 attempts, 5/30 min) preserved. Push fan-out retries per-target with same window; logical retry only when no target succeeded.
+- **Tenant isolation**: all queries scoped to authenticated internal UUID. No caller-supplied user IDs.

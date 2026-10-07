@@ -21,3 +21,8 @@ export const reminderDeliveryStatus = pgEnum("reminder_delivery_status", [
   "FAILED",
   "SKIPPED",
 ]);
+
+export const reminderDeliveryChannel = pgEnum("reminder_delivery_channel", [
+  "EMAIL",
+  "PUSH",
+]);

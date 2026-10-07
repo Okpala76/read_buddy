@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
       deliveries.map((delivery) => ({
         id: delivery.id,
         status: delivery.status,
+        deliveryChannel: delivery.deliveryChannel,
         scheduledFor: delivery.scheduledFor,
         nextAttemptAt: delivery.nextAttemptAt,
         sentAt: delivery.sentAt,

@@ -267,14 +267,16 @@ export function PushNotificationSettings({
   }[status];
 
   return (
-    <Card className="mx-auto w-full max-w-md">
+    <Card id="push-notifications" className="mx-auto w-full max-w-md">
       <CardHeader>
         <div className="flex items-center gap-2">
           <BellRing className="text-primary size-5" aria-hidden="true" />
           <CardTitle className="text-foreground">Push Notifications</CardTitle>
         </div>
         <CardDescription>
-          Enable notifications separately on each device you use.
+          Enable notifications separately on each device. An active device makes
+          push the preferred daily reminder channel; email remains the fallback
+          when enabled.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

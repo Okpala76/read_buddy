@@ -78,6 +78,7 @@ export interface PushSubscriptionRepository {
     userId: string,
     endpoint: string,
   ): Promise<StoredPushSubscription | null>;
+  listActiveForUser(userId: string): Promise<StoredPushSubscription[]>;
   revokeForUser(userId: string, endpoint: string, now: Date): Promise<boolean>;
   markUsedForUser(userId: string, endpoint: string, now: Date): Promise<void>;
 }

@@ -125,6 +125,17 @@ describe("DrizzlePushSubscriptionRepository", () => {
     expect(query.params).toEqual(["user-a", "https://push.example/device-a"]);
   });
 
+  it("lists only active subscriptions for the requested user", async () => {
+    const repository = new DrizzlePushSubscriptionRepository();
+
+    await repository.listActiveForUser("user-a");
+
+    const where = databaseMocks.selectQuery.where.mock.calls[0][0];
+    const query = new PgDialect().sqlToQuery(where);
+    expect(query.params).toEqual(["user-a"]);
+    expect(query.sql).toContain('"push_subscriptions"."revoked_at" is null');
+  });
+
   it("scopes revocation by authenticated user and endpoint", async () => {
     const repository = new DrizzlePushSubscriptionRepository();
 

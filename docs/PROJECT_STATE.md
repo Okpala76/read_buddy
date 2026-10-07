@@ -2,7 +2,7 @@
 
 ## Current phase
 
-PWA Phase 2A: Web Push foundation complete. Production VAPID configuration, migration, deployment, and controlled Chrome acceptance are verified. Automated push reminders remain outside this phase.
+PWA Phase 2B: Notification decision engine complete. Email reminders enabled by default for new users; push preferred when active subscription exists; email fallback when push unavailable; channel persistence and retry behavior verified; production deployment and controlled tests passed.
 
 ## Implemented
 
@@ -49,6 +49,7 @@ PWA Phase 2A: Web Push foundation complete. Production VAPID configuration, migr
 - **Production reminder acceptance**: one due occurrence reached `SENT` with one provider attempt, remained one row across later scheduler cycles, and was independently reported as `delivered` by Resend.
 - **PWA Phase 1**: installable standalone manifest, application icons, conservative Serwist service worker, and safe branded offline fallback.
 - **PWA Phase 2A Web Push foundation**: authenticated per-device subscription registration, ownership-safe account switching, current-device test push, soft revocation, VAPID rotation handling, supported-provider endpoint validation, Node-only `web-push` delivery, and defensive push/click handling in the existing Serwist worker.
+- **PWA Phase 2B Notification decision engine**: unified reminder channel selection (PUSH preferred, EMAIL fallback, SKIP with reason), `NotificationDecisionEngine` with immutable channel persistence, multi-device fan-out with aggregate acceptance, email reminders enabled by default for new users, contextual dashboard push adoption prompt, delivery history exposes channel.
 
 ## Verification
 
@@ -61,14 +62,20 @@ PWA Phase 2A: Web Push foundation complete. Production VAPID configuration, migr
 - Migration application: all committed migrations applied successfully to local PostgreSQL.
 - Batch 3 reminder migrations applied successfully to local PostgreSQL.
 - Batch 4 reminder snapshot/retry-index migration applied successfully to local PostgreSQL.
-- All six versioned migrations applied successfully to production PostgreSQL with no unknown migration hashes.
+- All seven versioned migrations applied successfully to production PostgreSQL with no unknown migration hashes.
 - Push migration `0005_nappy_mac_gargan.sql` applied and constraint-checked locally and in production.
+- Decision-engine migration `0006_elite_professor_monster.sql` applied and constraint-checked locally and in production; backfilled existing non-skipped deliveries as EMAIL; new delivery_channel enum and preference `email_enabled` default `true`.
 - A rollback-only local PostgreSQL tenant check confirmed user B cannot read or revoke user A's endpoint, matching browser keys can reassign it during an account switch, and mismatched keys cannot claim it.
 - Production reminder endpoint authentication passed unauthenticated (`401`) and authenticated (`200`) checks.
 - PostgreSQL activity showed application connections using only `read_buddy_app`; Vercel Production has no admin database variable.
 - Seven opt-in PostgreSQL concurrency integration tests passed against local PostgreSQL.
+- Decision engine integration tests cover channel selection, fallback, retry, and tenant isolation against local PostgreSQL.
 - Vercel Production contains the complete VAPID tuple, with the private key stored as a secret; deployment `dpl_CH3LPzan1CjnQuDZ4C4m9RgVhtM2` is Ready on the canonical custom domain.
-- Controlled production Chrome acceptance passed enable, permission, subscription persistence, OS notification display, `/dashboard` click-through, and current-device disable. The database retained one soft-revoked row and no active test subscription.
+- Phase 2A controlled production Chrome acceptance passed enable, permission, subscription persistence, OS notification display, `/dashboard` click-through, and current-device disable. The database retained one soft-revoked row and no active test subscription.
+- Phase 2B controlled production tests:
+  - PUSH path: enable, test push display, `/dashboard` click-through, and disable — all passed.
+  - EMAIL fallback: with push disabled, next controlled reminder correctly sent via EMAIL — passed.
+- Production database confirms two SENT deliveries with `delivery_channel = EMAIL`, zero active push subscriptions, and two soft-revoked test subscriptions.
 
 ## Migrations
 
@@ -78,6 +85,7 @@ PWA Phase 2A: Web Push foundation complete. Production VAPID configuration, migr
 - `0003_nice_bromley.sql` - Reminder claim, future retry, and skip metadata
 - `0004_oval_sway.sql` - Deterministic email snapshot and retry scan index
 - `0005_nappy_mac_gargan.sql` - User-owned Web Push subscriptions and endpoint uniqueness
+- `0006_elite_professor_monster.sql` - Reminder channel preference, delivery channel enum, email-enabled default, channel persistence
 
 ## Tests
 
@@ -94,12 +102,13 @@ PWA Phase 2A: Web Push foundation complete. Production VAPID configuration, migr
 - Reminder infrastructure integration tests use local PostgreSQL to verify concurrent initial/retry claims, terminal-state exclusion, stale recovery, claim-token protection, active-book checks, and timezone-aware reading suppression.
 - Reminder UI and cron tests cover settings validation, authenticated scheduling, and dispatch sequencing.
 - Web Push tests cover tenant isolation, key-proven account reassignment, supported endpoints, provider classification and timeout, authenticated Server Actions, permission UX, and service-worker source integration.
-- All regular tests passing (262 total); 7 PostgreSQL reminder concurrency tests pass through the explicit local integration command.
+- Decision engine tests cover 11 precedence cases, channel persistence on retry, PUSH→EMAIL fallback rules, multi-device fan-out aggregate acceptance, and subscription cleanup.
+- All regular tests passing (289 total); 11 PostgreSQL reminder concurrency tests pass through the explicit local integration command.
 
 ## Intentionally absent
 
 - Redis.
-- Automated push reminder delivery and push/email channel selection.
+- Streak-aware reminders, late-day rescue, adaptive timing, streak rescue (Phase 2C).
 - Offline data mutation, queued writes, background sync, and private-data caching.
 
 ## Known deployment inputs

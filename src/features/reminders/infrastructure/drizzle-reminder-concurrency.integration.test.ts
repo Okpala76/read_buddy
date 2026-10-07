@@ -1,4 +1,12 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { asc, eq } from "drizzle-orm";
 
 import {
@@ -6,8 +14,11 @@ import {
   readingSessions,
   reminderDeliveries,
   reminderPreferences,
+  pushSubscriptions,
   users,
 } from "@/db/schema";
+
+vi.mock("server-only", () => ({}));
 
 const runIntegrationTests =
   process.env.RUN_DATABASE_INTEGRATION_TESTS === "true";
@@ -92,6 +103,7 @@ describe.runIf(runIntegrationTests)(
           userId,
           ...deliverySnapshot,
           status: "FAILED",
+          deliveryChannel: "EMAIL",
           scheduledFor: new Date("2026-10-05T18:01:00.000Z"),
           attemptCount: 1,
           nextAttemptAt: new Date("2026-10-05T18:05:00.000Z"),
@@ -102,6 +114,7 @@ describe.runIf(runIntegrationTests)(
           userId,
           ...deliverySnapshot,
           status: "FAILED",
+          deliveryChannel: "EMAIL",
           scheduledFor: new Date("2026-10-05T18:02:00.000Z"),
           attemptCount: 1,
           nextAttemptAt: new Date("2026-10-05T18:06:00.000Z"),
@@ -112,6 +125,7 @@ describe.runIf(runIntegrationTests)(
           userId,
           ...deliverySnapshot,
           status: "FAILED",
+          deliveryChannel: "EMAIL",
           scheduledFor: new Date("2026-10-05T18:00:00.000Z"),
           attemptCount: 3,
           nextAttemptAt: new Date("2026-10-05T18:04:00.000Z"),
@@ -141,6 +155,7 @@ describe.runIf(runIntegrationTests)(
           userId,
           ...deliverySnapshot,
           status: "SENT",
+          deliveryChannel: "EMAIL",
           scheduledFor: new Date("2026-10-05T17:59:00.000Z"),
           sentAt: new Date("2026-10-05T18:00:00.000Z"),
           attemptCount: 1,
@@ -216,6 +231,7 @@ describe.runIf(runIntegrationTests)(
         userId,
         ...deliverySnapshot,
         status: "PROCESSING",
+        deliveryChannel: "EMAIL",
         scheduledFor: new Date("2026-10-05T18:00:00.000Z"),
         lockedAt: new Date("2026-10-05T18:09:00.000Z"),
         attemptCount: 1,
@@ -230,6 +246,7 @@ describe.runIf(runIntegrationTests)(
       const [row] = await database
         .select({
           status: reminderDeliveries.status,
+          deliveryChannel: reminderDeliveries.deliveryChannel,
           nextAttemptAt: reminderDeliveries.nextAttemptAt,
           attemptCount: reminderDeliveries.attemptCount,
         })
@@ -238,6 +255,7 @@ describe.runIf(runIntegrationTests)(
 
       expect(row).toEqual({
         status: "FAILED",
+        deliveryChannel: "EMAIL",
         nextAttemptAt: retryAt,
         attemptCount: 1,
       });
@@ -250,6 +268,7 @@ describe.runIf(runIntegrationTests)(
         id: crypto.randomUUID(),
         userId,
         ...deliverySnapshot,
+        deliveryChannel: "EMAIL",
         scheduledFor: new Date("2026-10-05T17:59:00.000Z"),
       });
       const repository = new Repository();
@@ -326,10 +345,130 @@ describe.runIf(runIntegrationTests)(
       expect(eligibility).toEqual({
         timezone: "Africa/Lagos",
         remindersEnabled: true,
+        emailEnabled: true,
         hasActiveBook: true,
       });
       expect(readDuringLagosDay).toBe(true);
       expect(readDuringUtcDay).toBe(false);
+    });
+
+    it("assigns one immutable channel across concurrent workers", async () => {
+      const deliveryId = crypto.randomUUID();
+      const claimedAt = new Date("2026-10-05T18:05:00.000Z");
+      await database.insert(reminderDeliveries).values({
+        id: deliveryId,
+        userId,
+        ...deliverySnapshot,
+        scheduledFor: new Date("2026-10-05T18:00:00.000Z"),
+      });
+      const repositoryA = new Repository();
+      const repositoryB = new Repository();
+      await repositoryA.claimDueDeliveries(claimedAt, 1, 3);
+
+      const selections = await Promise.all([
+        repositoryA.selectChannel(deliveryId, claimedAt, "PUSH", claimedAt),
+        repositoryB.selectChannel(deliveryId, claimedAt, "EMAIL", claimedAt),
+      ]);
+      const [row] = await database
+        .select({ channel: reminderDeliveries.deliveryChannel })
+        .from(reminderDeliveries)
+        .where(eq(reminderDeliveries.id, deliveryId));
+
+      expect(selections.filter(Boolean)).toHaveLength(1);
+      expect(["PUSH", "EMAIL"]).toContain(row.channel);
+    });
+
+    it("keeps an explicitly disabled existing preference disabled", async () => {
+      await database.insert(reminderPreferences).values({
+        userId,
+        enabled: false,
+      });
+
+      const [preference] = await database
+        .select({
+          enabled: reminderPreferences.enabled,
+          emailEnabled: reminderPreferences.emailEnabled,
+        })
+        .from(reminderPreferences)
+        .where(eq(reminderPreferences.userId, userId));
+
+      expect(preference).toEqual({ enabled: false, emailEnabled: true });
+    });
+
+    it("provisions new users with email reminders on and no push subscription", async () => {
+      const clerkUserId = `clerk-${crypto.randomUUID()}`;
+      const email = `${clerkUserId}@example.com`;
+      const { provisionLocalUser } =
+        await import("@/features/auth/infrastructure/drizzle-user-repository");
+      const user = await provisionLocalUser({
+        clerkUserId,
+        email,
+        name: "New Reader",
+        image: null,
+      });
+
+      try {
+        const [preference] = await database
+          .select({
+            enabled: reminderPreferences.enabled,
+            emailEnabled: reminderPreferences.emailEnabled,
+          })
+          .from(reminderPreferences)
+          .where(eq(reminderPreferences.userId, user.id));
+        const subscriptions = await database
+          .select({ id: pushSubscriptions.id })
+          .from(pushSubscriptions)
+          .where(eq(pushSubscriptions.userId, user.id));
+
+        expect(preference).toEqual({ enabled: true, emailEnabled: true });
+        expect(subscriptions).toEqual([]);
+      } finally {
+        await database.delete(users).where(eq(users.id, user.id));
+      }
+    });
+
+    it("lists active push subscriptions only for the reminder owner", async () => {
+      const otherUserId = crypto.randomUUID();
+      await database.insert(users).values({
+        id: otherUserId,
+        email: `other-${otherUserId}@example.com`,
+      });
+      await database.insert(pushSubscriptions).values([
+        {
+          userId,
+          endpoint: "https://fcm.googleapis.com/fcm/send/user-a-active",
+          p256dh: "p256dh_key_value_123",
+          auth: "auth_key_value_123",
+        },
+        {
+          userId,
+          endpoint: "https://fcm.googleapis.com/fcm/send/user-a-revoked",
+          p256dh: "p256dh_key_value_123",
+          auth: "auth_key_value_123",
+          revokedAt: new Date(),
+        },
+        {
+          userId: otherUserId,
+          endpoint: "https://fcm.googleapis.com/fcm/send/user-b-active",
+          p256dh: "p256dh_key_value_123",
+          auth: "auth_key_value_123",
+        },
+      ]);
+
+      try {
+        const { DrizzlePushSubscriptionRepository } =
+          await import("@/features/push-notifications/infrastructure/drizzle-push-subscription-repository");
+        const subscriptions =
+          await new DrizzlePushSubscriptionRepository().listActiveForUser(
+            userId,
+          );
+
+        expect(subscriptions).toHaveLength(1);
+        expect(subscriptions[0].userId).toBe(userId);
+        expect(subscriptions[0].endpoint).toContain("user-a-active");
+      } finally {
+        await database.delete(users).where(eq(users.id, otherUserId));
+      }
     });
   },
 );

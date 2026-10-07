@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookStatus } from "@/features/books/domain";
 import type { BookView } from "@/features/books/ui/book-view";
+import { PushAdoptionPrompt } from "@/features/push-notifications/ui/PushAdoptionPrompt";
 import {
   getCurrentReading,
   getBooks,
@@ -181,6 +182,8 @@ export function DashboardContent() {
           </div>
         </section>
       )}
+
+      {currentBook && <PushAdoptionPrompt />}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Daily Target Progress */}

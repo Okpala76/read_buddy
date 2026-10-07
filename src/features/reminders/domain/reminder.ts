@@ -10,11 +10,17 @@ export type DeliveryStatusValue =
   "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "SKIPPED";
 
 export type ReminderSkipReasonValue =
-  "REMINDERS_DISABLED" | "ALREADY_READ_TODAY" | "NO_ACTIVE_BOOK";
+  | "REMINDERS_DISABLED"
+  | "ALREADY_READ_TODAY"
+  | "NO_ACTIVE_BOOK"
+  | "NO_ENABLED_CHANNEL";
+
+export type ReminderDeliveryChannel = "EMAIL" | "PUSH";
 
 export interface ReminderPreferenceProps {
   userId: string;
   enabled: boolean;
+  emailEnabled: boolean;
   reminderTime: string;
   createdAt: Date;
   updatedAt: Date;
@@ -30,6 +36,7 @@ export class ReminderPreference {
   static create(props: {
     userId: string;
     enabled: boolean;
+    emailEnabled?: boolean;
     reminderTime: string;
   }): ReminderPreference {
     if (!/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/.test(props.reminderTime)) {
@@ -38,6 +45,7 @@ export class ReminderPreference {
 
     return new ReminderPreference({
       ...props,
+      emailEnabled: props.emailEnabled ?? true,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -57,6 +65,10 @@ export class ReminderPreference {
 
   get reminderTime(): string {
     return this.props.reminderTime;
+  }
+
+  get emailEnabled(): boolean {
+    return this.props.emailEnabled;
   }
 
   get createdAt(): Date {
@@ -94,6 +106,14 @@ export class ReminderPreference {
     });
   }
 
+  updateEmailEnabled(emailEnabled: boolean): ReminderPreference {
+    return new ReminderPreference({
+      ...this.props,
+      emailEnabled,
+      updatedAt: new Date(),
+    });
+  }
+
   toPersistence(): ReminderPreferenceProps {
     return { ...this.props };
   }
@@ -108,6 +128,7 @@ export interface ReminderDeliveryProps {
   bookTotalPages: number | null;
   dailyPageTarget: number;
   status: DeliveryStatusValue;
+  deliveryChannel: ReminderDeliveryChannel | null;
   scheduledFor: Date;
   lockedAt: Date | null;
   nextAttemptAt: Date | null;
@@ -140,6 +161,7 @@ export class ReminderDelivery {
     return new ReminderDelivery({
       ...props,
       status: "PENDING",
+      deliveryChannel: null,
       lockedAt: null,
       nextAttemptAt: null,
       sentAt: null,
@@ -190,6 +212,10 @@ export class ReminderDelivery {
 
   get scheduledFor(): Date {
     return this.props.scheduledFor;
+  }
+
+  get deliveryChannel(): ReminderDeliveryChannel | null {
+    return this.props.deliveryChannel;
   }
 
   get lockedAt(): Date | null {
@@ -248,6 +274,30 @@ export class ReminderDelivery {
       ...this.props,
       status: "PROCESSING",
       lockedAt,
+      updatedAt: new Date(),
+    });
+  }
+
+  selectChannel(channel: ReminderDeliveryChannel): ReminderDelivery {
+    this.assertStatus("PROCESSING", "select a delivery channel");
+    if (this.props.deliveryChannel) {
+      throw new Error("Reminder delivery channel is already selected");
+    }
+    return new ReminderDelivery({
+      ...this.props,
+      deliveryChannel: channel,
+      updatedAt: new Date(),
+    });
+  }
+
+  fallbackToEmail(): ReminderDelivery {
+    this.assertStatus("PROCESSING", "fall back to email");
+    if (this.props.deliveryChannel !== "PUSH") {
+      throw new Error("Only a push delivery can fall back to email");
+    }
+    return new ReminderDelivery({
+      ...this.props,
+      deliveryChannel: "EMAIL",
       updatedAt: new Date(),
     });
   }
@@ -369,6 +419,7 @@ export interface ReminderDeliveryRepository {
 export interface ReminderDispatchEligibility {
   timezone: string;
   remindersEnabled: boolean;
+  emailEnabled: boolean;
   hasActiveBook: boolean;
 }
 
@@ -384,6 +435,17 @@ export interface ReminderDispatchRepository {
     userId: string,
     start: Date,
     end: Date,
+  ): Promise<boolean>;
+  selectChannel(
+    deliveryId: string,
+    claimedAt: Date,
+    channel: ReminderDeliveryChannel,
+    selectedAt: Date,
+  ): Promise<boolean>;
+  fallbackToEmail(
+    deliveryId: string,
+    claimedAt: Date,
+    selectedAt: Date,
   ): Promise<boolean>;
   saveClaimResult(
     delivery: ReminderDelivery,

@@ -43,6 +43,13 @@
       "when": 1791361027074,
       "tag": "0005_nappy_mac_gargan",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791370522176,
+      "tag": "0006_elite_professor_monster",
+      "breakpoints": true
     }
   ]
 }

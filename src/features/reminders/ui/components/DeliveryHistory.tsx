@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export interface ReminderDelivery {
   id: string;
   status: "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "SKIPPED";
+  deliveryChannel: "EMAIL" | "PUSH" | null;
   scheduledFor: string;
   nextAttemptAt: string | null;
   sentAt: string | null;
@@ -128,6 +129,7 @@ export function DeliveryHistory({
               <tr className="text-muted-foreground border-border border-b text-left">
                 <th className="pb-2 font-medium">Scheduled</th>
                 <th className="pb-2 font-medium">Status</th>
+                <th className="pb-2 font-medium">Channel</th>
                 <th className="pb-2 font-medium">Attempts</th>
                 <th className="pb-2 font-medium">Details</th>
               </tr>
@@ -158,6 +160,15 @@ export function DeliveryHistory({
                         },
                       )}
                     </div>
+                  </td>
+                  <td className="py-3">
+                    {delivery.deliveryChannel ? (
+                      <Badge variant="outline">
+                        {delivery.deliveryChannel.toLowerCase()}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">None</span>
+                    )}
                   </td>
                   <td className="py-3">
                     <div className="flex items-center gap-2">

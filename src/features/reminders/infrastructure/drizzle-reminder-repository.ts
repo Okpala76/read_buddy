@@ -29,6 +29,7 @@ import {
   type ReminderDispatchRepository,
   type ReminderSchedulingRepository,
   type ReminderSkipReasonValue,
+  type ReminderDeliveryChannel,
 } from "../domain";
 
 function getDb() {
@@ -44,6 +45,7 @@ function toPreferenceDomain(
   return ReminderPreference.reconstitute({
     userId: row.userId,
     enabled: row.enabled,
+    emailEnabled: row.emailEnabled,
     reminderTime: row.reminderTime,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -62,6 +64,7 @@ function toDeliveryDomain(
     bookTotalPages: row.bookTotalPages,
     dailyPageTarget: row.dailyPageTarget,
     status: row.status as DeliveryStatusValue,
+    deliveryChannel: row.deliveryChannel as ReminderDeliveryChannel | null,
     scheduledFor: row.scheduledFor,
     lockedAt: row.lockedAt,
     nextAttemptAt: row.nextAttemptAt,
@@ -79,6 +82,7 @@ function toPreferencePersistence(props: ReminderPreferenceProps) {
   return {
     userId: props.userId,
     enabled: props.enabled,
+    emailEnabled: props.emailEnabled,
     reminderTime: props.reminderTime,
     createdAt: props.createdAt,
     updatedAt: props.updatedAt,
@@ -95,6 +99,7 @@ function toDeliveryPersistence(props: ReminderDeliveryProps) {
     bookTotalPages: props.bookTotalPages,
     dailyPageTarget: props.dailyPageTarget,
     status: props.status,
+    deliveryChannel: props.deliveryChannel,
     scheduledFor: props.scheduledFor,
     lockedAt: props.lockedAt,
     nextAttemptAt: props.nextAttemptAt,
@@ -152,6 +157,7 @@ export class DrizzleReminderPreferenceRepository implements ReminderPreferenceRe
           target: reminderPreferences.userId,
           set: {
             enabled: data.enabled,
+            emailEnabled: data.emailEnabled,
             reminderTime: data.reminderTime,
             updatedAt: data.updatedAt,
           },
@@ -328,6 +334,7 @@ export class DrizzleReminderDispatchRepository implements ReminderDispatchReposi
         .select({
           timezone: users.timezone,
           remindersEnabled: reminderPreferences.enabled,
+          emailEnabled: reminderPreferences.emailEnabled,
         })
         .from(users)
         .leftJoin(reminderPreferences, eq(reminderPreferences.userId, users.id))
@@ -347,6 +354,7 @@ export class DrizzleReminderDispatchRepository implements ReminderDispatchReposi
     return {
       timezone: settings[0].timezone,
       remindersEnabled: settings[0].remindersEnabled ?? false,
+      emailEnabled: settings[0].emailEnabled ?? true,
       hasActiveBook: activeBook.length === 1,
     };
   }
@@ -369,6 +377,50 @@ export class DrizzleReminderDispatchRepository implements ReminderDispatchReposi
       )
       .limit(1);
     return rows.length === 1;
+  }
+
+  async selectChannel(
+    deliveryId: string,
+    claimedAt: Date,
+    channel: ReminderDeliveryChannel,
+    selectedAt: Date,
+  ): Promise<boolean> {
+    const updated = await getDb()
+      .update(reminderDeliveries)
+      .set({ deliveryChannel: channel, updatedAt: selectedAt })
+      .where(
+        and(
+          eq(reminderDeliveries.id, deliveryId),
+          eq(reminderDeliveries.status, "PROCESSING"),
+          eq(reminderDeliveries.lockedAt, claimedAt),
+          isNull(reminderDeliveries.deliveryChannel),
+        ),
+      )
+      .returning({ id: reminderDeliveries.id });
+
+    return updated.length === 1;
+  }
+
+  async fallbackToEmail(
+    deliveryId: string,
+    claimedAt: Date,
+    selectedAt: Date,
+  ): Promise<boolean> {
+    const updated = await getDb()
+      .update(reminderDeliveries)
+      .set({ deliveryChannel: "EMAIL", updatedAt: selectedAt })
+      .where(
+        and(
+          eq(reminderDeliveries.id, deliveryId),
+          eq(reminderDeliveries.status, "PROCESSING"),
+          eq(reminderDeliveries.lockedAt, claimedAt),
+          eq(reminderDeliveries.deliveryChannel, "PUSH"),
+          eq(reminderDeliveries.attemptCount, 0),
+        ),
+      )
+      .returning({ id: reminderDeliveries.id });
+
+    return updated.length === 1;
   }
 
   async saveClaimResult(

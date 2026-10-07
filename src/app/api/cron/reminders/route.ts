@@ -4,6 +4,7 @@ import {
   DrizzleReminderSchedulingRepository,
   ResendEmailService,
 } from "@/features/reminders/infrastructure";
+import { ScheduledPushNotificationService } from "@/features/push-notifications/infrastructure";
 import {
   ProcessReminderDeliveriesUseCase,
   ScheduleDueRemindersUseCase,
@@ -29,10 +30,12 @@ export async function GET(request: Request) {
     const schedulingRepo = new DrizzleReminderSchedulingRepository();
     const dispatchRepo = new DrizzleReminderDispatchRepository();
     const emailSender = new ResendEmailService();
+    const pushSender = new ScheduledPushNotificationService();
     const scheduleUseCase = new ScheduleDueRemindersUseCase(schedulingRepo);
     const processUseCase = new ProcessReminderDeliveriesUseCase(
       dispatchRepo,
       emailSender,
+      pushSender,
     );
 
     const schedulingResult = await scheduleUseCase.execute(now);

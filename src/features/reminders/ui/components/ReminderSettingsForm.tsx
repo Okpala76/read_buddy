@@ -15,6 +15,7 @@ import { isValidIanaTimezone } from "@/features/reminders/domain/iana-timezone";
 
 const reminderSchema = z.object({
   enabled: z.boolean(),
+  emailEnabled: z.boolean(),
   reminderTime: z
     .string()
     .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format (HH:MM)"),
@@ -28,6 +29,7 @@ type ReminderFormData = z.infer<typeof reminderSchema>;
 
 interface ReminderPreference {
   enabled: boolean;
+  emailEnabled: boolean;
   reminderTime: string;
   timezone: string;
   updatedAt: string;
@@ -52,6 +54,7 @@ export function ReminderSettingsForm() {
     resolver: zodResolver(reminderSchema),
     defaultValues: {
       enabled: false,
+      emailEnabled: true,
       reminderTime: "19:00",
       timezone: "UTC",
     },
@@ -99,6 +102,7 @@ export function ReminderSettingsForm() {
           setPreference(data.updatedAt ? data : null);
           reset({
             enabled: data.enabled,
+            emailEnabled: data.emailEnabled,
             reminderTime: data.reminderTime.slice(0, 5),
             timezone: data.timezone,
           });
@@ -127,6 +131,7 @@ export function ReminderSettingsForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           enabled: data.enabled,
+          emailEnabled: data.emailEnabled,
           reminderTime: `${data.reminderTime}:00`,
           timezone: data.timezone,
         }),
@@ -136,6 +141,7 @@ export function ReminderSettingsForm() {
       setPreference(preferenceData);
       form.reset({
         enabled: preferenceData.enabled,
+        emailEnabled: preferenceData.emailEnabled,
         reminderTime: preferenceData.reminderTime.slice(0, 5),
         timezone: preferenceData.timezone,
       });
@@ -173,7 +179,7 @@ export function ReminderSettingsForm() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Bell className="text-primary h-5 w-5" aria-hidden="true" />
-            <CardTitle className="text-foreground">Daily Reminder</CardTitle>
+            <CardTitle className="text-foreground">Reading Reminders</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -183,9 +189,9 @@ export function ReminderSettingsForm() {
           >
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <Label htmlFor="enabled">Enable Daily Reminder</Label>
+                <Label htmlFor="enabled">Reading reminders</Label>
                 <p className="text-muted-foreground text-sm">
-                  Get an email reminder at your chosen time each day
+                  Remind me if I have not logged reading that day
                 </p>
               </div>
               <Controller
@@ -200,6 +206,35 @@ export function ReminderSettingsForm() {
                 )}
               />
             </div>
+
+            <Separator />
+
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="emailEnabled">Email reminders</Label>
+                <p className="text-muted-foreground text-sm">
+                  On by default. Email is used when push is unavailable.
+                </p>
+              </div>
+              <Controller
+                name="emailEnabled"
+                control={form.control}
+                render={({ field }) => (
+                  <Switch
+                    id="emailEnabled"
+                    checked={field.value}
+                    disabled={!isEnabled}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+            </div>
+
+            <p className="bg-muted text-muted-foreground rounded-lg p-3 text-sm">
+              Push is preferred when this account has an active subscribed
+              device. Reading Buddy sends one normal reminder, not both push and
+              email.
+            </p>
 
             <Separator />
 

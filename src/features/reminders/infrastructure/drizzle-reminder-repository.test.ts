@@ -21,7 +21,8 @@ const databaseMocks = vi.hoisted(() => {
 
   const updateQuery = {} as Record<string, ReturnType<typeof vi.fn>>;
   updateQuery.set = vi.fn(() => updateQuery);
-  updateQuery.where = vi.fn().mockResolvedValue(undefined);
+  updateQuery.where = vi.fn(() => updateQuery);
+  updateQuery.returning = vi.fn().mockResolvedValue([]);
 
   const transactionDatabase = {
     update: vi.fn(() => updateQuery),
@@ -46,12 +47,14 @@ vi.mock("@/db/client", () => ({
   db: {
     select: databaseMocks.select,
     insert: databaseMocks.insert,
+    update: vi.fn(() => databaseMocks.updateQuery),
     transaction: databaseMocks.transaction,
   },
 }));
 
 import {
   DrizzleReminderDeliveryRepository,
+  DrizzleReminderDispatchRepository,
   DrizzleReminderPreferenceRepository,
   DrizzleReminderSchedulingRepository,
 } from "./drizzle-reminder-repository";
@@ -99,6 +102,48 @@ describe("DrizzleReminderDeliveryRepository", () => {
   });
 });
 
+describe("DrizzleReminderDispatchRepository", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    databaseMocks.updateQuery.returning.mockResolvedValue([
+      { id: "delivery-a" },
+    ]);
+  });
+
+  it("selects a channel only for the active claim while it is unset", async () => {
+    const repository = new DrizzleReminderDispatchRepository();
+    const claimedAt = new Date("2026-10-05T18:00:00.000Z");
+
+    await repository.selectChannel("delivery-a", claimedAt, "PUSH", claimedAt);
+
+    const condition = databaseMocks.updateQuery.where.mock.calls[0][0];
+    const query = new PgDialect().sqlToQuery(condition);
+    expect(query.params).toEqual([
+      "delivery-a",
+      "PROCESSING",
+      claimedAt.toISOString(),
+    ]);
+    expect(query.sql).toContain('"delivery_channel" is null');
+  });
+
+  it("allows fallback only from an unattempted PUSH claim", async () => {
+    const repository = new DrizzleReminderDispatchRepository();
+    const claimedAt = new Date("2026-10-05T18:00:00.000Z");
+
+    await repository.fallbackToEmail("delivery-a", claimedAt, claimedAt);
+
+    const condition = databaseMocks.updateQuery.where.mock.calls[0][0];
+    const query = new PgDialect().sqlToQuery(condition);
+    expect(query.params).toEqual([
+      "delivery-a",
+      "PROCESSING",
+      claimedAt.toISOString(),
+      "PUSH",
+      0,
+    ]);
+  });
+});
+
 describe("DrizzleReminderPreferenceRepository", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -124,6 +169,7 @@ describe("DrizzleReminderPreferenceRepository", () => {
       expect.objectContaining({
         userId: "user-a",
         enabled: true,
+        emailEnabled: true,
         reminderTime: "19:00:00",
       }),
     );

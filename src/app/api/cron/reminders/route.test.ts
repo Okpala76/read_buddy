@@ -24,6 +24,10 @@ vi.mock("@/features/reminders/application", () => ({
   },
 }));
 
+vi.mock("@/features/push-notifications/infrastructure", () => ({
+  ScheduledPushNotificationService: class {},
+}));
+
 import { GET } from "./route";
 
 describe("GET /api/cron/reminders", () => {

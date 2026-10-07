@@ -23,6 +23,7 @@ export async function getReminderPreference() {
   return {
     ...(preference?.toPersistence() ?? {
       enabled: false,
+      emailEnabled: true,
       reminderTime: "19:00:00",
     }),
     timezone,

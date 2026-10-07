@@ -12,6 +12,17 @@ export const TEST_PUSH_NOTIFICATION: PushNotificationPayload = {
   tag: "reading-buddy-test",
 };
 
+export function createReadingReminderPushNotification(
+  deliveryId: string,
+): PushNotificationPayload {
+  return {
+    title: "Time to read",
+    body: "You haven't logged your reading today.",
+    url: "/dashboard",
+    tag: `reading-reminder-${deliveryId}`,
+  };
+}
+
 const DEFAULT_PUSH_NOTIFICATION: PushNotificationPayload = {
   title: "Reading Buddy",
   body: "Open Reading Buddy to continue.",

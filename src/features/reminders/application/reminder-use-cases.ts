@@ -4,11 +4,13 @@ import {
   getLocalDayBounds,
   isValidIanaTimezone,
   normalizeIanaTimezone,
+  NotificationDecisionEngine,
   ReminderPreference,
   ReminderDelivery,
   type ReminderPreferenceRepository,
   type ReminderDeliveryRepository,
   type ReminderDispatchRepository,
+  type ReminderDispatchEligibility,
   type ReminderSchedulingRepository,
 } from "../domain";
 
@@ -26,6 +28,7 @@ export const ianaTimezoneSchema = z
 
 export const updateReminderPreferenceInputSchema = z.object({
   enabled: z.boolean().optional(),
+  emailEnabled: z.boolean().optional(),
   reminderTime: z
     .string()
     .regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/)
@@ -102,6 +105,7 @@ export class UpdateReminderPreferenceUseCase {
       preference = ReminderPreference.create({
         userId,
         enabled: parsed.enabled ?? false,
+        emailEnabled: parsed.emailEnabled ?? true,
         reminderTime: parsed.reminderTime ?? "19:00:00",
       });
     } else {
@@ -112,6 +116,9 @@ export class UpdateReminderPreferenceUseCase {
       }
       if (parsed.reminderTime !== undefined) {
         preference = preference.updateTime(parsed.reminderTime);
+      }
+      if (parsed.emailEnabled !== undefined) {
+        preference = preference.updateEmailEnabled(parsed.emailEnabled);
       }
     }
 
@@ -216,6 +223,8 @@ export class ProcessReminderDeliveriesUseCase {
   constructor(
     private readonly dispatchRepository: ReminderDispatchRepository,
     private readonly emailSender: ReminderEmailSender,
+    private readonly pushSender: ReminderPushSender,
+    private readonly decisionEngine = new NotificationDecisionEngine(),
   ) {}
 
   async execute(
@@ -225,6 +234,11 @@ export class ProcessReminderDeliveriesUseCase {
     recovered: number;
     claimed: number;
     sent: number;
+    pushSelected: number;
+    emailSelected: number;
+    sentPush: number;
+    sentEmail: number;
+    pushFallbackToEmail: number;
     skipped: number;
     retryScheduled: number;
     terminalFailed: number;
@@ -249,6 +263,11 @@ export class ProcessReminderDeliveriesUseCase {
     );
 
     let sent = 0;
+    let pushSelected = 0;
+    let emailSelected = 0;
+    let sentPush = 0;
+    let sentEmail = 0;
+    let pushFallbackToEmail = 0;
     let skipped = 0;
     let retryScheduled = 0;
     let terminalFailed = 0;
@@ -261,28 +280,29 @@ export class ProcessReminderDeliveriesUseCase {
         continue;
       }
 
-      let skipReason:
-        "REMINDERS_DISABLED" | "ALREADY_READ_TODAY" | "NO_ACTIVE_BOOK" | null =
-        null;
+      let eligibility: ReminderDispatchEligibility;
+      let alreadyReadToday = false;
+      let pushAvailable = false;
       try {
-        const eligibility = await this.dispatchRepository.findEligibility(
+        eligibility = await this.dispatchRepository.findEligibility(
           delivery.userId,
         );
-
-        if (!eligibility.remindersEnabled) {
-          skipReason = "REMINDERS_DISABLED";
-        } else {
+        if (eligibility.remindersEnabled) {
           const day = getLocalDayBounds(now, eligibility.timezone);
-          const alreadyRead =
+          alreadyReadToday =
             await this.dispatchRepository.hasReadingSessionBetween(
               delivery.userId,
               day.start,
               day.end,
             );
-          if (alreadyRead) {
-            skipReason = "ALREADY_READ_TODAY";
-          } else if (!eligibility.hasActiveBook) {
-            skipReason = "NO_ACTIVE_BOOK";
+          if (
+            !alreadyReadToday &&
+            eligibility.hasActiveBook &&
+            delivery.deliveryChannel === null
+          ) {
+            pushAvailable = await this.pushSender.hasActiveSubscription(
+              delivery.userId,
+            );
           }
         }
       } catch {
@@ -290,9 +310,18 @@ export class ProcessReminderDeliveriesUseCase {
         continue;
       }
 
-      if (skipReason) {
+      const decision = this.decisionEngine.decide({
+        remindersEnabled: eligibility.remindersEnabled,
+        emailEnabled: eligibility.emailEnabled,
+        alreadyReadToday,
+        hasActiveBook: eligibility.hasActiveBook,
+        pushAvailable,
+        selectedChannel: delivery.deliveryChannel,
+      });
+
+      if (decision.action === "SKIP") {
         const saved = await this.dispatchRepository.saveClaimResult(
-          delivery.markSkipped(skipReason, now),
+          delivery.markSkipped(decision.reason, now),
           claimedAt,
         );
         if (saved) skipped++;
@@ -300,65 +329,157 @@ export class ProcessReminderDeliveriesUseCase {
         continue;
       }
 
-      let result: ReminderEmailSendResult;
-      try {
-        result = await this.emailSender.sendReminder({
-          deliveryId: delivery.id,
-          recipientEmail: delivery.recipientEmail,
-          bookTitle: delivery.bookTitle,
-          bookCurrentPage: delivery.bookCurrentPage,
-          bookTotalPages: delivery.bookTotalPages,
-          dailyPageTarget: delivery.dailyPageTarget,
-          scheduledFor: delivery.scheduledFor,
-        });
-      } catch {
-        result = {
-          status: "FAILED",
-          classification: "RETRYABLE",
-          errorCode: "UNKNOWN_PROVIDER_ERROR",
-        };
-      }
-
-      if (result.status === "FAILED") {
-        const attemptNumber = delivery.attemptCount + 1;
-        const retryDelay = REMINDER_RETRY_DELAYS_MS[attemptNumber - 1];
-        const shouldRetry =
-          result.classification === "RETRYABLE" &&
-          attemptNumber < REMINDER_MAX_PROVIDER_ATTEMPTS &&
-          retryDelay !== undefined;
-        const nextAttemptAt = shouldRetry
-          ? new Date(now.getTime() + retryDelay)
-          : null;
-        const saved = await this.dispatchRepository.saveClaimResult(
-          delivery.markFailed(result.errorCode, nextAttemptAt, now),
+      let selectedDelivery = delivery;
+      const selectedNow = delivery.deliveryChannel === null;
+      if (selectedNow) {
+        const selected = await this.dispatchRepository.selectChannel(
+          delivery.id,
           claimedAt,
+          decision.action,
+          now,
         );
-        if (saved) {
-          if (shouldRetry) retryScheduled++;
-          else terminalFailed++;
-        } else {
+        if (!selected) {
           unresolved++;
+          continue;
         }
-        continue;
+        selectedDelivery = delivery.selectChannel(decision.action);
       }
 
-      const saved = await this.dispatchRepository.saveClaimResult(
-        delivery.markSent(result.providerMessageId, now),
+      let channel = decision.action;
+      let result: ReminderProviderSendResult;
+      if (channel === "PUSH") {
+        pushSelected++;
+        try {
+          const pushResult = await this.pushSender.sendReminder(
+            delivery.userId,
+            delivery.id,
+          );
+          if (
+            pushResult.status === "NO_ACTIVE_SUBSCRIPTIONS" &&
+            selectedNow &&
+            eligibility.emailEnabled
+          ) {
+            const changed = await this.dispatchRepository.fallbackToEmail(
+              delivery.id,
+              claimedAt,
+              now,
+            );
+            if (!changed) {
+              unresolved++;
+              continue;
+            }
+            selectedDelivery = selectedDelivery.fallbackToEmail();
+            channel = "EMAIL";
+            emailSelected++;
+            pushFallbackToEmail++;
+            result = await this.sendEmail(selectedDelivery);
+          } else if (pushResult.status === "NO_ACTIVE_SUBSCRIPTIONS") {
+            result = {
+              status: "FAILED",
+              classification: "PERMANENT",
+              errorCode: "PUSH_NO_ACTIVE_SUBSCRIPTIONS",
+            };
+          } else {
+            result = pushResult;
+          }
+        } catch {
+          result = {
+            status: "FAILED",
+            classification: "RETRYABLE",
+            errorCode: "PUSH_TEMPORARY_FAILURE",
+          };
+        }
+      } else {
+        emailSelected++;
+        result = await this.sendEmail(selectedDelivery);
+      }
+
+      const outcome = await this.saveProviderResult(
+        selectedDelivery,
         claimedAt,
+        result,
+        now,
       );
-      if (saved) sent++;
-      else unresolved++;
+      if (outcome === "SENT") {
+        sent++;
+        if (channel === "PUSH") sentPush++;
+        else sentEmail++;
+      } else if (outcome === "RETRY_SCHEDULED") {
+        retryScheduled++;
+      } else if (outcome === "TERMINAL_FAILED") {
+        terminalFailed++;
+      } else {
+        unresolved++;
+      }
     }
 
     return {
       recovered,
       claimed: claimedDeliveries.length,
       sent,
+      pushSelected,
+      emailSelected,
+      sentPush,
+      sentEmail,
+      pushFallbackToEmail,
       skipped,
       retryScheduled,
       terminalFailed,
       unresolved,
     };
+  }
+
+  private async sendEmail(
+    delivery: ReminderDelivery,
+  ): Promise<ReminderEmailSendResult> {
+    try {
+      return await this.emailSender.sendReminder({
+        deliveryId: delivery.id,
+        recipientEmail: delivery.recipientEmail,
+        bookTitle: delivery.bookTitle,
+        bookCurrentPage: delivery.bookCurrentPage,
+        bookTotalPages: delivery.bookTotalPages,
+        dailyPageTarget: delivery.dailyPageTarget,
+        scheduledFor: delivery.scheduledFor,
+      });
+    } catch {
+      return {
+        status: "FAILED",
+        classification: "RETRYABLE",
+        errorCode: "UNKNOWN_PROVIDER_ERROR",
+      };
+    }
+  }
+
+  private async saveProviderResult(
+    delivery: ReminderDelivery,
+    claimedAt: Date,
+    result: ReminderProviderSendResult,
+    now: Date,
+  ): Promise<"SENT" | "RETRY_SCHEDULED" | "TERMINAL_FAILED" | "UNRESOLVED"> {
+    if (result.status === "ACCEPTED") {
+      const saved = await this.dispatchRepository.saveClaimResult(
+        delivery.markSent(result.providerMessageId, now),
+        claimedAt,
+      );
+      return saved ? "SENT" : "UNRESOLVED";
+    }
+
+    const attemptNumber = delivery.attemptCount + 1;
+    const retryDelay = REMINDER_RETRY_DELAYS_MS[attemptNumber - 1];
+    const shouldRetry =
+      result.classification === "RETRYABLE" &&
+      attemptNumber < REMINDER_MAX_PROVIDER_ATTEMPTS &&
+      retryDelay !== undefined;
+    const nextAttemptAt = shouldRetry
+      ? new Date(now.getTime() + retryDelay)
+      : null;
+    const saved = await this.dispatchRepository.saveClaimResult(
+      delivery.markFailed(result.errorCode, nextAttemptAt, now),
+      claimedAt,
+    );
+    if (!saved) return "UNRESOLVED";
+    return shouldRetry ? "RETRY_SCHEDULED" : "TERMINAL_FAILED";
   }
 }
 
@@ -396,4 +517,47 @@ export type ReminderEmailSendResult =
       status: "FAILED";
       classification: ReminderEmailFailureClassification;
       errorCode: ReminderEmailFailureCode;
+    };
+
+export interface ReminderPushSender {
+  hasActiveSubscription(userId: string): Promise<boolean>;
+  sendReminder(
+    userId: string,
+    deliveryId: string,
+  ): Promise<ReminderPushSendResult>;
+}
+
+export type ReminderPushFailureCode =
+  "PUSH_TEMPORARY_FAILURE" | "PUSH_CONFIGURATION_ERROR" | "PUSH_PROVIDER_ERROR";
+
+export type ReminderPushSendResult =
+  | {
+      status: "ACCEPTED";
+      providerMessageId: string;
+      attempted: number;
+      accepted: number;
+      invalidated: number;
+    }
+  | {
+      status: "NO_ACTIVE_SUBSCRIPTIONS";
+      attempted: number;
+      invalidated: number;
+    }
+  | {
+      status: "FAILED";
+      classification: ReminderEmailFailureClassification;
+      errorCode: ReminderPushFailureCode;
+      attempted: number;
+      invalidated: number;
+    };
+
+type ReminderProviderSendResult =
+  | { status: "ACCEPTED"; providerMessageId: string }
+  | {
+      status: "FAILED";
+      classification: ReminderEmailFailureClassification;
+      errorCode:
+        | ReminderEmailFailureCode
+        | ReminderPushFailureCode
+        | "PUSH_NO_ACTIVE_SUBSCRIPTIONS";
     };

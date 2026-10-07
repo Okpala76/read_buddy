@@ -24,6 +24,7 @@ export async function GET() {
     if (!preference) {
       return NextResponse.json({
         enabled: false,
+        emailEnabled: true,
         reminderTime: "19:00:00",
         timezone,
       });

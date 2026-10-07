@@ -11,6 +11,7 @@ import { ReminderSettingsForm } from "./ReminderSettingsForm";
 
 const storedSettings = {
   enabled: true,
+  emailEnabled: true,
   reminderTime: "19:00:00",
   timezone: "America/Toronto",
   updatedAt: "2026-10-05T12:00:00.000Z",

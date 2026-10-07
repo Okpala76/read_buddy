@@ -77,6 +77,18 @@ export class DrizzlePushSubscriptionRepository implements PushSubscriptionReposi
     return rows[0] ?? null;
   }
 
+  async listActiveForUser(userId: string): Promise<StoredPushSubscription[]> {
+    return getDb()
+      .select()
+      .from(pushSubscriptions)
+      .where(
+        and(
+          eq(pushSubscriptions.userId, userId),
+          isNull(pushSubscriptions.revokedAt),
+        ),
+      );
+  }
+
   async revokeForUser(
     userId: string,
     endpoint: string,

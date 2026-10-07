@@ -12,14 +12,18 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { reminderDeliveryStatus } from "@/db/schema/enums";
+import {
+  reminderDeliveryChannel,
+  reminderDeliveryStatus,
+} from "@/db/schema/enums";
 import { users } from "@/db/schema/users";
 
 export const reminderPreferences = pgTable("reminder_preferences", {
   userId: uuid("user_id")
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),
-  enabled: boolean("enabled").notNull().default(false),
+  enabled: boolean("enabled").notNull().default(true),
+  emailEnabled: boolean("email_enabled").notNull().default(true),
   reminderTime: time("reminder_time").notNull().default("19:00:00"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -42,6 +46,7 @@ export const reminderDeliveries = pgTable(
     bookTotalPages: integer("book_total_pages"),
     dailyPageTarget: integer("daily_page_target").notNull(),
     status: reminderDeliveryStatus("status").notNull().default("PENDING"),
+    deliveryChannel: reminderDeliveryChannel("delivery_channel"),
     scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
     lockedAt: timestamp("locked_at", { withTimezone: true }),
     nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
@@ -83,6 +88,16 @@ export const reminderDeliveries = pgTable(
         ${table.status} <> 'SKIPPED'
         and ${table.skipReason} is null
       )`,
+    ),
+    check(
+      "reminder_deliveries_channel_check",
+      sql`(
+        ${table.status} in ('SENT', 'FAILED')
+        and ${table.deliveryChannel} is not null
+      ) or (
+        ${table.status} = 'SKIPPED'
+        and ${table.deliveryChannel} is null
+      ) or ${table.status} in ('PENDING', 'PROCESSING')`,
     ),
   ],
 );

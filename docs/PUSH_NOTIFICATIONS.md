@@ -4,6 +4,17 @@ PWA Phase 2A adds a standards-based Web Push foundation and a user-driven test
 notification. It does not connect push delivery to daily reminders, email
 fallback, streaks, adaptive timing, or the VPS cron.
 
+PWA Phase 2B integrates Web Push with the existing email reminder system into a
+unified notification decision engine. The decision engine evaluates each due
+reminder occurrence and selects one channel: PUSH (preferred when an active
+subscription exists), EMAIL (fallback when push is unavailable and email is
+enabled), or SKIP (eligibility failure). No normal reminder is delivered by
+both channels. Multi-device fan-out is aggregate: one logical reminder fans to
+all active push subscriptions; at least one accepted device makes the logical
+delivery SENT. Channel is persisted before provider dispatch and reused on
+retries; temporary push failures stay PUSH; only an all-gone fan-out triggers
+immediate email fallback before any provider attempt.
+
 ## Architecture
 
 ```text
@@ -211,7 +222,9 @@ device is available.
 
 ## Phase Boundary
 
-PWA Phase 2A does **not** call push from `/api/cron/reminders`. Existing email
-reminders continue through the VPS cron and Resend without modification. Push
-channel selection, email fallback, streak rescue, adaptive timing, and automated
-notification decisions belong to later phases.
+PWA Phase 2B connects push delivery to the daily reminder cron. The VPS cron
+invokes `/api/cron/reminders`, which runs the unified scheduling → claim →
+eligibility → NotificationDecisionEngine → PUSH/EMAIL/SKIP flow. Email reminders
+continue through the hardened Resend path. Phase 2C will add streak-aware
+reminders, late-day rescue, adaptive timing, and streak rescue; these are not
+present in Phase 2B.
