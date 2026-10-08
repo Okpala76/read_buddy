@@ -223,7 +223,11 @@ export class DrizzleReminderSchedulingRepository implements ReminderSchedulingRe
       .insert(reminderDeliveries)
       .values(data)
       .onConflictDoNothing({
-        target: [reminderDeliveries.userId, reminderDeliveries.scheduledFor],
+        target: [
+          reminderDeliveries.userId,
+          reminderDeliveries.scheduledFor,
+          reminderDeliveries.notificationKind,
+        ],
       })
       .returning({ id: reminderDeliveries.id });
 

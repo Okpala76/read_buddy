@@ -130,6 +130,27 @@ describe("PushNotificationSettings", () => {
     expect(requestPermission).not.toHaveBeenCalled();
   });
 
+  it("keeps an existing browser subscription visible when server sync fails", async () => {
+    const existingSubscription = createSubscription();
+    configureBrowser({
+      permission: "granted",
+      existingSubscription,
+    });
+    actionMocks.register.mockRejectedValueOnce(new Error("network failure"));
+
+    render(<PushNotificationSettings vapidPublicKey="AQAB" />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /enabled in this browser/i,
+    );
+    expect(
+      screen.getByRole("button", { name: /retry connection/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^enable notifications$/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("replaces a subscription created with an old VAPID key", async () => {
     const existingSubscription = createSubscription(new Uint8Array([2, 0, 2]));
     const { requestPermission, subscribe } = configureBrowser({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,6 +25,71 @@ const reminderSchema = z.object({
     .refine(isValidIanaTimezone, "Enter a valid IANA timezone"),
 });
 
+const reminderPreferenceResponseSchema = reminderSchema.extend({
+  reminderTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/),
+  updatedAt: z.string().optional(),
+});
+
+const fallbackTimezones = [
+  "UTC",
+  "Africa/Cairo",
+  "Africa/Johannesburg",
+  "Africa/Lagos",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/New_York",
+  "America/Sao_Paulo",
+  "America/Toronto",
+  "Asia/Dubai",
+  "Asia/Kolkata",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+  "Europe/Berlin",
+  "Europe/London",
+  "Europe/Paris",
+  "Pacific/Auckland",
+];
+
+function getSupportedTimezones(): string[] {
+  const supportedValuesOf = (
+    Intl as typeof Intl & {
+      supportedValuesOf?: (key: "timeZone") => string[];
+    }
+  ).supportedValuesOf;
+
+  return supportedValuesOf ? supportedValuesOf("timeZone") : fallbackTimezones;
+}
+
+const browserTimezones = getSupportedTimezones();
+const browserTimezone =
+  typeof window === "undefined"
+    ? null
+    : Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function subscribeToBrowserSettings() {
+  return () => undefined;
+}
+
+function getBrowserTimezones() {
+  return browserTimezones;
+}
+
+function getServerTimezones() {
+  return fallbackTimezones;
+}
+
+function getBrowserTimezone() {
+  return browserTimezone && isValidIanaTimezone(browserTimezone)
+    ? browserTimezone
+    : null;
+}
+
+function getServerTimezone() {
+  return null;
+}
+
 type ReminderFormData = z.infer<typeof reminderSchema>;
 
 interface ReminderPreference {
@@ -32,7 +97,7 @@ interface ReminderPreference {
   emailEnabled: boolean;
   reminderTime: string;
   timezone: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 interface ToastMessage {
@@ -44,10 +109,19 @@ interface ToastMessage {
 export function ReminderSettingsForm() {
   const [preference, setPreference] = useState<ReminderPreference | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
-  const [suggestedTimezone, setSuggestedTimezone] = useState<string | null>(
-    null,
+  const suggestedTimezone = useSyncExternalStore(
+    subscribeToBrowserSettings,
+    getBrowserTimezone,
+    getServerTimezone,
+  );
+  const availableTimezones = useSyncExternalStore(
+    subscribeToBrowserSettings,
+    getBrowserTimezones,
+    getServerTimezones,
   );
 
   const form = useForm<ReminderFormData>({
@@ -63,42 +137,43 @@ export function ReminderSettingsForm() {
     control: form.control,
     name: "timezone",
   });
-
-  const [isEnabled, setIsEnabled] = useState(false);
-
-  const handleEnabledChange = (checked: boolean) => {
-    setIsEnabled(checked);
-    form.setValue("enabled", checked);
-  };
+  const remindersEnabled = useWatch({
+    control: form.control,
+    name: "enabled",
+  });
+  const timezoneOptions = Array.from(
+    new Set(
+      [
+        "UTC",
+        selectedTimezone,
+        suggestedTimezone,
+        ...availableTimezones,
+      ].filter((timezone): timezone is string => Boolean(timezone)),
+    ),
+  ).sort((left, right) => left.localeCompare(right));
 
   const showToast = (message: ToastMessage) => {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
   };
-  const showLoadError = useEffectEvent(() => {
-    showToast({
-      title: "Error",
-      description: "Failed to load reminder settings",
-      variant: "destructive",
-    });
-  });
   const { reset } = form;
 
   useEffect(() => {
     let mounted = true;
 
     const loadPreference = async () => {
+      setIsLoading(true);
+      setLoadError(false);
       try {
         const response = await fetch("/api/reminders");
         if (!response.ok) throw new Error("Failed to load");
-        const data = await response.json();
+        const parsed = reminderPreferenceResponseSchema.safeParse(
+          await response.json(),
+        );
+        if (!parsed.success) throw new Error("Invalid reminder response");
+        const data = parsed.data;
 
         if (mounted) {
-          const browserTimezone =
-            Intl.DateTimeFormat().resolvedOptions().timeZone;
-          if (isValidIanaTimezone(browserTimezone)) {
-            setSuggestedTimezone(browserTimezone);
-          }
           setPreference(data.updatedAt ? data : null);
           reset({
             enabled: data.enabled,
@@ -106,11 +181,10 @@ export function ReminderSettingsForm() {
             reminderTime: data.reminderTime.slice(0, 5),
             timezone: data.timezone,
           });
-          setIsEnabled(data.enabled);
         }
       } catch {
         if (mounted) {
-          showLoadError();
+          setLoadError(true);
         }
       } finally {
         if (mounted) setIsLoading(false);
@@ -121,7 +195,7 @@ export function ReminderSettingsForm() {
     return () => {
       mounted = false;
     };
-  }, [reset]);
+  }, [loadAttempt, reset]);
 
   const handleSubmit = async (data: ReminderFormData) => {
     setIsSaving(true);
@@ -137,7 +211,11 @@ export function ReminderSettingsForm() {
         }),
       });
       if (!response.ok) throw new Error("Failed to save");
-      const preferenceData = await response.json();
+      const parsed = reminderPreferenceResponseSchema.safeParse(
+        await response.json(),
+      );
+      if (!parsed.success) throw new Error("Invalid reminder response");
+      const preferenceData = parsed.data;
       setPreference(preferenceData);
       form.reset({
         enabled: preferenceData.enabled,
@@ -145,7 +223,6 @@ export function ReminderSettingsForm() {
         reminderTime: preferenceData.reminderTime.slice(0, 5),
         timezone: preferenceData.timezone,
       });
-      setIsEnabled(preferenceData.enabled);
       showToast({
         title: "Saved",
         description: "Reminder settings updated successfully",
@@ -170,6 +247,33 @@ export function ReminderSettingsForm() {
           aria-hidden="true"
         />
       </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Card className="mx-auto w-full max-w-md">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Bell className="text-primary h-5 w-5" aria-hidden="true" />
+            <CardTitle className="text-foreground">Reading Reminders</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-destructive text-sm" role="alert">
+            Your reminder settings could not be loaded. No settings were
+            changed.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => setLoadAttempt((attempt) => attempt + 1)}
+          >
+            Retry loading settings
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -201,7 +305,7 @@ export function ReminderSettingsForm() {
                   <Switch
                     id="enabled"
                     checked={field.value}
-                    onCheckedChange={handleEnabledChange}
+                    onCheckedChange={field.onChange}
                   />
                 )}
               />
@@ -223,7 +327,7 @@ export function ReminderSettingsForm() {
                   <Switch
                     id="emailEnabled"
                     checked={field.value}
-                    disabled={!isEnabled}
+                    disabled={!remindersEnabled}
                     onCheckedChange={field.onChange}
                   />
                 )}
@@ -249,7 +353,7 @@ export function ReminderSettingsForm() {
                   id="reminderTime"
                   type="time"
                   {...form.register("reminderTime")}
-                  disabled={!isEnabled}
+                  disabled={!remindersEnabled}
                   className="w-40"
                 />
               </div>
@@ -261,23 +365,27 @@ export function ReminderSettingsForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="timezone">Timezone</Label>
+              <Label htmlFor="timezone">Account timezone</Label>
               <div className="flex items-center gap-2">
                 <Globe2
                   className="text-muted-foreground h-4 w-4 shrink-0"
                   aria-hidden="true"
                 />
-                <Input
+                <select
                   id="timezone"
-                  type="text"
-                  autoComplete="off"
-                  placeholder="Africa/Lagos"
                   {...form.register("timezone")}
-                />
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                >
+                  {timezoneOptions.map((timezone) => (
+                    <option key={timezone} value={timezone}>
+                      {timezone}
+                    </option>
+                  ))}
+                </select>
               </div>
               <p className="text-muted-foreground text-sm">
-                Reminder time uses this IANA timezone, including daylight saving
-                changes.
+                This controls reminder times, streaks, analytics, and daily
+                boundaries, including daylight saving changes.
               </p>
               {suggestedTimezone && suggestedTimezone !== selectedTimezone && (
                 <Button
@@ -301,6 +409,12 @@ export function ReminderSettingsForm() {
               )}
             </div>
 
+            {form.formState.isDirty && (
+              <p className="text-muted-foreground text-sm" role="status">
+                You have unsaved changes. Select Save Settings to keep them.
+              </p>
+            )}
+
             <Button type="submit" disabled={isSaving} className="w-full">
               {isSaving ? (
                 <>
@@ -316,7 +430,7 @@ export function ReminderSettingsForm() {
             </Button>
           </form>
 
-          {preference && (
+          {preference?.updatedAt && (
             <div className="border-border mt-6 border-t pt-6">
               <p className="text-muted-foreground text-sm">
                 Last updated:{" "}

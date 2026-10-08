@@ -29,6 +29,7 @@ type PushStatus =
   | "unavailable"
   | "not-enabled"
   | "enabled"
+  | "sync-error"
   | "blocked";
 
 interface StatusMessage {
@@ -46,7 +47,7 @@ export function PushNotificationSettings({
     null,
   );
   const [busyAction, setBusyAction] = useState<
-    "enable" | "disable" | "test" | null
+    "enable" | "disable" | "test" | "sync" | null
   >(null);
   const [message, setMessage] = useState<StatusMessage | null>(null);
 
@@ -82,12 +83,20 @@ export function PushNotificationSettings({
         currentSubscription &&
         subscriptionUsesVapidKey(currentSubscription, vapidPublicKey)
       ) {
-        await registerPushSubscription(
-          serializePushSubscription(currentSubscription),
-        );
-        if (!cancelled) {
-          setSubscription(currentSubscription);
-          setStatus("enabled");
+        setSubscription(currentSubscription);
+        setStatus("enabled");
+        try {
+          await registerPushSubscription(
+            serializePushSubscription(currentSubscription),
+          );
+        } catch {
+          if (!cancelled) {
+            setStatus("sync-error");
+            setMessage({
+              kind: "error",
+              text: "Notifications are enabled in this browser, but Reading Buddy could not connect this device. Retry the connection.",
+            });
+          }
         }
         return;
       }
@@ -180,6 +189,29 @@ export function PushNotificationSettings({
     }
   };
 
+  const retrySynchronization = async () => {
+    if (!subscription) return;
+
+    setBusyAction("sync");
+    setMessage(null);
+    try {
+      await registerPushSubscription(serializePushSubscription(subscription));
+      setStatus("enabled");
+      setMessage({
+        kind: "success",
+        text: "This device is connected to Reading Buddy.",
+      });
+    } catch {
+      setStatus("sync-error");
+      setMessage({
+        kind: "error",
+        text: "Reading Buddy could not connect this device. Try again.",
+      });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
   const disableNotifications = async () => {
     setBusyAction("disable");
     setMessage(null);
@@ -263,6 +295,8 @@ export function PushNotificationSettings({
       "Notifications are unavailable. Open the production PWA and try again.",
     "not-enabled": "Notifications are not enabled on this device.",
     enabled: "Notifications are enabled on this device.",
+    "sync-error":
+      "Notifications are enabled in this browser, but the device is not connected to Reading Buddy.",
     blocked: "Notifications are blocked in your browser settings.",
   }[status];
 
@@ -327,6 +361,32 @@ export function PushNotificationSettings({
               ) : (
                 <BellOff className="size-4" aria-hidden="true" />
               )}
+              Disable notifications
+            </Button>
+          </div>
+        )}
+
+        {status === "sync-error" && (
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              type="button"
+              className="flex-1"
+              disabled={busyAction !== null}
+              onClick={retrySynchronization}
+            >
+              {busyAction === "sync" && (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              )}
+              Retry connection
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              disabled={busyAction !== null}
+              onClick={disableNotifications}
+            >
+              <BellOff className="size-4" aria-hidden="true" />
               Disable notifications
             </Button>
           </div>

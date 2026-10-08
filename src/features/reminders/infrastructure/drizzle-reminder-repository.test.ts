@@ -212,7 +212,7 @@ describe("DrizzleReminderSchedulingRepository", () => {
     expect(whereQuery.params).toEqual([true]);
   });
 
-  it("uses the user and scheduled instant unique key for atomic creation", async () => {
+  it("uses the user, scheduled instant, and kind for atomic creation", async () => {
     const repository = new DrizzleReminderSchedulingRepository();
     const delivery = ReminderDelivery.create({
       id: "delivery-a",
@@ -237,6 +237,7 @@ describe("DrizzleReminderSchedulingRepository", () => {
       target: expect.arrayContaining([
         expect.objectContaining({ name: "user_id" }),
         expect.objectContaining({ name: "scheduled_for" }),
+        expect.objectContaining({ name: "notification_kind" }),
       ]),
     });
   });

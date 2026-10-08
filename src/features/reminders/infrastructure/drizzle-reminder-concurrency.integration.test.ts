@@ -347,6 +347,7 @@ describe.runIf(runIntegrationTests)(
         remindersEnabled: true,
         emailEnabled: true,
         streakRescueEnabled: true,
+        adaptiveTimingEnabled: false,
         quietHoursStart: "22:30:00",
         quietHoursEnd: "07:00:00",
         hasActiveBook: true,
