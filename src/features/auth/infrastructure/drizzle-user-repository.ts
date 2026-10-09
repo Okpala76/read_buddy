@@ -11,6 +11,7 @@ export interface LocalUser {
   name: string | null;
   image: string | null;
   timezone: string;
+  dailyPageTarget: number;
 }
 
 interface ProvisionLocalUserInput {
@@ -26,6 +27,7 @@ const localUserColumns = {
   name: users.name,
   image: users.image,
   timezone: users.timezone,
+  dailyPageTarget: users.dailyPageTarget,
 };
 
 function getDatabase() {

@@ -7,6 +7,7 @@ import {
   toUserTimezoneDate,
   getDayStartInTimezone,
   getDayEndInTimezone,
+  getUserDayUtcRange,
   groupSessionsByDay,
   calculateStreak,
   filterSessionsByDateRange,
@@ -77,6 +78,28 @@ describe("Analytics domain", () => {
       expect(result.getUTCHours()).toBe(23);
       expect(result.getUTCMinutes()).toBe(59);
       expect(result.getUTCSeconds()).toBe(59);
+    });
+  });
+
+  describe("getUserDayUtcRange", () => {
+    it("returns the UTC bounds for a non-UTC local day", () => {
+      const range = getUserDayUtcRange(
+        new Date("2026-01-10T18:00:00.000Z"),
+        "America/Toronto",
+      );
+
+      expect(range.startDate.toISOString()).toBe("2026-01-10T05:00:00.000Z");
+      expect(range.endDate.toISOString()).toBe("2026-01-11T04:59:59.999Z");
+    });
+
+    it("honors daylight-saving day length", () => {
+      const range = getUserDayUtcRange(
+        new Date("2026-03-08T18:00:00.000Z"),
+        "America/Toronto",
+      );
+
+      expect(range.startDate.toISOString()).toBe("2026-03-08T05:00:00.000Z");
+      expect(range.endDate.toISOString()).toBe("2026-03-09T03:59:59.999Z");
     });
   });
 

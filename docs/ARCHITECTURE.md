@@ -53,6 +53,7 @@ Dependencies point inward: UI and infrastructure depend on application/domain co
 - Internal authenticated mutations use Server Actions that validate input with Zod, resolve the authenticated user, and invoke one application use case.
 - Route Handlers are reserved for actual HTTP boundaries such as Vercel Cron and provider webhooks.
 - Errors are translated at the outer boundary; domain/application code does not depend on Next.js response types.
+- TanStack Query is route-scoped to client-owned data that changes out of band. Reminder delivery history uses intent prefetch and conditional polling; core page data remains server-rendered and private query data is never persisted offline.
 
 ## Reading transaction
 

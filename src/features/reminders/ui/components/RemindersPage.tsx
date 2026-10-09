@@ -1,32 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 import { Bell, History } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PushNotificationSettings } from "@/features/push-notifications/ui/PushNotificationSettings";
 import { ReminderSettingsForm } from "./ReminderSettingsForm";
-import { DeliveryHistory, type ReminderDelivery } from "./DeliveryHistory";
+import { DeliveryHistoryQuery } from "./DeliveryHistoryQuery";
+import { ReminderQueryProvider } from "./ReminderQueryProvider";
+import { reminderDeliveriesQueryOptions } from "../queries/delivery-history-query";
+import type { ReminderSettingsView } from "./ReminderSettingsForm";
 
-export function RemindersPage({ vapidPublicKey }: { vapidPublicKey: string }) {
-  const [deliveries, setDeliveries] = useState<ReminderDelivery[]>([]);
-  const [isLoadingDeliveries, setIsLoadingDeliveries] = useState(true);
+const PushNotificationSettings = dynamic(() =>
+  import("@/features/push-notifications/ui/PushNotificationSettings").then(
+    (module) => module.PushNotificationSettings,
+  ),
+);
 
-  useEffect(() => {
-    const loadDeliveries = async () => {
-      try {
-        const response = await fetch("/api/reminders/deliveries");
-        if (response.ok) {
-          const data = await response.json();
-          setDeliveries(data);
-        }
-      } catch (error) {
-        console.error("Failed to load deliveries:", error);
-      } finally {
-        setIsLoadingDeliveries(false);
-      }
-    };
-    loadDeliveries();
-  }, []);
+export function RemindersPage({
+  vapidPublicKey,
+  initialSettings,
+}: {
+  vapidPublicKey: string;
+  initialSettings: ReminderSettingsView;
+}) {
+  return (
+    <ReminderQueryProvider>
+      <RemindersPageContent
+        vapidPublicKey={vapidPublicKey}
+        initialSettings={initialSettings}
+      />
+    </ReminderQueryProvider>
+  );
+}
+
+function RemindersPageContent({
+  vapidPublicKey,
+  initialSettings,
+}: {
+  vapidPublicKey: string;
+  initialSettings: ReminderSettingsView;
+}) {
+  const queryClient = useQueryClient();
+  const prefetchHistory = () => {
+    void queryClient.prefetchQuery(reminderDeliveriesQueryOptions());
+  };
 
   return (
     <div className="space-y-6">
@@ -48,7 +65,11 @@ export function RemindersPage({ vapidPublicKey }: { vapidPublicKey: string }) {
             <Bell className="mr-2 h-4 w-4" aria-hidden="true" />
             Settings
           </TabsTrigger>
-          <TabsTrigger value="history">
+          <TabsTrigger
+            value="history"
+            onPointerEnter={prefetchHistory}
+            onFocus={prefetchHistory}
+          >
             <History className="mr-2 h-4 w-4" aria-hidden="true" />
             History
           </TabsTrigger>
@@ -56,16 +77,13 @@ export function RemindersPage({ vapidPublicKey }: { vapidPublicKey: string }) {
 
         <TabsContent value="settings" className="mt-4">
           <div className="space-y-4">
-            <ReminderSettingsForm />
+            <ReminderSettingsForm initialPreference={initialSettings} />
             <PushNotificationSettings vapidPublicKey={vapidPublicKey} />
           </div>
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
-          <DeliveryHistory
-            deliveries={deliveries}
-            isLoading={isLoadingDeliveries}
-          />
+          <DeliveryHistoryQuery />
         </TabsContent>
       </Tabs>
     </div>

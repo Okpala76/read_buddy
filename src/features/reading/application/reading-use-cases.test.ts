@@ -236,22 +236,35 @@ describe("GetRecentSessionsUseCase", () => {
 
 describe("GetDailyTargetUseCase", () => {
   let useCase: GetDailyTargetUseCase;
+  const dailyTargetRepository = {
+    findByUserId: vi.fn(),
+    updateByUserId: vi.fn(),
+  };
 
   beforeEach(() => {
-    useCase = new GetDailyTargetUseCase();
+    vi.clearAllMocks();
+    useCase = new GetDailyTargetUseCase(dailyTargetRepository);
   });
 
-  it("returns default target of 10", async () => {
+  it("returns the persisted daily target", async () => {
+    dailyTargetRepository.findByUserId.mockResolvedValue(24);
     const target = await useCase.execute(testUserId);
-    expect(target).toBe(10);
+    expect(target).toBe(24);
+    expect(dailyTargetRepository.findByUserId).toHaveBeenCalledWith(testUserId);
   });
 });
 
 describe("UpdateDailyTargetUseCase", () => {
   let useCase: UpdateDailyTargetUseCase;
+  const dailyTargetRepository = {
+    findByUserId: vi.fn(),
+    updateByUserId: vi.fn(),
+  };
 
   beforeEach(() => {
-    useCase = new UpdateDailyTargetUseCase();
+    vi.clearAllMocks();
+    dailyTargetRepository.updateByUserId.mockResolvedValue(undefined);
+    useCase = new UpdateDailyTargetUseCase(dailyTargetRepository);
   });
 
   it("throws when target is not positive", async () => {
@@ -264,8 +277,11 @@ describe("UpdateDailyTargetUseCase", () => {
   });
 
   it("accepts positive target", async () => {
-    // Should not throw
     await expect(useCase.execute(testUserId, 20)).resolves.toBeUndefined();
+    expect(dailyTargetRepository.updateByUserId).toHaveBeenCalledWith(
+      testUserId,
+      20,
+    );
   });
 });
 

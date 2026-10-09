@@ -48,10 +48,11 @@ export function PushSubscriptionReconciler({
         }
       });
     };
-    run(true);
+    const initialRun = setTimeout(() => run(true), 1_500);
 
     return () => {
       cancelled = true;
+      clearTimeout(initialRun);
       if (retry) clearTimeout(retry);
     };
   }, [sessionId, userId, vapidPublicKey]);

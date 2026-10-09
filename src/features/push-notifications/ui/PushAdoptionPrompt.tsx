@@ -8,15 +8,17 @@ import { BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supportsWebPush } from "@/features/push-notifications/ui/push-browser";
 
-interface ReminderSettingsResponse {
+interface PushAdoptionPromptProps {
   enabled: boolean;
   emailEnabled: boolean;
 }
 
-export function PushAdoptionPrompt() {
+export function PushAdoptionPrompt({
+  enabled,
+  emailEnabled,
+}: PushAdoptionPromptProps) {
   const { userId } = useAuth();
   const [visible, setVisible] = useState(false);
-  const [emailEnabled, setEmailEnabled] = useState(true);
 
   useEffect(() => {
     if (!userId || !supportsWebPush() || Notification.permission === "denied") {
@@ -28,17 +30,10 @@ export function PushAdoptionPrompt() {
     const inspect = async () => {
       if (window.localStorage.getItem(storageKey) === "dismissed") return;
 
-      const [settingsResponse, registration] = await Promise.all([
-        fetch("/api/reminders"),
-        navigator.serviceWorker.getRegistration(),
-      ]);
-      if (!settingsResponse.ok) return;
-      const settings =
-        (await settingsResponse.json()) as ReminderSettingsResponse;
+      const registration = await navigator.serviceWorker.getRegistration();
       const subscription = await registration?.pushManager.getSubscription();
 
-      if (!cancelled && settings.enabled && !subscription) {
-        setEmailEnabled(settings.emailEnabled);
+      if (!cancelled && enabled && !subscription) {
         setVisible(true);
       }
     };
@@ -47,7 +42,7 @@ export function PushAdoptionPrompt() {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [enabled, userId]);
 
   if (!visible || !userId) return null;
 

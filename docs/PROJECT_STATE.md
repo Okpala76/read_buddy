@@ -50,6 +50,9 @@ PWA Phase 2B: Notification decision engine complete. Email reminders enabled by 
 - **PWA Phase 1**: installable standalone manifest, application icons, conservative Serwist service worker, and safe branded offline fallback.
 - **PWA Phase 2A Web Push foundation**: authenticated per-device subscription registration, ownership-safe account switching, current-device test push, soft revocation, VAPID rotation handling, supported-provider endpoint validation, Node-only `web-push` delivery, and defensive push/click handling in the existing Serwist worker.
 - **PWA Phase 2B Notification decision engine**: unified reminder channel selection (PUSH preferred, EMAIL fallback, SKIP with reason), `NotificationDecisionEngine` with immutable channel persistence, multi-device fan-out with aggregate acceptance, email reminders enabled by default for new users, contextual dashboard push adoption prompt, delivery history exposes channel.
+- **Server-first performance pass**: dashboard, books, sessions, analytics, and reminder settings load in Server Components instead of post-hydration effects; request-scoped auth resolution is memoized; mutations revalidate dependent routes; route skeleton/error boundaries provide immediate navigation feedback.
+- **Targeted client caching**: TanStack Query is scoped to reminder delivery history with Zod response validation, tab-intent prefetch, focus/reconnect refresh, and polling only while visible deliveries are pending or processing.
+- **Frontend payload optimization**: analytics metrics render on the server and Recharts loads through a split client island; noncritical push reconciliation is deferred; dashboard daily totals use DST-safe UTC bounds for the user's IANA timezone.
 
 ## Verification
 
@@ -103,7 +106,7 @@ PWA Phase 2B: Notification decision engine complete. Email reminders enabled by 
 - Reminder UI and cron tests cover settings validation, authenticated scheduling, and dispatch sequencing.
 - Web Push tests cover tenant isolation, key-proven account reassignment, supported endpoints, provider classification and timeout, authenticated Server Actions, permission UX, and service-worker source integration.
 - Decision engine tests cover 11 precedence cases, channel persistence on retry, PUSH→EMAIL fallback rules, multi-device fan-out aggregate acceptance, and subscription cleanup.
-- All regular tests passing (289 total); 11 PostgreSQL reminder concurrency tests pass through the explicit local integration command.
+- All regular tests passing (324 total); 11 PostgreSQL reminder concurrency tests pass through the explicit local integration command.
 
 ## Intentionally absent
 

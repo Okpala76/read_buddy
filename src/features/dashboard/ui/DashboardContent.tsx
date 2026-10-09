@@ -1,18 +1,9 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookStatus } from "@/features/books/domain";
 import type { BookView } from "@/features/books/ui/book-view";
+import type { ReadingSessionView } from "@/features/reading/ui/reading-session-view";
 import { PushAdoptionPrompt } from "@/features/push-notifications/ui/PushAdoptionPrompt";
 import {
-  getCurrentReading,
-  getBooks,
-  getDailyTarget,
-  getRecentReadingSessions,
-} from "@/features/reading/ui/reading-actions";
-import {
-  Loader2,
   Target,
   BookOpen,
   Clock,
@@ -22,88 +13,33 @@ import {
   Settings,
 } from "lucide-react";
 
-interface RecentSession {
-  id: string;
-  bookId: string;
-  startPage: number;
-  endPage: number;
-  pagesRead: number;
-  mood: "FOCUSED" | "RELAXED" | "ENERGIZED" | "DISTRACTED" | "TIRED" | null;
-  readAt: Date;
-  createdAt: Date;
+interface DashboardContentProps {
+  currentBook: BookView | null;
+  queuedBooks: BookView[];
+  queuedBookCount: number;
+  dailyTarget: number;
+  pagesReadToday: number;
+  recentSessions: ReadingSessionView[];
+  timezone: string;
+  reminderSettings: {
+    enabled: boolean;
+    emailEnabled: boolean;
+  };
 }
 
-export function DashboardContent() {
-  const [currentBook, setCurrentBook] = useState<BookView | null>(null);
-  const [queuedBooks, setQueuedBooks] = useState<BookView[]>([]);
-  const [dailyTarget, setDailyTarget] = useState<number>(10);
-  const [recentSessions, setRecentSessions] = useState<RecentSession[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    const loadData = async () => {
-      try {
-        setError(null);
-        const [book, target, sessions, books] = await Promise.all([
-          getCurrentReading(),
-          getDailyTarget(),
-          getRecentReadingSessions(5),
-          getBooks(),
-        ]);
-        if (mounted) {
-          setCurrentBook(book);
-          setDailyTarget(target);
-          setRecentSessions(sessions as RecentSession[]);
-          setQueuedBooks(
-            books.filter((book) => book.status === BookStatus.QUEUED),
-          );
-        }
-      } catch (err) {
-        if (mounted) {
-          setError("Failed to load dashboard data");
-          console.error(err);
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-    loadData();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
+export function DashboardContent({
+  currentBook,
+  queuedBooks,
+  queuedBookCount,
+  dailyTarget,
+  pagesReadToday,
+  recentSessions,
+  timezone,
+  reminderSettings,
+}: DashboardContentProps) {
   const progressPercent = currentBook
     ? Math.round((currentBook.currentPage / currentBook.totalPages) * 100)
     : 0;
-  const today = new Date().toDateString();
-  const pagesReadToday = recentSessions
-    .filter((session) => new Date(session.readAt).toDateString() === today)
-    .reduce((total, session) => total + session.pagesRead, 0);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2
-          className="text-primary h-8 w-8 animate-spin"
-          aria-hidden="true"
-        />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="py-12 text-center">
-        <p className="text-destructive">{error}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <header>
@@ -183,7 +119,7 @@ export function DashboardContent() {
         </section>
       )}
 
-      {currentBook && <PushAdoptionPrompt />}
+      {currentBook && <PushAdoptionPrompt {...reminderSettings} />}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Daily Target Progress */}
@@ -283,9 +219,16 @@ export function DashboardContent() {
       {/* Queued Books - Secondary */}
       <section className="border-border bg-card rounded-xl border">
         <div className="border-border border-b p-6">
-          <h2 className="text-foreground text-xl font-semibold">
-            Queued Books
-          </h2>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-foreground text-xl font-semibold">
+              Queued Books
+            </h2>
+            {queuedBookCount > queuedBooks.length && (
+              <Link href="/books" className="text-primary text-sm font-medium">
+                View all {queuedBookCount}
+              </Link>
+            )}
+          </div>
         </div>
         <div className="divide-border divide-y">
           {queuedBooks.length === 0 ? (
@@ -376,8 +319,12 @@ export function DashboardContent() {
                       </div>
                       <div className="text-muted-foreground mt-1 text-sm">
                         <time dateTime={session.readAt.toISOString()}>
-                          {session.readAt.toLocaleDateString()} at{" "}
-                          {session.readAt.toLocaleTimeString([], {
+                          {session.readAt.toLocaleDateString("en-US", {
+                            timeZone: timezone,
+                          })}{" "}
+                          at{" "}
+                          {session.readAt.toLocaleTimeString("en-US", {
+                            timeZone: timezone,
                             hour: "2-digit",
                             minute: "2-digit",
                           })}

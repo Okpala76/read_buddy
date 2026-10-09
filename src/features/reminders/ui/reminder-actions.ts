@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAuth } from "@/lib/auth/server";
+import { revalidatePath } from "next/cache";
 import { DrizzleReminderPreferenceRepository } from "@/features/reminders/infrastructure";
 import {
   GetReminderSettingsUseCase,
@@ -38,5 +39,13 @@ export async function updateReminderPreference(input: unknown) {
     user.id,
     parsed,
   );
-  return { ...preference.toPersistence(), timezone };
+  const persisted = preference.toPersistence();
+  revalidatePath("/dashboard");
+  revalidatePath("/analytics");
+  revalidatePath("/reminders");
+  return {
+    ...persisted,
+    updatedAt: persisted.updatedAt.toISOString(),
+    timezone,
+  };
 }

@@ -8,6 +8,7 @@ export {
   GetRecentSessionsUseCase,
   GetDailyTargetUseCase,
   UpdateDailyTargetUseCase,
+  type DailyTargetRepository,
   GetBooksUseCase,
   getBooksInputSchema,
   type GetBooksInput,

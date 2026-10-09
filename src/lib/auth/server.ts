@@ -1,19 +1,14 @@
 import "server-only";
 
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { cache } from "react";
 
 import {
   findLocalUserByClerkId,
   provisionLocalUser,
 } from "@/features/auth/infrastructure/drizzle-user-repository";
 
-export async function getCurrentUser() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    return null;
-  }
-
+const resolveLocalUser = cache(async function resolveLocalUser(userId: string) {
   const existingUser = await findLocalUserByClerkId(userId);
   if (existingUser) {
     return existingUser;
@@ -40,15 +35,25 @@ export async function getCurrentUser() {
     name: name || null,
     image: clerkUser.imageUrl,
   });
-}
+});
 
-export async function requireAuth() {
-  await auth.protect();
-  const user = await getCurrentUser();
+export const getCurrentUser = cache(async function getCurrentUser() {
+  const { userId } = await auth();
+  return userId ? resolveLocalUser(userId) : null;
+});
+
+export const requireAuth = cache(async function requireAuth() {
+  const { userId } = await auth.protect();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  const user = await resolveLocalUser(userId);
 
   if (!user) {
     throw new Error("Unauthorized");
   }
 
   return user;
-}
+});

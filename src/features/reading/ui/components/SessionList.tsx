@@ -1,9 +1,7 @@
-"use client";
-
-import { ReadingMood } from "@/features/reading/domain";
+import type { MoodValue } from "@/features/reading/domain";
 import { cn } from "@/lib/utils";
 
-const moodLabels: Record<ReadingMood, string> = {
+const moodLabels: Record<MoodValue, string> = {
   FOCUSED: "Focused",
   RELAXED: "Relaxed",
   ENERGIZED: "Energized",
@@ -11,7 +9,7 @@ const moodLabels: Record<ReadingMood, string> = {
   TIRED: "Tired",
 };
 
-const moodColors: Record<ReadingMood, string> = {
+const moodColors: Record<MoodValue, string> = {
   FOCUSED: "bg-chart-1/10 text-foreground border-chart-1/20",
   RELAXED: "bg-chart-2/10 text-foreground border-chart-2/20",
   ENERGIZED: "bg-chart-4/15 text-foreground border-chart-4/30",
@@ -24,15 +22,16 @@ export interface SessionData {
   startPage: number;
   endPage: number;
   pagesRead: number;
-  mood: ReadingMood | null;
+  mood: MoodValue | null;
   readAt: Date;
 }
 
 interface SessionItemProps {
   session: SessionData;
+  timezone: string;
 }
 
-export function SessionItem({ session }: SessionItemProps) {
+export function SessionItem({ session, timezone }: SessionItemProps) {
   return (
     <article className="border-border hover:bg-muted/50 rounded-lg border p-4 transition-colors">
       <div className="flex items-start justify-between gap-4">
@@ -57,8 +56,12 @@ export function SessionItem({ session }: SessionItemProps) {
           </div>
           <div className="text-muted-foreground mt-1 flex items-center gap-3 text-sm">
             <time dateTime={session.readAt.toISOString()}>
-              {session.readAt.toLocaleDateString()} at{" "}
-              {session.readAt.toLocaleTimeString([], {
+              {session.readAt.toLocaleDateString("en-US", {
+                timeZone: timezone,
+              })}{" "}
+              at{" "}
+              {session.readAt.toLocaleTimeString("en-US", {
+                timeZone: timezone,
                 hour: "2-digit",
                 minute: "2-digit",
               })}
@@ -78,6 +81,7 @@ export function SessionItem({ session }: SessionItemProps) {
 
 interface SessionListProps {
   sessions: SessionData[];
+  timezone: string;
   isLoading?: boolean;
   onLoadMore?: () => void;
   hasMore?: boolean;
@@ -85,6 +89,7 @@ interface SessionListProps {
 
 export function SessionList({
   sessions,
+  timezone,
   isLoading,
   onLoadMore,
   hasMore,
@@ -137,7 +142,7 @@ export function SessionList({
   return (
     <div className="space-y-3">
       {sessions.map((session) => (
-        <SessionItem key={session.id} session={session} />
+        <SessionItem key={session.id} session={session} timezone={timezone} />
       ))}
       {hasMore && onLoadMore && (
         <button

@@ -15,24 +15,15 @@ import { cn } from "@/lib/utils";
 interface BookCardProps {
   book: BookView;
   isCurrentReading?: boolean;
-  onBookChange?: () => void;
 }
 
-export function BookCard({
-  book,
-  isCurrentReading,
-  onBookChange,
-}: BookCardProps) {
+export function BookCard({ book, isCurrentReading }: BookCardProps) {
   const [isPending, startTransition] = useTransition();
 
-  const handleAction = (
-    action: () => Promise<unknown>,
-    onSuccess?: () => void,
-  ) => {
+  const handleAction = (action: () => Promise<unknown>) => {
     startTransition(async () => {
       try {
         await action();
-        onSuccess?.();
       } catch (error) {
         console.error("Action failed:", error);
       }
@@ -115,10 +106,7 @@ export function BookCard({
             {book.status === BookStatus.QUEUED && (
               <button
                 onClick={() =>
-                  handleAction(
-                    () => startBook({ bookId: book.id }),
-                    onBookChange,
-                  )
+                  handleAction(() => startBook({ bookId: book.id }))
                 }
                 disabled={isPending}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex items-center justify-center gap-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
@@ -132,13 +120,11 @@ export function BookCard({
               <div className="flex items-center gap-1">
                 <button
                   onClick={() =>
-                    handleAction(
-                      () =>
-                        updateBookProgress({
-                          bookId: book.id,
-                          page: book.currentPage + 1,
-                        }),
-                      onBookChange,
+                    handleAction(() =>
+                      updateBookProgress({
+                        bookId: book.id,
+                        page: book.currentPage + 1,
+                      }),
                     )
                   }
                   disabled={isPending}
@@ -149,10 +135,7 @@ export function BookCard({
                 </button>
                 <button
                   onClick={() =>
-                    handleAction(
-                      () => completeBook({ bookId: book.id }),
-                      onBookChange,
-                    )
+                    handleAction(() => completeBook({ bookId: book.id }))
                   }
                   disabled={isPending}
                   className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
@@ -165,10 +148,7 @@ export function BookCard({
 
             <button
               onClick={() =>
-                handleAction(
-                  () => deleteBook({ bookId: book.id }),
-                  onBookChange,
-                )
+                handleAction(() => deleteBook({ bookId: book.id }))
               }
               disabled={isPending}
               className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50"

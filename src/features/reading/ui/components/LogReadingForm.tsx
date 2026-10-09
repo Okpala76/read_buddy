@@ -76,13 +76,11 @@ interface LogReadingFormProps {
     totalPages: number;
   } | null;
   dailyTarget: number;
-  onSuccess?: () => void;
 }
 
 export function LogReadingForm({
   currentBook,
   dailyTarget,
-  onSuccess,
 }: LogReadingFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,7 +117,6 @@ export function LogReadingForm({
       setPages("");
       setMood(null);
       setIsOpen(false);
-      onSuccess?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to log reading");
     } finally {

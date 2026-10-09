@@ -1,101 +1,24 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { BookStatus } from "@/features/books/domain";
 import type { BookView } from "@/features/books/ui/book-view";
-import {
-  getCurrentReading,
-  getDailyTarget,
-  getRecentReadingSessions,
-} from "@/features/reading/ui/reading-actions";
 import { LogReadingForm } from "./LogReadingForm";
 import { SessionList, type SessionData } from "./SessionList";
-import { Loader2, Target, BookOpen } from "lucide-react";
+import { Target, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function ReadingPage() {
-  const [currentBook, setCurrentBook] = useState<BookView | null>(null);
-  const [dailyTarget, setDailyTarget] = useState<number>(10);
-  const [recentSessions, setRecentSessions] = useState<SessionData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchData = async () => {
-    try {
-      setError(null);
-      const [book, target, sessions] = await Promise.all([
-        getCurrentReading(),
-        getDailyTarget(),
-        getRecentReadingSessions(10),
-      ]);
-      setCurrentBook(book);
-      setDailyTarget(target);
-      setRecentSessions(sessions as SessionData[]);
-    } catch (err) {
-      setError("Failed to load reading data");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    let mounted = true;
-    const loadData = async () => {
-      try {
-        const [book, target, sessions] = await Promise.all([
-          getCurrentReading(),
-          getDailyTarget(),
-          getRecentReadingSessions(10),
-        ]);
-        if (mounted) {
-          setCurrentBook(book);
-          setDailyTarget(target);
-          setRecentSessions(sessions as SessionData[]);
-        }
-      } catch (err) {
-        if (mounted) {
-          setError("Failed to load reading data");
-          console.error(err);
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-    loadData();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const handleLogSuccess = () => {
-    fetchData();
-  };
-
+export function ReadingPage({
+  currentBook,
+  dailyTarget,
+  recentSessions,
+  timezone,
+}: {
+  currentBook: BookView | null;
+  dailyTarget: number;
+  recentSessions: SessionData[];
+  timezone: string;
+}) {
   const progressPercent = currentBook
     ? Math.round((currentBook.currentPage / currentBook.totalPages) * 100)
     : 0;
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2
-          className="text-primary size-8 animate-spin"
-          aria-hidden="true"
-        />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="py-12 text-center">
-        <p className="text-destructive">{error}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8">
@@ -181,11 +104,7 @@ export function ReadingPage() {
           </div>
         </div>
 
-        <LogReadingForm
-          currentBook={currentBook}
-          dailyTarget={dailyTarget}
-          onSuccess={handleLogSuccess}
-        />
+        <LogReadingForm currentBook={currentBook} dailyTarget={dailyTarget} />
       </section>
 
       {/* Recent Sessions */}
@@ -193,7 +112,7 @@ export function ReadingPage() {
         <h2 className="text-foreground mb-4 text-xl font-semibold">
           Recent Sessions
         </h2>
-        <SessionList sessions={recentSessions} />
+        <SessionList sessions={recentSessions} timezone={timezone} />
       </section>
     </div>
   );

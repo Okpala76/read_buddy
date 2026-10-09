@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { isValidIanaTimezone } from "@/features/reminders/domain/iana-timezone";
+import { updateReminderPreference } from "../reminder-actions";
 
 const reminderSchema = z.object({
   enabled: z.boolean(),
@@ -92,7 +93,7 @@ function getServerTimezone() {
 
 type ReminderFormData = z.infer<typeof reminderSchema>;
 
-interface ReminderPreference {
+export interface ReminderSettingsView {
   enabled: boolean;
   emailEnabled: boolean;
   reminderTime: string;
@@ -106,11 +107,13 @@ interface ToastMessage {
   variant: "default" | "destructive";
 }
 
-export function ReminderSettingsForm() {
-  const [preference, setPreference] = useState<ReminderPreference | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [loadAttempt, setLoadAttempt] = useState(0);
+export function ReminderSettingsForm({
+  initialPreference,
+}: {
+  initialPreference: ReminderSettingsView;
+}) {
+  const [preference, setPreference] =
+    useState<ReminderSettingsView>(initialPreference);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const suggestedTimezone = useSyncExternalStore(
@@ -127,10 +130,10 @@ export function ReminderSettingsForm() {
   const form = useForm<ReminderFormData>({
     resolver: zodResolver(reminderSchema),
     defaultValues: {
-      enabled: false,
-      emailEnabled: true,
-      reminderTime: "19:00",
-      timezone: "UTC",
+      enabled: initialPreference.enabled,
+      emailEnabled: initialPreference.emailEnabled,
+      reminderTime: initialPreference.reminderTime.slice(0, 5),
+      timezone: initialPreference.timezone,
     },
   });
   const selectedTimezone = useWatch({
@@ -156,63 +159,16 @@ export function ReminderSettingsForm() {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
   };
-  const { reset } = form;
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadPreference = async () => {
-      setIsLoading(true);
-      setLoadError(false);
-      try {
-        const response = await fetch("/api/reminders");
-        if (!response.ok) throw new Error("Failed to load");
-        const parsed = reminderPreferenceResponseSchema.safeParse(
-          await response.json(),
-        );
-        if (!parsed.success) throw new Error("Invalid reminder response");
-        const data = parsed.data;
-
-        if (mounted) {
-          setPreference(data.updatedAt ? data : null);
-          reset({
-            enabled: data.enabled,
-            emailEnabled: data.emailEnabled,
-            reminderTime: data.reminderTime.slice(0, 5),
-            timezone: data.timezone,
-          });
-        }
-      } catch {
-        if (mounted) {
-          setLoadError(true);
-        }
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    };
-
-    void loadPreference();
-    return () => {
-      mounted = false;
-    };
-  }, [loadAttempt, reset]);
-
   const handleSubmit = async (data: ReminderFormData) => {
     setIsSaving(true);
     try {
-      const response = await fetch("/api/reminders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const parsed = reminderPreferenceResponseSchema.safeParse(
+        await updateReminderPreference({
           enabled: data.enabled,
           emailEnabled: data.emailEnabled,
           reminderTime: `${data.reminderTime}:00`,
           timezone: data.timezone,
         }),
-      });
-      if (!response.ok) throw new Error("Failed to save");
-      const parsed = reminderPreferenceResponseSchema.safeParse(
-        await response.json(),
       );
       if (!parsed.success) throw new Error("Invalid reminder response");
       const preferenceData = parsed.data;
@@ -238,44 +194,6 @@ export function ReminderSettingsForm() {
       setIsSaving(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2
-          className="text-primary h-8 w-8 animate-spin"
-          aria-hidden="true"
-        />
-      </div>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <Card className="mx-auto w-full max-w-md">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Bell className="text-primary h-5 w-5" aria-hidden="true" />
-            <CardTitle className="text-foreground">Reading Reminders</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-destructive text-sm" role="alert">
-            Your reminder settings could not be loaded. No settings were
-            changed.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => setLoadAttempt((attempt) => attempt + 1)}
-          >
-            Retry loading settings
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <div>

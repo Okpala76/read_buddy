@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getCurrentUser, requireAuth } from "@/lib/auth/server";
 
@@ -33,6 +33,10 @@ vi.mock("@/features/auth/infrastructure/drizzle-user-repository", () => ({
 }));
 
 describe("Server auth utilities", () => {
+  beforeEach(() => {
+    authProtectMock.mockImplementation(async () => authMock());
+  });
+
   it("getCurrentUser returns null when no session", async () => {
     authMock.mockResolvedValue({ userId: null });
 

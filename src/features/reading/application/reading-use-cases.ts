@@ -92,19 +92,28 @@ export class GetRecentSessionsUseCase {
   }
 }
 
+export interface DailyTargetRepository {
+  findByUserId(userId: string): Promise<number>;
+  updateByUserId(userId: string, target: number): Promise<void>;
+}
+
 export class GetDailyTargetUseCase {
+  constructor(private readonly repository: DailyTargetRepository) {}
+
   async execute(userId: string): Promise<number> {
-    void userId;
-    return 10;
+    return this.repository.findByUserId(userId);
   }
 }
 
 export class UpdateDailyTargetUseCase {
+  constructor(private readonly repository: DailyTargetRepository) {}
+
   async execute(userId: string, target: number): Promise<void> {
-    if (target <= 0) {
+    if (!Number.isInteger(target) || target <= 0) {
       throw new Error("Daily target must be positive");
     }
-    void userId;
+
+    await this.repository.updateByUserId(userId, target);
   }
 }
 

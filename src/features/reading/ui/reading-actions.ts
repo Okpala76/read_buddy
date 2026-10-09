@@ -1,7 +1,11 @@
 "use server";
 
 import { requireAuth } from "@/lib/auth/server";
-import { DrizzleReadingSessionRepository } from "@/features/reading/infrastructure";
+import { revalidatePath } from "next/cache";
+import {
+  DrizzleDailyTargetRepository,
+  DrizzleReadingSessionRepository,
+} from "@/features/reading/infrastructure";
 import { DrizzleBookRepository } from "@/features/books/infrastructure";
 import {
   LogReadingUseCase,
@@ -20,12 +24,13 @@ import { toReadingSessionView } from "./reading-session-view";
 
 function getReadingUseCases() {
   const repo = new DrizzleReadingSessionRepository();
+  const dailyTargetRepository = new DrizzleDailyTargetRepository();
   return {
     logReading: new LogReadingUseCase(repo),
     getSessions: new GetReadingSessionsUseCase(repo),
     getRecentSessions: new GetRecentSessionsUseCase(repo),
-    getDailyTarget: new GetDailyTargetUseCase(),
-    updateDailyTarget: new UpdateDailyTargetUseCase(),
+    getDailyTarget: new GetDailyTargetUseCase(dailyTargetRepository),
+    updateDailyTarget: new UpdateDailyTargetUseCase(dailyTargetRepository),
   };
 }
 
@@ -42,6 +47,10 @@ export async function logReading(input: unknown) {
   const { logReading } = getReadingUseCases();
   const parsed = logReadingInputSchema.parse(input);
   await logReading.execute(user.id, parsed);
+  revalidatePath("/dashboard");
+  revalidatePath("/books");
+  revalidatePath("/sessions");
+  revalidatePath("/analytics");
 }
 
 export async function getReadingSessions(input: unknown = {}) {
@@ -68,7 +77,10 @@ export async function getDailyTarget() {
 export async function updateDailyTarget(target: number) {
   const user = await requireAuth();
   const { updateDailyTarget } = getReadingUseCases();
-  return updateDailyTarget.execute(user.id, target);
+  const result = await updateDailyTarget.execute(user.id, target);
+  revalidatePath("/dashboard");
+  revalidatePath("/sessions");
+  return result;
 }
 
 export async function getCurrentReading() {

@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAuth } from "@/lib/auth/server";
+import { revalidatePath } from "next/cache";
 import { DrizzleBookRepository } from "@/features/books/infrastructure";
 import {
   CreateBookUseCase,
@@ -35,11 +36,18 @@ function getUseCases() {
   };
 }
 
+function revalidateBookViews() {
+  revalidatePath("/dashboard");
+  revalidatePath("/books");
+  revalidatePath("/sessions");
+}
+
 export async function createBook(input: unknown) {
   const user = await requireAuth();
   const { createBook } = getUseCases();
   const parsed = createBookInputSchema.parse(input);
   await createBook.execute(user.id, parsed);
+  revalidateBookViews();
 }
 
 export async function getBooks(input: unknown = {}) {
@@ -62,6 +70,7 @@ export async function startBook(input: unknown) {
   const { startBook } = getUseCases();
   const parsed = startBookInputSchema.parse(input);
   await startBook.execute(user.id, parsed);
+  revalidateBookViews();
 }
 
 export async function updateBookProgress(input: unknown) {
@@ -69,6 +78,7 @@ export async function updateBookProgress(input: unknown) {
   const { updateBookProgress } = getUseCases();
   const parsed = updateBookProgressInputSchema.parse(input);
   await updateBookProgress.execute(user.id, parsed);
+  revalidateBookViews();
 }
 
 export async function completeBook(input: unknown) {
@@ -76,6 +86,7 @@ export async function completeBook(input: unknown) {
   const { completeBook } = getUseCases();
   const parsed = completeBookInputSchema.parse(input);
   await completeBook.execute(user.id, parsed);
+  revalidateBookViews();
 }
 
 export async function requeueBook(input: unknown) {
@@ -83,11 +94,14 @@ export async function requeueBook(input: unknown) {
   const { requeueBook } = getUseCases();
   const parsed = requeueBookInputSchema.parse(input);
   await requeueBook.execute(user.id, parsed);
+  revalidateBookViews();
 }
 
 export async function deleteBook(input: unknown) {
   const user = await requireAuth();
   const { deleteBook } = getUseCases();
   const parsed = deleteBookInputSchema.parse(input);
-  return deleteBook.execute(user.id, parsed);
+  const result = await deleteBook.execute(user.id, parsed);
+  revalidateBookViews();
+  return result;
 }

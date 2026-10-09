@@ -11,24 +11,10 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-export interface ReminderDelivery {
-  id: string;
-  status: "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "SKIPPED";
-  deliveryChannel: "EMAIL" | "PUSH" | null;
-  scheduledFor: string;
-  nextAttemptAt: string | null;
-  sentAt: string | null;
-  attemptCount: number;
-  providerMessageId: string | null;
-  errorCode: string | null;
-  skipReason: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { ReminderDeliveryView } from "../queries/delivery-history-query";
 
 export interface DeliveryHistoryProps {
-  deliveries: ReminderDelivery[];
+  deliveries: ReminderDeliveryView[];
   isLoading?: boolean;
 }
 
@@ -57,7 +43,7 @@ export function DeliveryHistory({
     );
   }
 
-  const getStatusIcon = (status: ReminderDelivery["status"]) => {
+  const getStatusIcon = (status: ReminderDeliveryView["status"]) => {
     switch (status) {
       case "SENT":
         return (
@@ -81,7 +67,7 @@ export function DeliveryHistory({
     }
   };
 
-  const getStatusBadge = (status: ReminderDelivery["status"]) => {
+  const getStatusBadge = (status: ReminderDeliveryView["status"]) => {
     const variants = {
       SENT: "default" as const,
       FAILED: "destructive" as const,
@@ -162,6 +148,12 @@ export function DeliveryHistory({
                     </div>
                   </td>
                   <td className="py-3">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(delivery.status)}
+                      {getStatusBadge(delivery.status)}
+                    </div>
+                  </td>
+                  <td className="py-3">
                     {delivery.deliveryChannel ? (
                       <Badge variant="outline">
                         {delivery.deliveryChannel.toLowerCase()}
@@ -169,12 +161,6 @@ export function DeliveryHistory({
                     ) : (
                       <span className="text-muted-foreground">None</span>
                     )}
-                  </td>
-                  <td className="py-3">
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(delivery.status)}
-                      {getStatusBadge(delivery.status)}
-                    </div>
                   </td>
                   <td className="text-muted-foreground py-3">
                     {delivery.attemptCount}

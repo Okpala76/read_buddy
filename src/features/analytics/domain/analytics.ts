@@ -1,4 +1,5 @@
 import { type ReadingSession } from "@/features/reading/domain";
+import { Temporal } from "@js-temporal/polyfill";
 
 export interface DayEntry {
   date: Date;
@@ -60,6 +61,23 @@ export function getDayStartInTimezone(date: Date, timezone: string): Date {
 export function getDayEndInTimezone(date: Date, timezone: string): Date {
   const dayStart = getDayStartInTimezone(date, timezone);
   return new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+}
+
+/** Returns the inclusive UTC bounds for the local day containing `date`. */
+export function getUserDayUtcRange(
+  date: Date,
+  timezone: string,
+): { startDate: Date; endDate: Date } {
+  const localNow = Temporal.Instant.fromEpochMilliseconds(
+    date.getTime(),
+  ).toZonedDateTimeISO(timezone);
+  const start = localNow.startOfDay();
+  const nextDay = start.add({ days: 1 });
+
+  return {
+    startDate: new Date(start.epochMilliseconds),
+    endDate: new Date(nextDay.epochMilliseconds - 1),
+  };
 }
 
 /**
@@ -326,39 +344,36 @@ export function getDateRangePreset(
   preset: "week" | "month" | "quarter" | "year" | "all",
   timezone: string,
 ): { startDate: Date; endDate: Date } {
-  const now = new Date();
-  const userNow = new Date(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: timezone,
-      dateStyle: "short",
-    }).format(now),
+  const localNow = Temporal.Now.instant().toZonedDateTimeISO(timezone);
+  const endDate = new Date(
+    localNow.startOfDay().add({ days: 1 }).epochMilliseconds - 1,
   );
 
-  let startDate: Date;
-  const endDate = getDayEndInTimezone(now, timezone);
+  if (preset === "all") {
+    return { startDate: new Date(0), endDate };
+  }
+
+  let rangeStart: Temporal.ZonedDateTime;
 
   switch (preset) {
     case "week":
-      startDate = new Date(userNow);
-      startDate.setDate(startDate.getDate() - 7);
+      rangeStart = localNow.subtract({ days: 7 });
       break;
     case "month":
-      startDate = new Date(userNow);
-      startDate.setMonth(startDate.getMonth() - 1);
+      rangeStart = localNow.subtract({ months: 1 });
       break;
     case "quarter":
-      startDate = new Date(userNow);
-      startDate.setMonth(startDate.getMonth() - 3);
+      rangeStart = localNow.subtract({ months: 3 });
       break;
     case "year":
-      startDate = new Date(userNow);
-      startDate.setFullYear(startDate.getFullYear() - 1);
+      rangeStart = localNow.subtract({ years: 1 });
       break;
-    case "all":
     default:
-      startDate = new Date(0); // Unix epoch
-      break;
+      rangeStart = localNow;
   }
 
-  return { startDate: getDayStartInTimezone(startDate, timezone), endDate };
+  return {
+    startDate: new Date(rangeStart.startOfDay().epochMilliseconds),
+    endDate,
+  };
 }

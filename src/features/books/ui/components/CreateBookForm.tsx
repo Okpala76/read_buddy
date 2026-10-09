@@ -5,11 +5,7 @@ import { Plus, X, Loader2 } from "lucide-react";
 import { createBook } from "@/features/books/ui/book-actions";
 import { cn } from "@/lib/utils";
 
-interface CreateBookFormProps {
-  onSuccess?: () => void;
-}
-
-export function CreateBookForm({ onSuccess }: CreateBookFormProps) {
+export function CreateBookForm() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
@@ -44,7 +40,6 @@ export function CreateBookForm({ onSuccess }: CreateBookFormProps) {
       setAuthor("");
       setTotalPages("");
       setIsOpen(false);
-      onSuccess?.();
     } catch (error) {
       console.error("Failed to create book:", error);
       setErrors({ form: "Failed to create book. Please try again." });

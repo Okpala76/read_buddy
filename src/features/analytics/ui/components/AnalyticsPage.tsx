@@ -1,8 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import {
-  Loader2,
   BookOpen,
   Calendar,
   TrendingUp,
@@ -10,18 +6,13 @@ import {
   CalendarDays,
   BarChart2,
 } from "lucide-react";
-import { DailyPagesChart, WeeklyChart, MonthlyChart } from "../charts";
+import { AnalyticsCharts } from "./AnalyticsCharts";
 
-interface AnalyticsData {
+export interface AnalyticsPageData {
   totalPagesRead: number;
   totalSessions: number;
   averagePagesPerSession: number;
   averagePagesPerDay: number;
-  streak: {
-    currentStreak: number;
-    longestStreak: number;
-    lastReadDate: Date | null;
-  };
   dailyData: Array<{
     date: string;
     pagesRead: number;
@@ -39,71 +30,17 @@ interface AnalyticsData {
   }>;
 }
 
-export function AnalyticsPage() {
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
-  const [streak, setStreak] = useState<{
+export function AnalyticsPage({
+  analytics,
+  streak,
+}: {
+  analytics: AnalyticsPageData;
+  streak: {
     currentStreak: number;
     longestStreak: number;
-    lastReadDate: Date | null;
-  } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    const loadData = async () => {
-      try {
-        const [analyticsResponse, streakResponse] = await Promise.all([
-          fetch(`/api/analytics?preset=month`),
-          fetch(`/api/analytics/streak`),
-        ]);
-        if (!analyticsResponse.ok || !streakResponse.ok) {
-          throw new Error("Analytics request failed");
-        }
-        const [analyticsData, streakData] = await Promise.all([
-          analyticsResponse.json(),
-          streakResponse.json(),
-        ]);
-        if (mounted) {
-          setAnalytics(analyticsData);
-          setStreak(streakData);
-        }
-      } catch (err) {
-        if (mounted) {
-          setError("Failed to load analytics");
-          console.error(err);
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-    loadData();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2
-          className="text-primary h-8 w-8 animate-spin"
-          aria-hidden="true"
-        />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="py-12 text-center">
-        <p className="text-destructive">{error}</p>
-      </div>
-    );
-  }
-
+    lastReadDate: string | null;
+  };
+}) {
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -128,7 +65,7 @@ export function AnalyticsPage() {
             <div>
               <p className="text-muted-foreground text-sm">Current Streak</p>
               <p className="text-foreground text-2xl font-bold">
-                {streak?.currentStreak ?? 0}
+                {streak.currentStreak}
               </p>
             </div>
           </div>
@@ -141,7 +78,7 @@ export function AnalyticsPage() {
             <div>
               <p className="text-muted-foreground text-sm">Longest Streak</p>
               <p className="text-foreground text-2xl font-bold">
-                {streak?.longestStreak ?? 0}
+                {streak.longestStreak}
               </p>
             </div>
           </div>
@@ -157,7 +94,7 @@ export function AnalyticsPage() {
             <div>
               <p className="text-muted-foreground text-sm">Total Days Read</p>
               <p className="text-foreground text-2xl font-bold">
-                {analytics?.dailyData.length ?? 0}
+                {analytics.dailyData.length}
               </p>
             </div>
           </div>
@@ -174,7 +111,7 @@ export function AnalyticsPage() {
             <div>
               <p className="text-foreground font-medium">Total Pages</p>
               <p className="text-foreground text-2xl font-bold">
-                {analytics?.totalPagesRead ?? 0}
+                {analytics.totalPagesRead}
               </p>
             </div>
           </div>
@@ -187,7 +124,7 @@ export function AnalyticsPage() {
             <div>
               <p className="text-muted-foreground text-sm">Total Sessions</p>
               <p className="text-foreground text-2xl font-bold">
-                {analytics?.totalSessions ?? 0}
+                {analytics.totalSessions}
               </p>
             </div>
           </div>
@@ -200,7 +137,7 @@ export function AnalyticsPage() {
             <div>
               <p className="text-muted-foreground text-sm">Avg Pages/Session</p>
               <p className="text-foreground text-2xl font-bold">
-                {analytics?.averagePagesPerSession?.toFixed(1) ?? "0"}
+                {analytics.averagePagesPerSession.toFixed(1)}
               </p>
             </div>
           </div>
@@ -216,75 +153,14 @@ export function AnalyticsPage() {
             <div>
               <p className="text-muted-foreground text-sm">Avg Pages/Day</p>
               <p className="text-foreground text-2xl font-bold">
-                {analytics?.averagePagesPerDay?.toFixed(1) ?? "0"}
+                {analytics.averagePagesPerDay.toFixed(1)}
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Charts */}
-      <section className="space-y-6">
-        <section className="border-border bg-card min-w-0 rounded-xl border p-4 sm:p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-foreground text-xl font-semibold">
-              Daily Progress
-            </h2>
-          </div>
-          {analytics?.dailyData && analytics.dailyData.length > 0 ? (
-            <DailyPagesChart
-              data={analytics.dailyData.map((d) => ({
-                date: d.date,
-                pagesRead: d.pagesRead,
-              }))}
-            />
-          ) : (
-            <div className="text-muted-foreground py-12 text-center">
-              No reading data for this period
-            </div>
-          )}
-        </section>
-
-        <div className="grid gap-6 xl:grid-cols-2">
-          <section className="border-border bg-card min-w-0 rounded-xl border p-4 sm:p-6">
-            <h2 className="text-foreground mb-4 text-xl font-semibold">
-              Weekly Progress
-            </h2>
-            {analytics?.weeklyData && analytics.weeklyData.length > 0 ? (
-              <WeeklyChart
-                data={analytics.weeklyData.map((d) => ({
-                  weekStart: d.weekStart,
-                  pagesRead: d.pagesRead,
-                  sessions: d.sessions,
-                }))}
-              />
-            ) : (
-              <div className="text-muted-foreground py-12 text-center">
-                No weekly data for this period
-              </div>
-            )}
-          </section>
-
-          <section className="border-border bg-card min-w-0 rounded-xl border p-4 sm:p-6">
-            <h2 className="text-foreground mb-4 text-xl font-semibold">
-              Monthly Progress
-            </h2>
-            {analytics?.monthlyData && analytics.monthlyData.length > 0 ? (
-              <MonthlyChart
-                data={analytics.monthlyData.map((d) => ({
-                  monthStart: d.monthStart,
-                  pagesRead: d.pagesRead,
-                  sessions: d.sessions,
-                }))}
-              />
-            ) : (
-              <div className="text-muted-foreground py-12 text-center">
-                No monthly data for this period
-              </div>
-            )}
-          </section>
-        </div>
-      </section>
+      <AnalyticsCharts data={analytics} />
     </div>
   );
 }
