@@ -179,6 +179,27 @@ export class Book {
     });
   }
 
+  reopenAtPage(
+    page: number,
+    targetStatus: BookStatus.QUEUED | BookStatus.READING,
+  ): Book {
+    if (this.props.status !== BookStatus.COMPLETED) {
+      throw new Error("Only completed books can be reopened");
+    }
+    if (!Number.isInteger(page) || page < 0 || page >= this.props.totalPages) {
+      throw new Error(
+        "Resume page must be an integer between 0 and total pages - 1",
+      );
+    }
+    return Book.reconstitute({
+      ...this.props,
+      currentPage: page,
+      status: targetStatus,
+      completedAt: null,
+      updatedAt: new Date(),
+    });
+  }
+
   toPersistence(): BookProps {
     return { ...this.props };
   }

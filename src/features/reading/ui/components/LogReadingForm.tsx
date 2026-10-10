@@ -91,6 +91,7 @@ export function LogReadingForm({
   const maxPages = currentBook
     ? currentBook.totalPages - currentBook.currentPage
     : 0;
+  const submittedPages = Number.parseInt(pages, 10) || 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,6 +199,11 @@ export function LogReadingForm({
               Page {currentBook.currentPage} of {currentBook.totalPages} •{" "}
               {maxPages} pages remaining
             </p>
+            {submittedPages >= maxPages && maxPages > 0 && (
+              <p className="text-primary mt-1 text-xs">
+                This will complete the book.
+              </p>
+            )}
           </div>
 
           <div>
@@ -292,7 +298,9 @@ export function LogReadingForm({
               {isSubmitting && (
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
               )}
-              Log {pages || "Reading"}
+              {submittedPages >= maxPages && maxPages > 0
+                ? "Log and finish book"
+                : `Log ${pages || "Reading"}`}
             </button>
           </div>
         </form>

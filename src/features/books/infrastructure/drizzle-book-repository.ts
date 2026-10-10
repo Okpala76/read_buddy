@@ -1,6 +1,6 @@
 import { db } from "@/db/client";
-import { books } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { books, readingSessions } from "@/db/schema";
+import { eq, and, desc, max } from "drizzle-orm";
 import { Book, BookStatus, BookRepository } from "../domain";
 
 function toDomain(row: typeof books.$inferSelect): Book {
@@ -101,5 +101,24 @@ export class DrizzleBookRepository implements BookRepository {
     await database
       .delete(books)
       .where(and(eq(books.id, id), eq(books.userId, userId)));
+  }
+
+  async findMaxSessionPageByBookId(
+    bookId: string,
+    userId: string,
+  ): Promise<number | null> {
+    const database = getDb();
+    const result = await database
+      .select({ maxEndPage: max(readingSessions.endPage) })
+      .from(readingSessions)
+      .where(
+        and(
+          eq(readingSessions.bookId, bookId),
+          eq(readingSessions.userId, userId),
+        ),
+      )
+      .limit(1);
+
+    return result[0]?.maxEndPage ?? null;
   }
 }

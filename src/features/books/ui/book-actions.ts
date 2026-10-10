@@ -17,6 +17,8 @@ import {
   completeBookInputSchema,
   RequeueBookUseCase,
   requeueBookInputSchema,
+  ReopenCompletedBookUseCase,
+  reopenCompletedBookInputSchema,
   DeleteBookUseCase,
   deleteBookInputSchema,
 } from "@/features/books/application";
@@ -32,6 +34,7 @@ function getUseCases() {
     updateBookProgress: new UpdateBookProgressUseCase(repo),
     completeBook: new CompleteBookUseCase(repo),
     requeueBook: new RequeueBookUseCase(repo),
+    reopenCompletedBook: new ReopenCompletedBookUseCase(repo),
     deleteBook: new DeleteBookUseCase(repo),
   };
 }
@@ -95,6 +98,15 @@ export async function requeueBook(input: unknown) {
   const parsed = requeueBookInputSchema.parse(input);
   await requeueBook.execute(user.id, parsed);
   revalidateBookViews();
+}
+
+export async function reopenCompletedBook(input: unknown) {
+  const user = await requireAuth();
+  const { reopenCompletedBook } = getUseCases();
+  const parsed = reopenCompletedBookInputSchema.parse(input);
+  const result = await reopenCompletedBook.execute(user.id, parsed);
+  revalidateBookViews();
+  return { status: result.status };
 }
 
 export async function deleteBook(input: unknown) {

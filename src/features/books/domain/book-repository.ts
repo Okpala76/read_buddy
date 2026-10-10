@@ -6,4 +6,8 @@ export interface BookRepository {
   findReadingByUserId(userId: string): Promise<Book | null>;
   save(book: Book): Promise<void>;
   delete(id: string, userId: string): Promise<void>;
+  findMaxSessionPageByBookId(
+    bookId: string,
+    userId: string,
+  ): Promise<number | null>;
 }

@@ -257,4 +257,63 @@ describe("Book domain entity", () => {
       expect(book.pagesRemaining).toBe(200);
     });
   });
+
+  describe("reopenAtPage", () => {
+    const completedBook = Book.create({
+      ...baseProps,
+      status: BookStatus.COMPLETED,
+      currentPage: 300,
+      completedAt: new Date(),
+    });
+
+    it("reopens to QUEUED with a valid page", () => {
+      const reopened = completedBook.reopenAtPage(150, BookStatus.QUEUED);
+      expect(reopened.status).toBe(BookStatus.QUEUED);
+      expect(reopened.currentPage).toBe(150);
+      expect(reopened.completedAt).toBeNull();
+      expect(reopened.updatedAt).not.toBe(completedBook.updatedAt);
+    });
+
+    it("reopens to READING with a valid page", () => {
+      const reopened = completedBook.reopenAtPage(150, BookStatus.READING);
+      expect(reopened.status).toBe(BookStatus.READING);
+      expect(reopened.currentPage).toBe(150);
+      expect(reopened.completedAt).toBeNull();
+    });
+
+    it("throws when book is not completed", () => {
+      const readingBook = Book.create({
+        ...baseProps,
+        status: BookStatus.READING,
+        currentPage: 150,
+      });
+      expect(() => readingBook.reopenAtPage(150, BookStatus.QUEUED)).toThrow(
+        "Only completed books can be reopened",
+      );
+    });
+
+    it("throws when page is negative", () => {
+      expect(() => completedBook.reopenAtPage(-1, BookStatus.QUEUED)).toThrow(
+        "Resume page must be an integer between 0 and total pages - 1",
+      );
+    });
+
+    it("throws when page equals total pages", () => {
+      expect(() => completedBook.reopenAtPage(300, BookStatus.QUEUED)).toThrow(
+        "Resume page must be an integer between 0 and total pages - 1",
+      );
+    });
+
+    it("throws when page exceeds total pages", () => {
+      expect(() => completedBook.reopenAtPage(301, BookStatus.QUEUED)).toThrow(
+        "Resume page must be an integer between 0 and total pages - 1",
+      );
+    });
+
+    it("throws when page is not an integer", () => {
+      expect(() =>
+        completedBook.reopenAtPage(150.5, BookStatus.QUEUED),
+      ).toThrow("Resume page must be an integer between 0 and total pages - 1");
+    });
+  });
 });

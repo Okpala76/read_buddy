@@ -9,6 +9,7 @@ import {
   UpdateBookProgressUseCase,
   CompleteBookUseCase,
   RequeueBookUseCase,
+  ReopenCompletedBookUseCase,
   DeleteBookUseCase,
 } from "./book-use-cases";
 
@@ -18,6 +19,7 @@ const createMockRepo = (): BookRepository => ({
   findReadingByUserId: vi.fn(),
   save: vi.fn(),
   delete: vi.fn(),
+  findMaxSessionPageByBookId: vi.fn(),
 });
 
 const testUserId = "550e8400-e29b-41d4-a716-446655440000";
@@ -356,5 +358,111 @@ describe("DeleteBookUseCase", () => {
     await expect(
       useCase.execute(testUserId, { bookId: testBookId }),
     ).rejects.toThrow("Completed books cannot be deleted");
+  });
+});
+
+describe("ReopenCompletedBookUseCase", () => {
+  let repo: BookRepository;
+  let useCase: ReopenCompletedBookUseCase;
+
+  const completedBook = Book.create({
+    ...baseBook.toPersistence(),
+    status: BookStatus.COMPLETED,
+    currentPage: 300,
+    completedAt: new Date(),
+  });
+
+  beforeEach(() => {
+    repo = createMockRepo();
+    repo.findMaxSessionPageByBookId = vi.fn();
+    useCase = new ReopenCompletedBookUseCase(repo);
+  });
+
+  it("reopens a completed book to READING when no other book is reading", async () => {
+    vi.mocked(repo.findById).mockResolvedValue(completedBook);
+    vi.mocked(repo.save).mockResolvedValue(undefined);
+    vi.mocked(repo.findReadingByUserId).mockResolvedValue(null);
+    vi.mocked(repo.findMaxSessionPageByBookId).mockResolvedValue(200);
+
+    const result = await useCase.execute(testUserId, {
+      bookId: testBookId,
+      resumePage: 200,
+    });
+
+    expect(result.status).toBe("reading");
+    expect(result.book.status).toBe(BookStatus.READING);
+    expect(result.book.currentPage).toBe(200);
+    expect(result.book.completedAt).toBeNull();
+    expect(repo.save).toHaveBeenCalled();
+  });
+
+  it("reopens a completed book to QUEUED when another book is reading", async () => {
+    const otherReadingBook = Book.create({
+      ...baseBook.toPersistence(),
+      id: otherBookId,
+      status: BookStatus.READING,
+      currentPage: 50,
+    });
+    vi.mocked(repo.findById).mockResolvedValue(completedBook);
+    vi.mocked(repo.save).mockResolvedValue(undefined);
+    vi.mocked(repo.findReadingByUserId).mockResolvedValue(otherReadingBook);
+    vi.mocked(repo.findMaxSessionPageByBookId).mockResolvedValue(200);
+
+    const result = await useCase.execute(testUserId, {
+      bookId: testBookId,
+      resumePage: 200,
+    });
+
+    expect(result.status).toBe("queued");
+    expect(result.book.status).toBe(BookStatus.QUEUED);
+    expect(result.book.currentPage).toBe(200);
+    expect(result.book.completedAt).toBeNull();
+  });
+
+  it("throws when book not found", async () => {
+    vi.mocked(repo.findById).mockResolvedValue(null);
+    vi.mocked(repo.findMaxSessionPageByBookId).mockResolvedValue(null);
+
+    await expect(
+      useCase.execute(testUserId, { bookId: testBookId, resumePage: 100 }),
+    ).rejects.toThrow("Book not found");
+  });
+
+  it("throws when book is not completed", async () => {
+    const readingBook = Book.create({
+      ...baseBook.toPersistence(),
+      status: BookStatus.READING,
+      currentPage: 150,
+    });
+    vi.mocked(repo.findById).mockResolvedValue(readingBook);
+    vi.mocked(repo.findMaxSessionPageByBookId).mockResolvedValue(200);
+
+    await expect(
+      useCase.execute(testUserId, { bookId: testBookId, resumePage: 150 }),
+    ).rejects.toThrow("Book is not completed");
+  });
+
+  it("throws when resume page is below max session page", async () => {
+    vi.mocked(repo.findById).mockResolvedValue(completedBook);
+    vi.mocked(repo.findMaxSessionPageByBookId).mockResolvedValue(250);
+
+    await expect(
+      useCase.execute(testUserId, { bookId: testBookId, resumePage: 200 }),
+    ).rejects.toThrow("Cannot reopen before page 250");
+  });
+
+  it("throws when max session page equals total pages", async () => {
+    vi.mocked(repo.findById).mockResolvedValue(completedBook);
+    vi.mocked(repo.findMaxSessionPageByBookId).mockResolvedValue(300);
+
+    await expect(
+      useCase.execute(testUserId, { bookId: testBookId, resumePage: 200 }),
+    ).rejects.toThrow("A reading session already reaches the final page");
+  });
+
+  it("validates input with Zod", async () => {
+    await expect(
+      useCase.execute(testUserId, { bookId: "invalid-uuid", resumePage: 100 }),
+    ).rejects.toThrow();
   });
 });

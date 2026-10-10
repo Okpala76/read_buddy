@@ -206,3 +206,66 @@ export class DeleteBookUseCase {
     await this.bookRepository.delete(bookId, userId);
   }
 }
+
+export const reopenCompletedBookInputSchema = z.object({
+  bookId: z.string().uuid(),
+  resumePage: z.number().int().nonnegative(),
+});
+
+export type ReopenCompletedBookInput = z.infer<
+  typeof reopenCompletedBookInputSchema
+>;
+
+export interface ReopenCompletedBookResult {
+  book: Book;
+  status: "reading" | "queued";
+}
+
+export class ReopenCompletedBookUseCase {
+  constructor(private readonly bookRepository: BookRepository) {}
+
+  async execute(
+    userId: string,
+    input: ReopenCompletedBookInput,
+  ): Promise<ReopenCompletedBookResult> {
+    const parsed = reopenCompletedBookInputSchema.parse(input);
+
+    const book = await this.bookRepository.findById(parsed.bookId, userId);
+    if (!book) {
+      throw new Error("Book not found");
+    }
+
+    if (!book.isCompleted()) {
+      throw new Error("Book is not completed");
+    }
+
+    const maxSessionPage = await this.bookRepository.findMaxSessionPageByBookId(
+      parsed.bookId,
+      userId,
+    );
+    if (maxSessionPage === book.totalPages) {
+      throw new Error(
+        "A reading session already reaches the final page. Correct that session first.",
+      );
+    }
+    if (maxSessionPage !== null && parsed.resumePage < maxSessionPage) {
+      throw new Error(
+        `Cannot reopen before page ${maxSessionPage}. Reading sessions exist up to that page.`,
+      );
+    }
+
+    const currentReading =
+      await this.bookRepository.findReadingByUserId(userId);
+    const targetStatus = currentReading
+      ? BookStatus.QUEUED
+      : BookStatus.READING;
+
+    const reopenedBook = book.reopenAtPage(parsed.resumePage, targetStatus);
+    await this.bookRepository.save(reopenedBook);
+
+    return {
+      book: reopenedBook,
+      status: targetStatus === BookStatus.READING ? "reading" : "queued",
+    };
+  }
+}
