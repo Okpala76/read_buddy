@@ -112,7 +112,7 @@ export function BookCard({
         isCurrentReading && "border-primary/30 bg-primary/5",
       )}
     >
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
         <div
           className={cn(
             "grid size-12 shrink-0 place-items-center rounded-xl",
@@ -190,7 +190,7 @@ export function BookCard({
           )}
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:max-w-56 sm:justify-end">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:ml-auto sm:flex-nowrap sm:justify-end">
           {book.status === BookStatus.READING && (
             <>
               <Link
