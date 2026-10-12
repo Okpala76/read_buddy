@@ -1,11 +1,5 @@
-import {
-  BookOpen,
-  Calendar,
-  TrendingUp,
-  Award,
-  CalendarDays,
-  BarChart2,
-} from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, BookOpen, Flame, Award, CalendarDays, TrendingUp } from "lucide-react";
 import { AnalyticsCharts } from "./AnalyticsCharts";
 
 export interface AnalyticsPageData {
@@ -13,21 +7,9 @@ export interface AnalyticsPageData {
   totalSessions: number;
   averagePagesPerSession: number;
   averagePagesPerDay: number;
-  dailyData: Array<{
-    date: string;
-    pagesRead: number;
-    sessions: number;
-  }>;
-  weeklyData: Array<{
-    weekStart: string;
-    pagesRead: number;
-    sessions: number;
-  }>;
-  monthlyData: Array<{
-    monthStart: string;
-    pagesRead: number;
-    sessions: number;
-  }>;
+  dailyData: Array<{ date: string; pagesRead: number; sessions: number }>;
+  weeklyData: Array<{ weekStart: string; pagesRead: number; sessions: number }>;
+  monthlyData: Array<{ monthStart: string; pagesRead: number; sessions: number }>;
 }
 
 export function AnalyticsPage({
@@ -41,126 +23,92 @@ export function AnalyticsPage({
     lastReadDate: string | null;
   };
 }) {
+  const readingDays = analytics.dailyData.filter((day) => day.sessions > 0).length;
+  const hasHistory = analytics.totalSessions > 0;
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-foreground text-3xl font-semibold tracking-tight">
-            Analytics
-          </h1>
-          <p className="text-muted-foreground">
-            Track your reading progress and habits
-          </p>
-        </div>
-      </div>
+    <div className="space-y-8">
+      <header className="max-w-2xl">
+        <p className="text-primary text-sm font-medium">Your progress</p>
+        <h1 className="text-foreground mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
+          See how far you’ve come.
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          Every reading session counts. Follow your consistency and progress over time.
+        </p>
+      </header>
 
-      {/* Streak Cards */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 rounded-lg p-3">
-              <TrendingUp className="text-primary h-6 w-6" aria-hidden="true" />
+      <section aria-labelledby="consistency-heading" className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm">
+        <div className="grid lg:grid-cols-[1.3fr_1fr]">
+          <div className="p-6 sm:p-8">
+            <div className="text-primary flex items-center gap-2 text-sm font-medium">
+              <Flame className="size-5" aria-hidden="true" />
+              Reading consistency
             </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Current Streak</p>
-              <p className="text-foreground text-2xl font-bold">
-                {streak.currentStreak}
-              </p>
-            </div>
+            <h2 id="consistency-heading" className="text-foreground mt-5 text-5xl font-semibold tracking-tight">
+              {streak.currentStreak} <span className="text-2xl"> {streak.currentStreak === 1 ? "day" : "days"}</span>
+            </h2>
+            <p className="text-muted-foreground mt-2 text-sm">
+              {streak.currentStreak > 0
+                ? "Your current reading streak. A little reading each day adds up."
+                : hasHistory
+                  ? "A fresh streak can begin with your next reading session."
+                  : "Your reading journey starts with a single session."}
+            </p>
+            <Link href="/sessions" className="bg-primary text-primary-foreground hover:bg-primary/90 mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors">
+              Log reading <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
           </div>
-        </div>
-        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-chart-3/15 rounded-lg p-3">
-              <Award className="text-chart-3 h-6 w-6" aria-hidden="true" />
+          <div className="bg-muted/40 border-border grid grid-cols-2 gap-4 border-t p-6 sm:p-8 lg:border-t-0 lg:border-l">
+            <div>
+              <Award className="text-primary mb-3 size-5" aria-hidden="true" />
+              <p className="text-foreground text-3xl font-semibold">{streak.longestStreak}</p>
+              <p className="text-muted-foreground mt-1 text-sm">Best streak (days)</p>
             </div>
             <div>
-              <p className="text-muted-foreground text-sm">Longest Streak</p>
-              <p className="text-foreground text-2xl font-bold">
-                {streak.longestStreak}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-chart-2/15 rounded-lg p-3">
-              <CalendarDays
-                className="text-chart-2 h-6 w-6"
-                aria-hidden="true"
-              />
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Total Days Read</p>
-              <p className="text-foreground text-2xl font-bold">
-                {analytics.dailyData.length}
-              </p>
+              <CalendarDays className="text-primary mb-3 size-5" aria-hidden="true" />
+              <p className="text-foreground text-3xl font-semibold">{readingDays}</p>
+              <p className="text-muted-foreground mt-1 text-sm">Reading days in this view</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Key Metrics */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 rounded-lg p-3">
-              <BookOpen className="text-primary h-6 w-6" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="text-foreground font-medium">Total Pages</p>
-              <p className="text-foreground text-2xl font-bold">
-                {analytics.totalPagesRead}
-              </p>
-            </div>
-          </div>
+      <section aria-labelledby="milestones-heading">
+        <div className="mb-4">
+          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Your effort</p>
+          <h2 id="milestones-heading" className="text-foreground mt-1 text-xl font-semibold">The pages add up</h2>
         </div>
-        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-chart-3/15 rounded-lg p-3">
-              <BarChart2 className="text-chart-3 h-6 w-6" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Total Sessions</p>
-              <p className="text-foreground text-2xl font-bold">
-                {analytics.totalSessions}
-              </p>
-            </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="border-border bg-card rounded-2xl border p-5">
+            <BookOpen className="text-primary mb-4 size-5" aria-hidden="true" />
+            <p className="text-foreground text-3xl font-semibold">{analytics.totalPagesRead}</p>
+            <p className="text-muted-foreground mt-1 text-sm">Total pages read</p>
           </div>
-        </div>
-        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-chart-5/15 rounded-lg p-3">
-              <Calendar className="text-chart-5 h-6 w-6" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Avg Pages/Session</p>
-              <p className="text-foreground text-2xl font-bold">
-                {analytics.averagePagesPerSession.toFixed(1)}
-              </p>
-            </div>
+          <div className="border-border bg-card rounded-2xl border p-5">
+            <TrendingUp className="text-primary mb-4 size-5" aria-hidden="true" />
+            <p className="text-foreground text-3xl font-semibold">{analytics.averagePagesPerDay.toFixed(1)}</p>
+            <p className="text-muted-foreground mt-1 text-sm">Average pages per day</p>
           </div>
-        </div>
-        <div className="border-border bg-card rounded-xl border p-4 sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-chart-4/15 rounded-lg p-3">
-              <CalendarDays
-                className="text-chart-4 h-6 w-6"
-                aria-hidden="true"
-              />
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Avg Pages/Day</p>
-              <p className="text-foreground text-2xl font-bold">
-                {analytics.averagePagesPerDay.toFixed(1)}
-              </p>
-            </div>
+          <div className="border-border bg-card rounded-2xl border p-5">
+            <CalendarDays className="text-primary mb-4 size-5" aria-hidden="true" />
+            <p className="text-foreground text-3xl font-semibold">{analytics.totalSessions}</p>
+            <p className="text-muted-foreground mt-1 text-sm">Reading sessions logged</p>
           </div>
         </div>
       </section>
 
-      <AnalyticsCharts data={analytics} />
+      <section aria-label="Reading trends">
+        <div className="mb-4">
+          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Explore</p>
+          <h2 className="text-foreground mt-1 text-xl font-semibold">Your reading trends</h2>
+          <p className="text-muted-foreground mt-1 text-sm">See how your reading changes across days, weeks and months.</p>
+        </div>
+        <AnalyticsCharts data={analytics} />
+      </section>
+      <p className="text-muted-foreground text-sm">
+        Average pages per session: {analytics.averagePagesPerSession.toFixed(1)}.
+        Progress comes from the reading sessions you log.
+      </p>
     </div>
   );
 }
