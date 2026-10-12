@@ -17,13 +17,13 @@ export function Sidebar() {
       <div className="border-sidebar-border flex h-16 shrink-0 items-center border-b px-6">
         <Link
           href="/dashboard"
-          className="text-sidebar-foreground flex items-center gap-2 text-xl font-semibold"
+          className="text-sidebar-foreground flex items-center gap-2 text-lg font-semibold"
         >
           <BookOpen
             className="text-sidebar-primary size-6"
             aria-hidden="true"
           />
-          <span>Read Buddy</span>
+          <span>Reading Buddy</span>
         </Link>
       </div>
 
