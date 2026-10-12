@@ -77,7 +77,7 @@ export function CreateBookForm() {
             id="create-book-title"
             className="text-foreground text-xl font-semibold"
           >
-            Add New Book
+            Add a book to your queue
           </h2>
           <button
             onClick={() => setIsOpen(false)}
