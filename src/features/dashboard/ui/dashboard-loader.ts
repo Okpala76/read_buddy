@@ -1,18 +1,14 @@
 import "server-only";
 
-import { getUserDayUtcRange } from "@/features/analytics/domain";
 import { GetStreakUseCase } from "@/features/analytics/application";
+import { getUserDayUtcRange } from "@/features/analytics/domain";
 import { DrizzleAnalyticsRepository } from "@/features/analytics/infrastructure";
 import { GetBooksUseCase } from "@/features/books/application";
 import { BookStatus } from "@/features/books/domain";
 import { DrizzleBookRepository } from "@/features/books/infrastructure";
 import { toBookView } from "@/features/books/ui/book-view";
-import {
-  GetReadingSessionsUseCase,
-  GetRecentSessionsUseCase,
-} from "@/features/reading/application";
+import { GetReadingSessionsUseCase } from "@/features/reading/application";
 import { DrizzleReadingSessionRepository } from "@/features/reading/infrastructure";
-import { toReadingSessionView } from "@/features/reading/ui/reading-session-view";
 import { DrizzleReminderPreferenceRepository } from "@/features/reminders/infrastructure";
 import { requireAuth } from "@/lib/auth/server";
 
@@ -25,17 +21,15 @@ export async function loadDashboardData() {
   const now = new Date();
   const todayRange = getUserDayUtcRange(now, user.timezone);
 
-  const [books, recentSessions, todaySessions, reminderPreference, streak] =
-    await Promise.all([
-      new GetBooksUseCase(bookRepository).execute(user.id, {}),
-      new GetRecentSessionsUseCase(sessionRepository).execute(user.id, 5),
-      new GetReadingSessionsUseCase(sessionRepository).execute(user.id, {
-        startDate: todayRange.startDate,
-        endDate: todayRange.endDate,
-      }),
-      preferenceRepository.findByUserId(user.id),
-      new GetStreakUseCase(analyticsRepository).execute(user.id, user.timezone),
-    ]);
+  const [books, todaySessions, reminderPreference, streak] = await Promise.all([
+    new GetBooksUseCase(bookRepository).execute(user.id, {}),
+    new GetReadingSessionsUseCase(sessionRepository).execute(user.id, {
+      startDate: todayRange.startDate,
+      endDate: todayRange.endDate,
+    }),
+    preferenceRepository.findByUserId(user.id),
+    new GetStreakUseCase(analyticsRepository).execute(user.id, user.timezone),
+  ]);
 
   const bookViews = books.map(toBookView);
   const queuedBooks = bookViews.filter(
@@ -53,7 +47,6 @@ export async function loadDashboardData() {
       0,
     ),
     currentStreak: streak.currentStreak,
-    recentSessions: recentSessions.map(toReadingSessionView),
     timezone: user.timezone,
     reminderSettings: {
       enabled: reminderPreference?.enabled ?? false,
