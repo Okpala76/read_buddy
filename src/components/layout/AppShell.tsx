@@ -12,9 +12,11 @@ import { Sidebar } from "./Sidebar";
 export function AppShell({
   children,
   vapidPublicKey,
+  currentStreak,
 }: {
   children: ReactNode;
   vapidPublicKey: string;
+  currentStreak: number;
 }) {
   const pathname = usePathname();
   const [mobileNavState, setMobileNavState] = useState({
@@ -45,7 +47,7 @@ export function AppShell({
       <div className="bg-background min-h-svh lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
         <Sidebar />
         <div className="min-w-0">
-          <Header />
+          <Header currentStreak={currentStreak} />
           <main className="mx-auto w-full max-w-7xl min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
             {children}
           </main>
