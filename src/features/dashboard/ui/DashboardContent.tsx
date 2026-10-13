@@ -117,8 +117,8 @@ export function DashboardContent({
                     aria-valuenow={bookProgress}
                   >
                     <div
-                      className="bg-primary h-full rounded-full motion-progress"
-                      style={{ width: `${bookProgress}%` }}
+                      className="bg-primary h-full w-full rounded-full motion-progress"
+                      style={{ transform: `scaleX(${bookProgress / 100})` }}
                     />
                   </div>
                   <p className="text-muted-foreground text-xs">
@@ -179,8 +179,8 @@ export function DashboardContent({
                   aria-valuenow={dailyProgress}
                 >
                   <div
-                    className="bg-primary/70 h-full rounded-full motion-progress"
-                    style={{ width: `${dailyProgress}%` }}
+                    className="bg-primary/70 h-full w-full rounded-full motion-progress"
+                    style={{ transform: `scaleX(${dailyProgress / 100})` }}
                   />
                 </div>
 
