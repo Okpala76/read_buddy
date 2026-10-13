@@ -159,8 +159,10 @@ export function BookCard({
               aria-valuenow={book.progressPercent}
             >
               <div
-                className="bg-primary h-full rounded-full motion-progress"
-                style={{ width: `${book.progressPercent}%` }}
+                className="bg-primary h-full w-full rounded-full motion-progress"
+                style={{
+                  transform: `scaleX(${book.progressPercent / 100})`,
+                }}
               />
             </div>
           </div>
