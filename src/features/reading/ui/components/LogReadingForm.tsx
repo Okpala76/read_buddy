@@ -264,7 +264,7 @@ export function LogReadingForm({
                   aria-pressed={selected}
                   onClick={() => setMood(selected ? null : item)}
                   className={cn(
-                    "min-h-10 rounded-full border px-3 text-sm font-medium transition-colors",
+                    "min-h-11 rounded-full border px-3 text-sm font-medium transition-colors motion-press",
                     selected
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
