@@ -117,7 +117,8 @@
   }
 
   .motion-progress {
-    transition-property: width;
+    transform-origin: left center;
+    transition-property: transform;
     transition-duration: var(--motion-progress);
     transition-timing-function: var(--ease-ui-in-out);
   }
@@ -139,6 +140,5 @@
   .motion-disclosure-in {
     animation: none !important;
     transition-duration: 0.01ms !important;
-    transform: none !important;
   }
 }
