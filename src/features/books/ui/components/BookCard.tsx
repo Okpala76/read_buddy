@@ -195,7 +195,7 @@ export function BookCard({
             <>
               <Link
                 href="/sessions"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition-colors motion-press"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition-colors motion-press"
               >
                 <BookOpen className="size-4" aria-hidden="true" />
                 Log reading
@@ -206,7 +206,7 @@ export function BookCard({
                   handleAction(() => requeueBook({ bookId: book.id }))
                 }
                 disabled={isPending}
-                className="border-border bg-background text-foreground hover:bg-muted inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border px-3.5 text-sm font-medium transition-colors motion-press disabled:opacity-50"
+                className="border-border bg-background text-foreground hover:bg-muted inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-3.5 text-sm font-medium transition-colors motion-press disabled:opacity-50"
               >
                 {isPending ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -230,7 +230,7 @@ export function BookCard({
                   ? "Start reading this book"
                   : "Move your current book back to the queue first"
               }
-              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition-colors motion-press disabled:cursor-not-allowed disabled:opacity-45"
             >
               {isPending ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -247,7 +247,7 @@ export function BookCard({
                 <button
                   type="button"
                   disabled={isPending}
-                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive inline-flex size-10 items-center justify-center rounded-lg transition-colors disabled:opacity-50"
+                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive inline-flex size-11 items-center justify-center rounded-lg transition-colors motion-press disabled:opacity-50"
                   aria-label={`Remove ${book.title} from library`}
                 >
                   <Trash2 className="size-4" aria-hidden="true" />
@@ -287,7 +287,7 @@ export function BookCard({
                 <button
                   type="button"
                   disabled={isPending}
-                  className="border-border bg-background text-foreground hover:bg-muted inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border px-3.5 text-sm font-medium transition-colors motion-press disabled:opacity-50"
+                  className="border-border bg-background text-foreground hover:bg-muted inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-3.5 text-sm font-medium transition-colors motion-press disabled:opacity-50"
                 >
                   <RotateCcw className="size-4" aria-hidden="true" />
                   Reopen
