@@ -33,13 +33,13 @@ export function Header({ currentStreak }: { currentStreak: number }) {
           <Link
             href="/analytics"
             aria-label={`Current reading streak: ${streakLabel}. View progress.`}
-            className="motion-press border-amber-200 bg-amber-50 text-amber-950 hover:bg-amber-100 inline-flex min-h-11 items-center gap-2.5 rounded-full border px-2.5 pr-3.5 transition-colors lg:px-3 lg:pr-4"
+            className="motion-press border-streak/25 bg-streak/10 text-streak-foreground hover:bg-streak/15 inline-flex min-h-11 items-center gap-2.5 rounded-full border px-2.5 pr-3.5 transition-colors lg:px-3 lg:pr-4"
           >
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-amber-500 text-white shadow-sm">
+            <span className="bg-streak text-primary-foreground grid size-7 shrink-0 place-items-center rounded-full shadow-sm">
               <Flame className="size-4" aria-hidden="true" />
             </span>
             <span className="flex items-baseline gap-1.5">
-              <span className="hidden text-[11px] font-semibold tracking-wide text-amber-700 uppercase sm:inline">
+              <span className="text-streak hidden text-[11px] font-semibold tracking-wide uppercase sm:inline">
                 Streak
               </span>
               <span className="text-sm font-semibold">{streakLabel}</span>
