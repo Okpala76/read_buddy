@@ -24,13 +24,9 @@ export function Header() {
           <Link href="/dashboard" className="flex items-center gap-2 lg:hidden">
             <BookOpen className="text-primary size-6" aria-hidden="true" />
             <span className="text-foreground hidden font-semibold sm:block">
-              Read Buddy
+              Reading Buddy
             </span>
           </Link>
-
-          <span className="text-muted-foreground hidden text-sm lg:block">
-            Reading workspace
-          </span>
         </div>
 
         <UserButton />

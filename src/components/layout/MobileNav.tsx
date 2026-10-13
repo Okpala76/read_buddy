@@ -29,9 +29,9 @@ export function MobileNav() {
       <SheetHeader className="border-border border-b px-5 py-5 text-left">
         <SheetTitle className="flex items-center gap-2">
           <BookOpen className="text-primary size-6" aria-hidden="true" />
-          Read Buddy
+          Reading Buddy
         </SheetTitle>
-        <SheetDescription>Your reading workspace</SheetDescription>
+        <SheetDescription>Keep your reading rhythm moving.</SheetDescription>
       </SheetHeader>
 
       <nav
