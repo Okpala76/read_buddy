@@ -1,310 +1,299 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
+  BookOpen,
+  CheckCircle2,
+  ChevronDown,
   Loader2,
-  Minus,
-  Plus,
-  X,
   Target,
-  CheckCircle,
-  AlertCircle,
 } from "lucide-react";
+
 import { ReadingMood } from "@/features/reading/domain";
 import { logReading } from "@/features/reading/ui/reading-actions";
 import { cn } from "@/lib/utils";
-
-interface MoodButtonProps {
-  mood: ReadingMood;
-  selected: ReadingMood | null;
-  onSelect: (mood: ReadingMood | null) => void;
-}
-
-export function MoodButton({ mood, selected, onSelect }: MoodButtonProps) {
-  const isSelected = selected === mood;
-
-  const moodLabels: Record<ReadingMood, string> = {
-    FOCUSED: "Focused",
-    RELAXED: "Relaxed",
-    ENERGIZED: "Energized",
-    DISTRACTED: "Distracted",
-    TIRED: "Tired",
-  };
-
-  const moodIcons: Record<ReadingMood, React.ReactNode> = {
-    FOCUSED: <Target className="size-4" />,
-    RELAXED: <CheckCircle className="size-4" />,
-    ENERGIZED: <Plus className="size-4" />,
-    DISTRACTED: <AlertCircle className="size-4" />,
-    TIRED: <Minus className="size-4" />,
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(isSelected ? null : mood)}
-      className={cn(
-        "relative flex flex-col items-center gap-1.5 rounded-lg border-2 px-3 py-2.5 transition-all",
-        isSelected
-          ? "border-primary bg-primary/10 text-primary"
-          : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5",
-      )}
-      role="radio"
-      aria-checked={isSelected}
-    >
-      <div
-        className={cn(
-          "flex size-8 items-center justify-center rounded-full",
-          isSelected ? "bg-primary text-primary-foreground" : "bg-muted",
-        )}
-      >
-        {moodIcons[mood]}
-      </div>
-      <span className="text-xs font-medium">{moodLabels[mood]}</span>
-      {isSelected && (
-        <div className="bg-primary absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full" />
-      )}
-    </button>
-  );
-}
 
 interface LogReadingFormProps {
   currentBook: {
     id: string;
     title: string;
+    author?: string;
     currentPage: number;
     totalPages: number;
   } | null;
   dailyTarget: number;
 }
 
+const moodLabels: Record<ReadingMood, string> = {
+  FOCUSED: "Focused",
+  RELAXED: "Relaxed",
+  ENERGIZED: "Energized",
+  DISTRACTED: "Distracted",
+  TIRED: "Tired",
+};
+
 export function LogReadingForm({
   currentBook,
   dailyTarget,
 }: LogReadingFormProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pages, setPages] = useState("");
   const [mood, setMood] = useState<ReadingMood | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const maxPages = currentBook
-    ? currentBook.totalPages - currentBook.currentPage
+    ? Math.max(0, currentBook.totalPages - currentBook.currentPage)
     : 0;
   const submittedPages = Number.parseInt(pages, 10) || 0;
+  const willFinishBook = maxPages > 0 && submittedPages === maxPages;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setError(null);
+    setSuccess(null);
 
     if (!currentBook) {
-      setError("No book currently being read");
+      setError("Choose an active book before logging reading.");
       return;
     }
 
-    const submittedPages = parseInt(pages, 10);
-    if (isNaN(submittedPages) || submittedPages <= 0) {
-      setError("Please enter a valid number of pages");
+    const parsedPages = Number.parseInt(pages, 10);
+    if (Number.isNaN(parsedPages) || parsedPages <= 0) {
+      setError("Enter the number of pages you read.");
       return;
     }
+
+    if (parsedPages > maxPages) {
+      setError(`This book only has ${maxPages} pages remaining.`);
+      return;
+    }
+
+    const completedBook = parsedPages === maxPages;
 
     setIsSubmitting(true);
     try {
       await logReading({
         bookId: currentBook.id,
-        submittedPages,
+        submittedPages: parsedPages,
         mood,
       });
+
       setPages("");
       setMood(null);
-      setIsOpen(false);
+      setSuccess(
+        completedBook
+          ? `${parsedPages} pages logged. You finished ${currentBook.title}.`
+          : `${parsedPages} pages logged. Your progress is up to date.`,
+      );
+      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to log reading");
+      setError(
+        err instanceof Error ? err.message : "Reading could not be saved.",
+      );
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }
 
   if (!currentBook) {
     return (
-      <div className="border-border bg-muted/50 rounded-lg border p-4 text-center">
-        <Target
-          className="text-muted-foreground mx-auto mb-2 size-8"
-          aria-hidden="true"
-        />
-        <p className="text-muted-foreground">No book currently being read</p>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Start a book from your queue to log reading progress
+      <section className="border-border bg-card rounded-2xl border p-6 shadow-sm sm:p-8">
+        {success && (
+          <div
+            className="bg-primary/10 text-primary mb-5 flex items-start gap-3 rounded-xl p-4 text-sm"
+            role="status"
+          >
+            <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <span>{success}</span>
+          </div>
+        )}
+
+        <div className="bg-primary/10 text-primary mb-5 grid size-12 place-items-center rounded-2xl">
+          <BookOpen className="size-6" aria-hidden="true" />
+        </div>
+        <h2 className="text-foreground text-xl font-semibold">
+          Choose a book before you log reading
+        </h2>
+        <p className="text-muted-foreground mt-2 max-w-xl">
+          Start a book from your library and it will become the active book for
+          your next reading session.
         </p>
-      </div>
+        <Link
+          href="/books"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 mt-6 inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-sm font-semibold transition-colors"
+        >
+          Choose a book
+        </Link>
+      </section>
     );
   }
 
-  if (!isOpen) {
-    return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-      >
-        <Target className="size-5" aria-hidden="true" />
-        Log Reading
-      </button>
-    );
-  }
+  const progressPercent = Math.min(
+    100,
+    Math.round((currentBook.currentPage / currentBook.totalPages) * 100),
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="fixed inset-0 bg-black/50"
-        onClick={() => setIsOpen(false)}
-      />
-      <div
-        className="bg-card border-border relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border p-5 shadow-xl sm:p-6"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="log-reading-title"
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h2
-            id="log-reading-title"
-            className="text-foreground text-xl font-semibold"
-          >
-            Log Reading Progress
-          </h2>
-          <button
-            onClick={() => setIsOpen(false)}
-            disabled={isSubmitting}
-            className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-            aria-label="Close log reading dialog"
-          >
-            <X className="size-5" aria-hidden="true" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div
-              className="bg-destructive/10 text-destructive rounded-md p-3 text-sm"
-              role="alert"
-            >
-              {error}
-            </div>
-          )}
-
-          <div className="bg-muted/50 rounded-lg p-3">
-            <p className="text-foreground text-sm font-medium">
+    <section className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm">
+      <div className="border-border bg-muted/35 border-b p-5 sm:p-6">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-primary text-sm font-medium">Current book</p>
+            <h2 className="text-foreground mt-1 truncate text-xl font-semibold sm:text-2xl">
               {currentBook.title}
-            </p>
-            <p className="text-muted-foreground text-sm">
-              Page {currentBook.currentPage} of {currentBook.totalPages} •{" "}
-              {maxPages} pages remaining
-            </p>
-            {submittedPages >= maxPages && maxPages > 0 && (
-              <p className="text-primary mt-1 text-xs">
-                This will complete the book.
+            </h2>
+            {currentBook.author && (
+              <p className="text-muted-foreground mt-1 text-sm">
+                {currentBook.author}
               </p>
             )}
           </div>
 
-          <div>
-            <label
-              htmlFor="pages"
-              className="text-foreground mb-1 block text-sm font-medium"
-            >
-              Pages Read
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                id="pages"
-                type="number"
-                value={pages}
-                onChange={(e) => setPages(e.target.value)}
-                min="1"
-                max={maxPages}
-                className={cn(
-                  "bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:outline-none",
-                )}
-                placeholder={dailyTarget.toString()}
-                disabled={isSubmitting}
-              />
-              <span className="text-muted-foreground">/ {maxPages}</span>
-            </div>
-            <p className="text-muted-foreground mt-1 text-xs">
-              Daily target: {dailyTarget} pages
+          <div className="sm:text-right">
+            <p className="text-foreground text-sm font-medium">
+              Page {currentBook.currentPage} of {currentBook.totalPages}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {maxPages} pages remaining
             </p>
           </div>
+        </div>
 
-          <div>
-            <label className="text-foreground mb-2 block text-sm font-medium">
-              Mood (optional)
-            </label>
-            <div
-              className="flex flex-wrap gap-2"
-              role="radiogroup"
-              aria-label="Reading mood"
+        <div
+          className="bg-background mt-4 h-2 overflow-hidden rounded-full"
+          role="progressbar"
+          aria-label="Book progress"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progressPercent}
+        >
+          <div
+            className="bg-primary h-full rounded-full"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6 p-5 sm:p-6">
+        {success && (
+          <div
+            className="bg-primary/10 text-primary flex items-start gap-3 rounded-xl p-4 text-sm"
+            role="status"
+          >
+            <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <span>{success}</span>
+          </div>
+        )}
+
+        {error && (
+          <div
+            className="bg-destructive/10 text-destructive rounded-xl p-4 text-sm"
+            role="alert"
+          >
+            {error}
+          </div>
+        )}
+
+        <div>
+          <div className="flex items-end justify-between gap-4">
+            <label
+              htmlFor="pages"
+              className="text-foreground text-base font-semibold"
             >
-              {(Object.values(ReadingMood) as ReadingMood[]).map((m) => (
-                <MoodButton
-                  key={m}
-                  mood={m}
-                  selected={mood}
-                  onSelect={setMood}
-                />
-              ))}
-              <button
-                type="button"
-                onClick={() => setMood(null)}
-                className={cn(
-                  "relative flex flex-col items-center gap-1.5 rounded-lg border-2 px-3 py-2.5 transition-all",
-                  mood === null
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5",
-                )}
-                role="radio"
-                aria-checked={mood === null}
-              >
-                <div
-                  className={cn(
-                    "flex size-8 items-center justify-center rounded-full",
-                    mood === null
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted",
-                  )}
-                >
-                  <X className="size-4" aria-hidden="true" />
-                </div>
-                <span className="text-xs font-medium">None</span>
-                {mood === null && (
-                  <div className="bg-primary absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full" />
-                )}
-              </button>
+              Pages read
+            </label>
+            <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+              <Target className="size-4" aria-hidden="true" />
+              Daily target: {dailyTarget}
             </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
+          <div className="border-input focus-within:ring-ring mt-2 flex items-center rounded-xl border bg-background px-4 focus-within:ring-2 focus-within:ring-offset-2">
+            <input
+              id="pages"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={maxPages}
+              value={pages}
+              onChange={(event) => {
+                setPages(event.target.value);
+                setError(null);
+                setSuccess(null);
+              }}
+              placeholder={String(Math.min(dailyTarget, maxPages || dailyTarget))}
               disabled={isSubmitting}
-              className="border-border bg-background text-foreground hover:bg-muted flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
-            >
-              {isSubmitting && (
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              )}
-              {submittedPages >= maxPages && maxPages > 0
-                ? "Log and finish book"
-                : `Log ${pages || "Reading"}`}
-            </button>
+              autoFocus
+              className="text-foreground h-16 min-w-0 flex-1 bg-transparent text-2xl font-semibold outline-none disabled:opacity-60"
+            />
+            <span className="text-muted-foreground text-sm">pages</span>
           </div>
-        </form>
-      </div>
-    </div>
+
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <p className="text-muted-foreground">
+              Enter only what you read in this session.
+            </p>
+            {willFinishBook && (
+              <p className="text-primary font-medium">
+                This will finish the book.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <details className="group">
+          <summary className="text-muted-foreground hover:text-foreground flex min-h-11 cursor-pointer list-none items-center justify-between rounded-lg text-sm font-medium transition-colors">
+            <span>Add how the session felt <span className="font-normal">(optional)</span></span>
+            <ChevronDown
+              className="size-4 transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </summary>
+
+          <div className="mt-2 flex flex-wrap gap-2" aria-label="Reading mood">
+            {(Object.values(ReadingMood) as ReadingMood[]).map((item) => {
+              const selected = mood === item;
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setMood(selected ? null : item)}
+                  className={cn(
+                    "min-h-10 rounded-full border px-3 text-sm font-medium transition-colors",
+                    selected
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  {moodLabels[item]}
+                </button>
+              );
+            })}
+          </div>
+        </details>
+
+        <button
+          type="submit"
+          disabled={isSubmitting || maxPages <= 0}
+          className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        >
+          {isSubmitting && (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          )}
+          {isSubmitting
+            ? "Saving…"
+            : willFinishBook
+              ? "Log reading and finish book"
+              : submittedPages > 0
+                ? `Save ${submittedPages} pages`
+                : "Save reading"}
+        </button>
+      </form>
+    </section>
   );
 }
