@@ -72,8 +72,13 @@ function RemindersPageContent({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <History className="text-muted-foreground size-4" aria-hidden="true" />
-              <h2 className="text-foreground font-semibold">Reminder activity</h2>
+              <History
+                className="text-muted-foreground size-4"
+                aria-hidden="true"
+              />
+              <h2 className="text-foreground font-semibold">
+                Reminder activity
+              </h2>
             </div>
             <p className="text-muted-foreground mt-1 text-sm">
               Useful when you want to confirm that a reminder was sent or
@@ -83,7 +88,7 @@ function RemindersPageContent({
           <Button
             type="button"
             variant="outline"
-            className="shrink-0 motion-press"
+            className="motion-press shrink-0"
             onPointerEnter={prefetchHistory}
             onFocus={prefetchHistory}
             onClick={() => {
@@ -102,7 +107,7 @@ function RemindersPageContent({
         </div>
 
         {showHistory && (
-          <div className="mt-5 motion-disclosure-in">
+          <div className="motion-disclosure-in mt-5">
             <DeliveryHistoryQuery />
           </div>
         )}

@@ -29,7 +29,10 @@ export function DeliveryHistory({
     return (
       <div className="border-border bg-card rounded-2xl border p-8">
         <div className="flex items-center justify-center">
-          <Loader2 className="text-primary size-7 animate-spin" aria-hidden="true" />
+          <Loader2
+            className="text-primary size-7 animate-spin"
+            aria-hidden="true"
+          />
           <span className="sr-only">Loading reminder activity</span>
         </div>
       </div>
@@ -49,20 +52,29 @@ export function DeliveryHistory({
   }
 
   return (
-    <div className="border-border bg-card divide-border overflow-hidden rounded-2xl border divide-y">
+    <div className="border-border bg-card divide-border divide-y overflow-hidden rounded-2xl border">
       {deliveries.map((delivery) => {
         const scheduled = new Date(delivery.scheduledFor);
         const icon =
           delivery.status === "SENT" ? (
             <CheckCircle2 className="text-primary size-5" aria-hidden="true" />
           ) : delivery.status === "FAILED" ? (
-            <AlertCircle className="text-destructive size-5" aria-hidden="true" />
+            <AlertCircle
+              className="text-destructive size-5"
+              aria-hidden="true"
+            />
           ) : delivery.status === "SKIPPED" ? (
-            <SkipForward className="text-muted-foreground size-5" aria-hidden="true" />
+            <SkipForward
+              className="text-muted-foreground size-5"
+              aria-hidden="true"
+            />
           ) : delivery.status === "PROCESSING" ? (
             <LoaderCircle className="text-primary size-5" aria-hidden="true" />
           ) : (
-            <Clock className="text-muted-foreground size-5" aria-hidden="true" />
+            <Clock
+              className="text-muted-foreground size-5"
+              aria-hidden="true"
+            />
           );
 
         const detail =
@@ -77,10 +89,13 @@ export function DeliveryHistory({
                 : delivery.status === "PENDING"
                   ? "Waiting to send"
                   : delivery.sentAt
-                    ? `Sent at ${new Date(delivery.sentAt).toLocaleTimeString("en-US", {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}`
+                    ? `Sent at ${new Date(delivery.sentAt).toLocaleTimeString(
+                        "en-US",
+                        {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        },
+                      )}`
                     : "Sent";
 
         return (

@@ -286,14 +286,18 @@ export function PushNotificationSettings({
     unavailable:
       "Push is unavailable here. Open the installed Reading Buddy app and try again.",
     "not-enabled": "Push is not connected on this device.",
-    enabled: "Push is connected on this device and will be preferred for reminders.",
+    enabled:
+      "Push is connected on this device and will be preferred for reminders.",
     "sync-error":
       "Push is enabled in the browser, but this device is not connected to Reading Buddy.",
     blocked: "Notifications are blocked in your browser settings.",
   }[status];
 
   return (
-    <section id="push-notifications" className="border-border bg-card rounded-2xl border p-5 sm:p-6">
+    <section
+      id="push-notifications"
+      className="border-border bg-card rounded-2xl border p-5 sm:p-6"
+    >
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-xl">
           <div className="flex items-center gap-2">

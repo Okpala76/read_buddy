@@ -104,10 +104,13 @@ export function LogReadingForm({
       <section className="border-border bg-card rounded-2xl border p-6 shadow-sm sm:p-8">
         {success && (
           <div
-            className="bg-primary/10 text-primary mb-5 flex items-start gap-3 rounded-xl p-4 text-sm motion-feedback-in"
+            className="bg-primary/10 text-primary motion-feedback-in mb-5 flex items-start gap-3 rounded-xl p-4 text-sm"
             role="status"
           >
-            <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <CheckCircle2
+              className="mt-0.5 size-5 shrink-0"
+              aria-hidden="true"
+            />
             <span>{success}</span>
           </div>
         )}
@@ -124,7 +127,7 @@ export function LogReadingForm({
         </p>
         <Link
           href="/books"
-          className="bg-primary text-primary-foreground hover:bg-primary/90 mt-6 inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-sm font-semibold transition-colors motion-press"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 motion-press mt-6 inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-sm font-semibold transition-colors"
         >
           Choose a book
         </Link>
@@ -172,7 +175,7 @@ export function LogReadingForm({
           aria-valuenow={progressPercent}
         >
           <div
-            className="bg-primary h-full w-full rounded-full motion-progress"
+            className="bg-primary motion-progress h-full w-full rounded-full"
             style={{ transform: `scaleX(${progressPercent / 100})` }}
           />
         </div>
@@ -181,10 +184,13 @@ export function LogReadingForm({
       <form onSubmit={handleSubmit} className="space-y-6 p-5 sm:p-6">
         {success && (
           <div
-            className="bg-primary/10 text-primary flex items-start gap-3 rounded-xl p-4 text-sm motion-feedback-in"
+            className="bg-primary/10 text-primary motion-feedback-in flex items-start gap-3 rounded-xl p-4 text-sm"
             role="status"
           >
-            <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <CheckCircle2
+              className="mt-0.5 size-5 shrink-0"
+              aria-hidden="true"
+            />
             <span>{success}</span>
           </div>
         )}
@@ -212,7 +218,7 @@ export function LogReadingForm({
             </div>
           </div>
 
-          <div className="border-input focus-within:ring-ring mt-2 flex items-center rounded-xl border bg-background px-4 focus-within:ring-2 focus-within:ring-offset-2">
+          <div className="border-input focus-within:ring-ring bg-background mt-2 flex items-center rounded-xl border px-4 focus-within:ring-2 focus-within:ring-offset-2">
             <input
               id="pages"
               type="number"
@@ -225,7 +231,9 @@ export function LogReadingForm({
                 setError(null);
                 setSuccess(null);
               }}
-              placeholder={String(Math.min(dailyTarget, maxPages || dailyTarget))}
+              placeholder={String(
+                Math.min(dailyTarget, maxPages || dailyTarget),
+              )}
               disabled={isSubmitting}
               autoFocus
               className="text-foreground h-16 min-w-0 flex-1 bg-transparent text-2xl font-semibold outline-none disabled:opacity-60"
@@ -247,7 +255,10 @@ export function LogReadingForm({
 
         <details className="group">
           <summary className="text-muted-foreground hover:text-foreground flex min-h-11 cursor-pointer list-none items-center justify-between rounded-lg text-sm font-medium transition-colors">
-            <span>Add how the session felt <span className="font-normal">(optional)</span></span>
+            <span>
+              Add how the session felt{" "}
+              <span className="font-normal">(optional)</span>
+            </span>
             <ChevronDown
               className="size-4 transition-transform group-open:rotate-180"
               aria-hidden="true"
@@ -264,7 +275,7 @@ export function LogReadingForm({
                   aria-pressed={selected}
                   onClick={() => setMood(selected ? null : item)}
                   className={cn(
-                    "min-h-11 rounded-full border px-3 text-sm font-medium transition-colors motion-press",
+                    "motion-press min-h-11 rounded-full border px-3 text-sm font-medium transition-colors",
                     selected
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -280,7 +291,7 @@ export function LogReadingForm({
         <button
           type="submit"
           disabled={isSubmitting || maxPages <= 0}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors motion-press focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring motion-press inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {isSubmitting && (
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
