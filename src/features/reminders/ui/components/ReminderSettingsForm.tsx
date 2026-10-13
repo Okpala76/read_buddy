@@ -4,14 +4,7 @@ import { useState, useSyncExternalStore } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  Bell,
-  CheckCircle2,
-  Clock,
-  Globe2,
-  Loader2,
-  Mail,
-} from "lucide-react";
+import { Bell, CheckCircle2, Clock, Globe2, Loader2, Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -157,9 +150,12 @@ export function ReminderSettingsForm({
 
   const timezoneOptions = Array.from(
     new Set(
-      ["UTC", selectedTimezone, suggestedTimezone, ...availableTimezones].filter(
-        (timezone): timezone is string => Boolean(timezone),
-      ),
+      [
+        "UTC",
+        selectedTimezone,
+        suggestedTimezone,
+        ...availableTimezones,
+      ].filter((timezone): timezone is string => Boolean(timezone)),
     ),
   ).sort((left, right) => left.localeCompare(right));
 
@@ -247,7 +243,10 @@ export function ReminderSettingsForm({
                 <Clock className="size-5" aria-hidden="true" />
               </div>
               <div className="min-w-0 flex-1">
-                <Label htmlFor="reminderTime" className="text-base font-semibold">
+                <Label
+                  htmlFor="reminderTime"
+                  className="text-base font-semibold"
+                >
                   Reminder time
                 </Label>
                 <p className="text-muted-foreground mt-1 text-sm">
@@ -276,7 +275,10 @@ export function ReminderSettingsForm({
                   <Mail className="size-5" aria-hidden="true" />
                 </div>
                 <div>
-                  <Label htmlFor="emailEnabled" className="text-base font-semibold">
+                  <Label
+                    htmlFor="emailEnabled"
+                    className="text-base font-semibold"
+                  >
                     Email fallback
                   </Label>
                   <p className="text-muted-foreground mt-1 max-w-xl text-sm">
@@ -310,7 +312,10 @@ export function ReminderSettingsForm({
           <details className="border-border border-t pt-6">
             <summary className="text-foreground flex min-h-11 cursor-pointer list-none items-center justify-between font-medium">
               <span className="flex items-center gap-2">
-                <Globe2 className="text-muted-foreground size-4" aria-hidden="true" />
+                <Globe2
+                  className="text-muted-foreground size-4"
+                  aria-hidden="true"
+                />
                 Reading day timezone
               </span>
               <span className="text-muted-foreground text-sm">
@@ -368,10 +373,17 @@ export function ReminderSettingsForm({
             </div>
           )}
 
-          <Button type="submit" disabled={isSaving} className="w-full sm:w-auto">
+          <Button
+            type="submit"
+            disabled={isSaving}
+            className="w-full sm:w-auto"
+          >
             {isSaving ? (
               <>
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
+                <Loader2
+                  className="mr-2 size-4 animate-spin"
+                  aria-hidden="true"
+                />
                 Saving...
               </>
             ) : (

@@ -15,7 +15,9 @@ export default function Home() {
                   aria-hidden="true"
                 />
               </div>
-              <span className="text-foreground font-semibold">Reading Buddy</span>
+              <span className="text-foreground font-semibold">
+                Reading Buddy
+              </span>
             </div>
 
             <p className="text-primary text-sm font-semibold">
@@ -36,7 +38,7 @@ export default function Home() {
                   <SignUpButton mode="redirect">
                     <button
                       type="button"
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-6 text-base font-semibold transition-colors motion-press focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring motion-press inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-6 text-base font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                     >
                       Start reading with intention
                       <ArrowRight className="size-5" aria-hidden="true" />
@@ -45,7 +47,7 @@ export default function Home() {
                   <SignInButton mode="redirect">
                     <button
                       type="button"
-                      className="border-border bg-background text-foreground hover:bg-accent focus-visible:ring-ring inline-flex min-h-12 items-center justify-center rounded-xl border px-6 text-base font-medium transition-colors motion-press focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                      className="border-border bg-background text-foreground hover:bg-accent focus-visible:ring-ring motion-press inline-flex min-h-12 items-center justify-center rounded-xl border px-6 text-base font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                     >
                       Sign in
                     </button>
@@ -57,7 +59,7 @@ export default function Home() {
                 <div className="flex items-center gap-4">
                   <Link
                     href="/dashboard"
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-6 text-base font-semibold transition-colors motion-press focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring motion-press inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-6 text-base font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                   >
                     Continue reading
                     <ArrowRight className="size-5" aria-hidden="true" />
@@ -115,8 +117,7 @@ export default function Home() {
                   </p>
                 </div>
               </div>
-
-              </div>
+            </div>
           </aside>
         </section>
       </div>

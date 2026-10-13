@@ -87,7 +87,10 @@ export function DashboardContent({
           <div className="grid lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
             <div className="p-5 sm:p-7 lg:p-8">
               <div className="text-primary mb-6 flex items-center gap-2 text-sm font-medium">
-                <span className="bg-primary size-2 rounded-full" aria-hidden="true" />
+                <span
+                  className="bg-primary size-2 rounded-full"
+                  aria-hidden="true"
+                />
                 Currently reading
               </div>
 
@@ -102,7 +105,8 @@ export function DashboardContent({
                 <div className="mt-7 space-y-2">
                   <div className="flex items-center justify-between gap-4 text-sm">
                     <span className="text-foreground font-medium">
-                      {currentBook.currentPage} of {currentBook.totalPages} pages
+                      {currentBook.currentPage} of {currentBook.totalPages}{" "}
+                      pages
                     </span>
                     <span className="text-muted-foreground">
                       {bookProgress}% complete
@@ -117,7 +121,7 @@ export function DashboardContent({
                     aria-valuenow={bookProgress}
                   >
                     <div
-                      className="bg-primary h-full w-full rounded-full motion-progress"
+                      className="bg-primary motion-progress h-full w-full rounded-full"
                       style={{ transform: `scaleX(${bookProgress / 100})` }}
                     />
                   </div>
@@ -134,14 +138,14 @@ export function DashboardContent({
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/sessions"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors motion-press"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 motion-press inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors"
                 >
                   <BookOpen className="size-4" aria-hidden="true" />
                   Log reading
                 </Link>
                 <Link
                   href="/books"
-                  className="border-border bg-background hover:bg-muted inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border px-5 text-sm font-semibold transition-colors motion-press"
+                  className="border-border bg-background hover:bg-muted motion-press inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border px-5 text-sm font-semibold transition-colors"
                 >
                   View book
                   <ArrowRight className="size-4" aria-hidden="true" />
@@ -179,13 +183,13 @@ export function DashboardContent({
                   aria-valuenow={dailyProgress}
                 >
                   <div
-                    className="bg-primary/70 h-full w-full rounded-full motion-progress"
+                    className="bg-primary/70 motion-progress h-full w-full rounded-full"
                     style={{ transform: `scaleX(${dailyProgress / 100})` }}
                   />
                 </div>
 
                 {dailyGoalComplete && (
-                  <p className="text-primary mt-3 flex items-center gap-2 text-sm font-medium motion-feedback-in">
+                  <p className="text-primary motion-feedback-in mt-3 flex items-center gap-2 text-sm font-medium">
                     <CheckCircle2 className="size-4" aria-hidden="true" />
                     Daily goal complete
                   </p>
@@ -232,7 +236,7 @@ export function DashboardContent({
             </p>
             <Link
               href="/books"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors motion-press"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 motion-press mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors"
             >
               Choose a book
               <ArrowRight className="size-4" aria-hidden="true" />

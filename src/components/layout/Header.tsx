@@ -23,8 +23,14 @@ export function Header({ currentStreak }: { currentStreak: number }) {
             </button>
           </SheetTrigger>
 
-          <Link href="/dashboard" className="flex min-w-0 items-center gap-2 lg:hidden">
-            <BookOpen className="text-primary size-6 shrink-0" aria-hidden="true" />
+          <Link
+            href="/dashboard"
+            className="flex min-w-0 items-center gap-2 lg:hidden"
+          >
+            <BookOpen
+              className="text-primary size-6 shrink-0"
+              aria-hidden="true"
+            />
             <span className="text-foreground hidden truncate font-semibold sm:block">
               Reading Buddy
             </span>

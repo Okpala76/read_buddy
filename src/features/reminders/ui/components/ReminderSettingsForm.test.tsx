@@ -52,17 +52,15 @@ describe("ReminderSettingsForm", () => {
     );
   });
 
-  it("rejects an invalid timezone before submitting", async () => {
+  it("keeps timezone controls behind progressive disclosure", () => {
     render(<ReminderSettingsForm initialPreference={storedSettings} />);
-    fireEvent.change(screen.getByLabelText("Account timezone"), {
-      target: { value: "UTC+1" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Save Settings" }));
 
-    expect(
-      await screen.findByText("Enter a valid IANA timezone"),
-    ).toBeVisible();
-    expect(updateReminderPreferenceMock).not.toHaveBeenCalled();
+    const timezoneSelect = screen.getByLabelText("Account timezone");
+    expect(timezoneSelect).not.toBeVisible();
+
+    fireEvent.click(screen.getByText("Reading day timezone"));
+
+    expect(timezoneSelect).toBeVisible();
   });
 
   it("submits a valid timezone through the Server Action", async () => {
