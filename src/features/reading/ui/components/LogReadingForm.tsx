@@ -172,8 +172,8 @@ export function LogReadingForm({
           aria-valuenow={progressPercent}
         >
           <div
-            className="bg-primary h-full rounded-full motion-progress"
-            style={{ width: `${progressPercent}%` }}
+            className="bg-primary h-full w-full rounded-full motion-progress"
+            style={{ transform: `scaleX(${progressPercent / 100})` }}
           />
         </div>
       </div>
