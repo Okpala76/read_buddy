@@ -73,7 +73,7 @@ describe("MobileNav", () => {
     render(<OpenMobileNav />);
     openMobileNav();
 
-    fireEvent.click(screen.getByRole("link", { name: "Books" }));
+    fireEvent.click(screen.getByRole("link", { name: "Library" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
