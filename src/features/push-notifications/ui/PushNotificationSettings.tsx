@@ -5,13 +5,6 @@ import { BellOff, BellRing, Loader2, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   registerPushSubscription,
   revokePushSubscription,
   sendTestPushNotification,
@@ -191,7 +184,6 @@ export function PushNotificationSettings({
 
   const retrySynchronization = async () => {
     if (!subscription) return;
-
     setBusyAction("sync");
     setMessage(null);
     try {
@@ -289,39 +281,43 @@ export function PushNotificationSettings({
   };
 
   const statusText = {
-    loading: "Checking notification status...",
-    unsupported: "Web Push is not supported in this browser.",
+    loading: "Checking this device…",
+    unsupported: "This browser does not support web push.",
     unavailable:
-      "Notifications are unavailable. Open the production PWA and try again.",
-    "not-enabled": "Notifications are not enabled on this device.",
-    enabled: "Notifications are enabled on this device.",
+      "Push is unavailable here. Open the installed Reading Buddy app and try again.",
+    "not-enabled": "Push is not connected on this device.",
+    enabled: "Push is connected on this device and will be preferred for reminders.",
     "sync-error":
-      "Notifications are enabled in this browser, but the device is not connected to Reading Buddy.",
+      "Push is enabled in the browser, but this device is not connected to Reading Buddy.",
     blocked: "Notifications are blocked in your browser settings.",
   }[status];
 
   return (
-    <Card id="push-notifications" className="mx-auto w-full max-w-md">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <BellRing className="text-primary size-5" aria-hidden="true" />
-          <CardTitle className="text-foreground">Push Notifications</CardTitle>
+    <section id="push-notifications" className="border-border bg-card rounded-2xl border p-5 sm:p-6">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="max-w-xl">
+          <div className="flex items-center gap-2">
+            <BellRing className="text-primary size-5" aria-hidden="true" />
+            <h2 className="text-foreground text-lg font-semibold">
+              Notifications on this device
+            </h2>
+          </div>
+          <p className="text-muted-foreground mt-2 text-sm" aria-live="polite">
+            {statusText}
+          </p>
         </div>
-        <CardDescription>
-          Enable notifications separately on each device. An active device makes
-          push the preferred daily reminder channel; email remains the fallback
-          when enabled.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-muted-foreground text-sm" aria-live="polite">
-          {statusText}
-        </p>
 
+        {status === "enabled" && (
+          <span className="bg-primary/10 text-primary inline-flex rounded-full px-3 py-1 text-xs font-semibold">
+            Connected
+          </span>
+        )}
+      </div>
+
+      <div className="mt-5">
         {status === "not-enabled" && (
           <Button
             type="button"
-            className="w-full"
             disabled={busyAction !== null}
             onClick={enableNotifications}
           >
@@ -330,7 +326,7 @@ export function PushNotificationSettings({
             ) : (
               <BellRing className="size-4" aria-hidden="true" />
             )}
-            Enable notifications
+            Enable on this device
           </Button>
         )}
 
@@ -338,7 +334,6 @@ export function PushNotificationSettings({
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               type="button"
-              className="flex-1"
               disabled={busyAction !== null}
               onClick={sendTest}
             >
@@ -347,12 +342,11 @@ export function PushNotificationSettings({
               ) : (
                 <Send className="size-4" aria-hidden="true" />
               )}
-              Send test notification
+              Send test
             </Button>
             <Button
               type="button"
               variant="outline"
-              className="flex-1"
               disabled={busyAction !== null}
               onClick={disableNotifications}
             >
@@ -361,7 +355,7 @@ export function PushNotificationSettings({
               ) : (
                 <BellOff className="size-4" aria-hidden="true" />
               )}
-              Disable notifications
+              Disconnect this device
             </Button>
           </div>
         )}
@@ -370,7 +364,6 @@ export function PushNotificationSettings({
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               type="button"
-              className="flex-1"
               disabled={busyAction !== null}
               onClick={retrySynchronization}
             >
@@ -382,12 +375,11 @@ export function PushNotificationSettings({
             <Button
               type="button"
               variant="outline"
-              className="flex-1"
               disabled={busyAction !== null}
               onClick={disableNotifications}
             >
               <BellOff className="size-4" aria-hidden="true" />
-              Disable notifications
+              Disconnect
             </Button>
           </div>
         )}
@@ -396,15 +388,15 @@ export function PushNotificationSettings({
           <p
             className={
               message.kind === "error"
-                ? "text-destructive text-sm"
-                : "text-accent-foreground text-sm"
+                ? "text-destructive mt-4 text-sm"
+                : "text-primary mt-4 text-sm"
             }
             role={message.kind === "error" ? "alert" : "status"}
           >
             {message.text}
           </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

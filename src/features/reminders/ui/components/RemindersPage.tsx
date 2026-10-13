@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
-import { Bell, History } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Bell, ChevronDown, History } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import { ReminderSettingsForm } from "./ReminderSettingsForm";
 import { DeliveryHistoryQuery } from "./DeliveryHistoryQuery";
 import { ReminderQueryProvider } from "./ReminderQueryProvider";
@@ -41,51 +43,70 @@ function RemindersPageContent({
   initialSettings: ReminderSettingsView;
 }) {
   const queryClient = useQueryClient();
+  const [showHistory, setShowHistory] = useState(false);
+
   const prefetchHistory = () => {
     void queryClient.prefetchQuery(reminderDeliveriesQueryOptions());
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-foreground flex items-center gap-2 text-3xl font-semibold tracking-tight">
-            <Bell className="text-primary h-6 w-6" aria-hidden="true" />
-            Reminders
-          </h1>
-          <p className="text-muted-foreground">
-            Configure daily reading reminders and view delivery history
-          </p>
-        </div>
+    <div className="space-y-10">
+      <header className="max-w-2xl">
+        <p className="text-primary text-sm font-medium">Reminders</p>
+        <h1 className="text-foreground mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
+          Build a reminder that fits your reading day.
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          Choose when you want a nudge. Reading Buddy will use push when this
+          device is connected, then fall back to email if you keep email
+          reminders enabled.
+        </p>
+      </header>
+
+      <div className="max-w-3xl space-y-6">
+        <ReminderSettingsForm initialPreference={initialSettings} />
+        <PushNotificationSettings vapidPublicKey={vapidPublicKey} />
       </div>
 
-      <Tabs defaultValue="settings" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="settings">
-            <Bell className="mr-2 h-4 w-4" aria-hidden="true" />
-            Settings
-          </TabsTrigger>
-          <TabsTrigger
-            value="history"
+      <section className="border-border max-w-3xl border-t pt-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <History className="text-muted-foreground size-4" aria-hidden="true" />
+              <h2 className="text-foreground font-semibold">Reminder activity</h2>
+            </div>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Useful when you want to confirm that a reminder was sent or
+              understand why one was skipped.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="shrink-0"
             onPointerEnter={prefetchHistory}
             onFocus={prefetchHistory}
+            onClick={() => {
+              if (!showHistory) prefetchHistory();
+              setShowHistory((value) => !value);
+            }}
+            aria-expanded={showHistory}
           >
-            <History className="mr-2 h-4 w-4" aria-hidden="true" />
-            History
-          </TabsTrigger>
-        </TabsList>
+            <Bell className="size-4" aria-hidden="true" />
+            {showHistory ? "Hide activity" : "View activity"}
+            <ChevronDown
+              className={`size-4 transition-transform ${showHistory ? "rotate-180" : ""}`}
+              aria-hidden="true"
+            />
+          </Button>
+        </div>
 
-        <TabsContent value="settings" className="mt-4">
-          <div className="space-y-4">
-            <ReminderSettingsForm initialPreference={initialSettings} />
-            <PushNotificationSettings vapidPublicKey={vapidPublicKey} />
+        {showHistory && (
+          <div className="mt-5">
+            <DeliveryHistoryQuery />
           </div>
-        </TabsContent>
-
-        <TabsContent value="history" className="mt-4">
-          <DeliveryHistoryQuery />
-        </TabsContent>
-      </Tabs>
+        )}
+      </section>
     </div>
   );
 }
