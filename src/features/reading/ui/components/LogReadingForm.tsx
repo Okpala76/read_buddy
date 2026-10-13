@@ -104,7 +104,7 @@ export function LogReadingForm({
       <section className="border-border bg-card rounded-2xl border p-6 shadow-sm sm:p-8">
         {success && (
           <div
-            className="bg-primary/10 text-primary mb-5 flex items-start gap-3 rounded-xl p-4 text-sm"
+            className="bg-primary/10 text-primary mb-5 flex items-start gap-3 rounded-xl p-4 text-sm motion-feedback-in"
             role="status"
           >
             <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
@@ -124,7 +124,7 @@ export function LogReadingForm({
         </p>
         <Link
           href="/books"
-          className="bg-primary text-primary-foreground hover:bg-primary/90 mt-6 inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-sm font-semibold transition-colors"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 mt-6 inline-flex min-h-12 items-center justify-center rounded-xl px-5 text-sm font-semibold transition-colors motion-press"
         >
           Choose a book
         </Link>
@@ -172,7 +172,7 @@ export function LogReadingForm({
           aria-valuenow={progressPercent}
         >
           <div
-            className="bg-primary h-full rounded-full"
+            className="bg-primary h-full rounded-full motion-progress"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -181,7 +181,7 @@ export function LogReadingForm({
       <form onSubmit={handleSubmit} className="space-y-6 p-5 sm:p-6">
         {success && (
           <div
-            className="bg-primary/10 text-primary flex items-start gap-3 rounded-xl p-4 text-sm"
+            className="bg-primary/10 text-primary flex items-start gap-3 rounded-xl p-4 text-sm motion-feedback-in"
             role="status"
           >
             <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
@@ -280,7 +280,7 @@ export function LogReadingForm({
         <button
           type="submit"
           disabled={isSubmitting || maxPages <= 0}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors motion-press focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {isSubmitting && (
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
