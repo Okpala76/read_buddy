@@ -44,6 +44,11 @@
 
 :root {
   --radius: 0.75rem;
+  --motion-fast: 140ms;
+  --motion-ui: 220ms;
+  --motion-progress: 240ms;
+  --ease-ui-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-ui-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --background: oklch(0.985 0.006 155);
   --foreground: oklch(0.23 0.018 155);
   --card: oklch(1 0 0);
@@ -85,5 +90,55 @@
 
   body {
     @apply bg-background text-foreground min-w-0 overflow-x-hidden antialiased;
+  }
+}
+
+
+@keyframes reading-buddy-feedback-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@layer utilities {
+  .motion-press {
+    transition-property: transform;
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--ease-ui-out);
+  }
+
+  .motion-press:active:not(:disabled) {
+    transform: scale(0.975);
+  }
+
+  .motion-progress {
+    transition-property: width;
+    transition-duration: var(--motion-progress);
+    transition-timing-function: var(--ease-ui-in-out);
+  }
+
+  .motion-feedback-in {
+    animation: reading-buddy-feedback-in var(--motion-ui) var(--ease-ui-out)
+      both;
+  }
+
+  .motion-disclosure-in {
+    animation: reading-buddy-feedback-in 180ms var(--ease-ui-out) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-press,
+  .motion-progress,
+  .motion-feedback-in,
+  .motion-disclosure-in {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    transform: none !important;
   }
 }

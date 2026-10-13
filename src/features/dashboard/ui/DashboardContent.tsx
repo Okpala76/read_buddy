@@ -117,7 +117,7 @@ export function DashboardContent({
                     aria-valuenow={bookProgress}
                   >
                     <div
-                      className="bg-primary h-full rounded-full"
+                      className="bg-primary h-full rounded-full motion-progress"
                       style={{ width: `${bookProgress}%` }}
                     />
                   </div>
@@ -134,14 +134,14 @@ export function DashboardContent({
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/sessions"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors motion-press"
                 >
                   <BookOpen className="size-4" aria-hidden="true" />
                   Log reading
                 </Link>
                 <Link
                   href="/books"
-                  className="border-border bg-background hover:bg-muted inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border px-5 text-sm font-semibold transition-colors"
+                  className="border-border bg-background hover:bg-muted inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border px-5 text-sm font-semibold transition-colors motion-press"
                 >
                   View book
                   <ArrowRight className="size-4" aria-hidden="true" />
@@ -179,13 +179,13 @@ export function DashboardContent({
                   aria-valuenow={dailyProgress}
                 >
                   <div
-                    className="bg-primary/70 h-full rounded-full"
+                    className="bg-primary/70 h-full rounded-full motion-progress"
                     style={{ width: `${dailyProgress}%` }}
                   />
                 </div>
 
                 {dailyGoalComplete && (
-                  <p className="text-primary mt-3 flex items-center gap-2 text-sm font-medium">
+                  <p className="text-primary mt-3 flex items-center gap-2 text-sm font-medium motion-feedback-in">
                     <CheckCircle2 className="size-4" aria-hidden="true" />
                     Daily goal complete
                   </p>
@@ -232,7 +232,7 @@ export function DashboardContent({
             </p>
             <Link
               href="/books"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors motion-press"
             >
               Choose a book
               <ArrowRight className="size-4" aria-hidden="true" />
