@@ -83,7 +83,7 @@ function RemindersPageContent({
           <Button
             type="button"
             variant="outline"
-            className="shrink-0"
+            className="shrink-0 motion-press"
             onPointerEnter={prefetchHistory}
             onFocus={prefetchHistory}
             onClick={() => {
@@ -102,7 +102,7 @@ function RemindersPageContent({
         </div>
 
         {showHistory && (
-          <div className="mt-5">
+          <div className="mt-5 motion-disclosure-in">
             <DeliveryHistoryQuery />
           </div>
         )}
