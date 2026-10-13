@@ -89,7 +89,7 @@ describe("PushNotificationSettings", () => {
     ).toBeInTheDocument();
     expect(requestPermission).not.toHaveBeenCalled();
     expect(
-      screen.queryByRole("button", { name: /enable notifications/i }),
+      screen.queryByRole("button", { name: /enable on this device/i }),
     ).not.toBeInTheDocument();
   });
 
@@ -100,7 +100,7 @@ describe("PushNotificationSettings", () => {
 
     render(<PushNotificationSettings vapidPublicKey="AQAB" />);
     const button = await screen.findByRole("button", {
-      name: /enable notifications/i,
+      name: /enable on this device/i,
     });
     expect(requestPermission).not.toHaveBeenCalled();
 
@@ -124,7 +124,7 @@ describe("PushNotificationSettings", () => {
     render(<PushNotificationSettings vapidPublicKey="AQAB" />);
 
     expect(
-      await screen.findByRole("button", { name: /send test notification/i }),
+      await screen.findByRole("button", { name: /send test/i }),
     ).toBeInTheDocument();
     expect(actionMocks.register).toHaveBeenCalledOnce();
     expect(requestPermission).not.toHaveBeenCalled();
@@ -147,7 +147,7 @@ describe("PushNotificationSettings", () => {
       screen.getByRole("button", { name: /retry connection/i }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /^enable notifications$/i }),
+      screen.queryByRole("button", { name: /^enable on this device$/i }),
     ).not.toBeInTheDocument();
   });
 
@@ -160,7 +160,7 @@ describe("PushNotificationSettings", () => {
     render(<PushNotificationSettings vapidPublicKey="AQAB" />);
 
     fireEvent.click(
-      await screen.findByRole("button", { name: /enable notifications/i }),
+      await screen.findByRole("button", { name: /enable on this device/i }),
     );
 
     await waitFor(() =>
@@ -177,7 +177,7 @@ describe("PushNotificationSettings", () => {
     render(<PushNotificationSettings vapidPublicKey="AQAB" />);
 
     fireEvent.click(
-      await screen.findByRole("button", { name: /disable notifications/i }),
+      await screen.findByRole("button", { name: /disconnect this device/i }),
     );
 
     expect(
@@ -185,7 +185,7 @@ describe("PushNotificationSettings", () => {
     ).toBeInTheDocument();
     expect(existingSubscription.unsubscribe).toHaveBeenCalledOnce();
     expect(
-      screen.getByRole("button", { name: /enable notifications/i }),
+      screen.getByRole("button", { name: /enable on this device/i }),
     ).toBeInTheDocument();
   });
 });
