@@ -12,25 +12,22 @@ import type { BookView } from "@/features/books/ui/book-view";
 import { BookCard } from "./BookCard";
 
 const {
-  completeBookMock,
   deleteBookMock,
   reopenCompletedBookMock,
+  requeueBookMock,
   startBookMock,
-  updateBookProgressMock,
 } = vi.hoisted(() => ({
-  completeBookMock: vi.fn(),
   deleteBookMock: vi.fn(),
   reopenCompletedBookMock: vi.fn(),
+  requeueBookMock: vi.fn(),
   startBookMock: vi.fn(),
-  updateBookProgressMock: vi.fn(),
 }));
 
 vi.mock("@/features/books/ui/book-actions", () => ({
-  completeBook: completeBookMock,
   deleteBook: deleteBookMock,
   reopenCompletedBook: reopenCompletedBookMock,
+  requeueBook: requeueBookMock,
   startBook: startBookMock,
-  updateBookProgress: updateBookProgressMock,
 }));
 
 const baseBook: BookView = {
@@ -48,65 +45,74 @@ const baseBook: BookView = {
 
 describe("BookCard", () => {
   beforeEach(() => {
-    completeBookMock.mockReset().mockResolvedValue(undefined);
     deleteBookMock.mockReset().mockResolvedValue(undefined);
     reopenCompletedBookMock
       .mockReset()
       .mockResolvedValue({ status: "reading" });
+    requeueBookMock.mockReset().mockResolvedValue(undefined);
     startBookMock.mockReset().mockResolvedValue(undefined);
-    updateBookProgressMock.mockReset().mockResolvedValue(undefined);
   });
 
   afterEach(cleanup);
 
-  it("increments a non-final page without confirmation", async () => {
-    render(<BookCard book={baseBook} />);
+  it("routes reading progress through the reading log", () => {
+    render(<BookCard book={baseBook} isCurrentReading />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Increment page" }));
+    expect(screen.getByRole("link", { name: "Log reading" })).toHaveAttribute(
+      "href",
+      "/sessions",
+    );
+    expect(
+      screen.queryByRole("button", { name: /increment page/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /finish book/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("moves the active book back to the queue", async () => {
+    render(<BookCard book={baseBook} isCurrentReading />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Move to queue" }));
 
     await waitFor(() =>
-      expect(updateBookProgressMock).toHaveBeenCalledWith({
-        bookId: baseBook.id,
-        page: 101,
-      }),
+      expect(requeueBookMock).toHaveBeenCalledWith({ bookId: baseBook.id }),
     );
   });
 
-  it("requires confirmation before the final page increment", async () => {
-    const finalPageBook = {
+  it("starts a queued book when there is no active book", async () => {
+    const queuedBook = {
       ...baseBook,
-      currentPage: 299,
-      progressPercent: 100,
+      currentPage: 0,
+      status: BookStatus.QUEUED,
+      progressPercent: 0,
     };
-    render(<BookCard book={finalPageBook} />);
+    render(<BookCard book={queuedBook} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Finish book" }));
-
-    expect(updateBookProgressMock).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Yes, mark finished" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start reading" }));
 
     await waitFor(() =>
-      expect(updateBookProgressMock).toHaveBeenCalledWith({
-        bookId: baseBook.id,
-        page: 300,
-      }),
+      expect(startBookMock).toHaveBeenCalledWith({ bookId: baseBook.id }),
     );
   });
 
-  it("requires confirmation before explicitly finishing a book", async () => {
-    render(<BookCard book={baseBook} />);
+  it("prevents starting a queued book while another book is active", () => {
+    const queuedBook = {
+      ...baseBook,
+      currentPage: 0,
+      status: BookStatus.QUEUED,
+      progressPercent: 0,
+    };
+    render(<BookCard book={queuedBook} hasCurrentReading />);
 
-    fireEvent.click(screen.getByText("Finish book…"));
+    const startButton = screen.getByRole("button", { name: "Start reading" });
+    expect(startButton).toBeDisabled();
 
-    expect(completeBookMock).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Yes, mark finished" }));
-
-    await waitFor(() =>
-      expect(completeBookMock).toHaveBeenCalledWith({ bookId: baseBook.id }),
-    );
+    fireEvent.click(startButton);
+    expect(startBookMock).not.toHaveBeenCalled();
   });
 
-  it("keeps undo open when the resume page is invalid", async () => {
+  it("keeps reopen open when the resume page is invalid", async () => {
     const completedBook = {
       ...baseBook,
       currentPage: 300,
@@ -116,11 +122,11 @@ describe("BookCard", () => {
     };
     render(<BookCard book={completedBook} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Undo completion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reopen" }));
     fireEvent.change(screen.getByLabelText("Resume page"), {
       target: { value: "300" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reopen book" }));
 
     expect(
       await screen.findByText("Enter a page between 0 and 299"),
@@ -129,7 +135,7 @@ describe("BookCard", () => {
     expect(reopenCompletedBookMock).not.toHaveBeenCalled();
   });
 
-  it("closes undo only after the completed book is reopened", async () => {
+  it("closes reopen only after the completed book is reopened", async () => {
     const completedBook = {
       ...baseBook,
       currentPage: 300,
@@ -139,11 +145,11 @@ describe("BookCard", () => {
     };
     render(<BookCard book={completedBook} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Undo completion" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reopen" }));
     fireEvent.change(screen.getByLabelText("Resume page"), {
       target: { value: "250" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reopen book" }));
 
     await waitFor(() =>
       expect(reopenCompletedBookMock).toHaveBeenCalledWith({
@@ -154,30 +160,5 @@ describe("BookCard", () => {
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
-  });
-
-  it("keeps undo open when reopening fails", async () => {
-    reopenCompletedBookMock.mockRejectedValue(
-      new Error("Reading sessions exist up to page 275"),
-    );
-    const completedBook = {
-      ...baseBook,
-      currentPage: 300,
-      status: BookStatus.COMPLETED,
-      completedAt: new Date("2026-01-02T00:00:00.000Z"),
-      progressPercent: 100,
-    };
-    render(<BookCard book={completedBook} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Undo completion" }));
-    fireEvent.change(screen.getByLabelText("Resume page"), {
-      target: { value: "250" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-
-    expect(
-      await screen.findByText("Reading sessions exist up to page 275"),
-    ).toBeVisible();
-    expect(screen.getByRole("alertdialog")).toBeVisible();
   });
 });
