@@ -116,16 +116,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="border-border flex items-center gap-2 border-t pt-5 text-sm">
-                <CheckCircle2
-                  className="text-primary size-4"
-                  aria-hidden="true"
-                />
-                <span className="text-muted-foreground">
-                  No points, leaderboards, or noisy gamification.
-                </span>
               </div>
-            </div>
           </aside>
         </section>
       </div>
