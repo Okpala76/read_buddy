@@ -6,6 +6,16 @@ export const createBookInputSchema = z.object({
   title: z.string().min(1).max(500),
   author: z.string().min(1).max(500),
   totalPages: z.number().int().positive(),
+  initialPage: z.number().int().nonnegative().optional(),
+  startNow: z.boolean().optional(),
+}).superRefine((input, ctx) => {
+  if ((input.initialPage ?? 0) >= input.totalPages) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["initialPage"],
+      message: "The last finished page must be before the final page.",
+    });
+  }
 });
 
 export type CreateBookInput = z.infer<typeof createBookInputSchema>;
@@ -14,10 +24,15 @@ export class CreateBookUseCase {
   constructor(private readonly bookRepository: BookRepository) {}
 
   async execute(userId: string, input: CreateBookInput): Promise<Book> {
-    const { title, author, totalPages } = createBookInputSchema.parse(input);
+    const { title, author, totalPages, initialPage = 0, startNow = false } =
+      createBookInputSchema.parse(input);
 
-    // Note: Multiple queued books are allowed, only one READING
+    if (startNow && (await this.bookRepository.findReadingByUserId(userId))) {
+      throw new Error("Move your current book to the queue before starting another.");
+    }
 
+    // Imported page position is a baseline, not a reading session.
+    // The database's unique READING constraint also prevents concurrent starts.
     const now = new Date();
     const book = Book.create({
       id: crypto.randomUUID(),
@@ -25,8 +40,8 @@ export class CreateBookUseCase {
       title,
       author,
       totalPages,
-      currentPage: 0,
-      status: BookStatus.QUEUED,
+      currentPage: initialPage,
+      status: startNow ? BookStatus.READING : BookStatus.QUEUED,
       completedAt: null,
       createdAt: now,
       updatedAt: now,
