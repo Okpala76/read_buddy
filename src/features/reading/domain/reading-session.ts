@@ -105,7 +105,7 @@ export class ReadingSession {
 
 export interface LogReadingInput {
   bookId: string;
-  submittedPages: number;
+  endPage: number;
   mood: MoodValue | null;
   readAt?: Date;
 }

@@ -17,8 +17,8 @@ export class ReadingStreakService implements ReminderStreakService {
       userId,
       1000,
     );
-    const readingDates = getUserReadingDates(sessions, "UTC");
     const timezone = await this.getUserTimezone(userId);
+    const readingDates = getUserReadingDates(sessions, timezone);
     return calculateStreak(readingDates, now, timezone);
   }
 }

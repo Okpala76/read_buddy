@@ -61,7 +61,7 @@ describe("LogReadingUseCase", () => {
 
     const input: LogReadingInput = {
       bookId: testBookId,
-      submittedPages: 10,
+      endPage: 10,
       mood: ReadingMood.FOCUSED,
     };
 
@@ -82,7 +82,7 @@ describe("LogReadingUseCase", () => {
 
     const result = await useCase.execute(testUserId, {
       bookId: testBookId,
-      submittedPages: 10,
+      endPage: 10,
       mood: ReadingMood.FOCUSED,
     });
 
@@ -93,17 +93,17 @@ describe("LogReadingUseCase", () => {
     await expect(
       useCase.execute(testUserId, {
         bookId: "not-a-uuid",
-        submittedPages: 10,
+        endPage: 10,
         mood: null,
       }),
     ).rejects.toThrow();
   });
 
-  it("validates input with Zod - submittedPages must be positive", async () => {
+  it("validates input with Zod - endPage must be positive", async () => {
     await expect(
       useCase.execute(testUserId, {
         bookId: testBookId,
-        submittedPages: 0,
+        endPage: 0,
         mood: null,
       }),
     ).rejects.toThrow();
@@ -111,7 +111,7 @@ describe("LogReadingUseCase", () => {
     await expect(
       useCase.execute(testUserId, {
         bookId: testBookId,
-        submittedPages: -1,
+        endPage: -1,
         mood: null,
       }),
     ).rejects.toThrow();
@@ -126,7 +126,7 @@ describe("LogReadingUseCase", () => {
 
     const result = await useCase.execute(testUserId, {
       bookId: testBookId,
-      submittedPages: 10,
+      endPage: 10,
       mood: null,
     });
 
@@ -142,7 +142,7 @@ describe("LogReadingUseCase", () => {
 
     const result = await useCase.execute(testUserId, {
       bookId: testBookId,
-      submittedPages: 10,
+      endPage: 10,
       mood: null,
     });
 
@@ -289,7 +289,7 @@ describe("logReadingInputSchema", () => {
   it("validates valid input", () => {
     const result = logReadingInputSchema.safeParse({
       bookId: testBookId,
-      submittedPages: 10,
+      endPage: 10,
       mood: ReadingMood.FOCUSED,
     });
     expect(result.success).toBe(true);
@@ -298,15 +298,15 @@ describe("logReadingInputSchema", () => {
   it("rejects invalid bookId", () => {
     const result = logReadingInputSchema.safeParse({
       bookId: "not-a-uuid",
-      submittedPages: 10,
+      endPage: 10,
     });
     expect(result.success).toBe(false);
   });
 
-  it("rejects non-positive submittedPages", () => {
+  it("rejects non-positive endPage", () => {
     const result = logReadingInputSchema.safeParse({
       bookId: testBookId,
-      submittedPages: 0,
+      endPage: 0,
     });
     expect(result.success).toBe(false);
   });
@@ -323,7 +323,7 @@ describe("logReadingInputSchema", () => {
     for (const mood of moods) {
       const result = logReadingInputSchema.safeParse({
         bookId: testBookId,
-        submittedPages: 10,
+        endPage: 10,
         mood,
       });
       expect(result.success).toBe(true);
@@ -333,7 +333,7 @@ describe("logReadingInputSchema", () => {
   it("accepts null mood", () => {
     const result = logReadingInputSchema.safeParse({
       bookId: testBookId,
-      submittedPages: 10,
+      endPage: 10,
       mood: null,
     });
     expect(result.success).toBe(true);
@@ -342,7 +342,7 @@ describe("logReadingInputSchema", () => {
   it("accepts omitted mood", () => {
     const result = logReadingInputSchema.safeParse({
       bookId: testBookId,
-      submittedPages: 10,
+      endPage: 10,
     });
     expect(result.success).toBe(true);
   });

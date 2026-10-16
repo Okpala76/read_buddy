@@ -18,11 +18,12 @@ export function ReadingPage({
       <header className="max-w-2xl">
         <p className="text-primary text-sm font-medium">Reading</p>
         <h1 className="text-foreground mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Log what you just read.
+          Save where you stopped.
         </h1>
         <p className="text-muted-foreground mt-2">
-          Add your pages while the session is fresh. Reading Buddy will update
-          your book progress, today&apos;s goal, and streak automatically.
+          Enter the last page you finished. Reading Buddy calculates the pages
+          read and updates your book progress, today&apos;s goal, and streak
+          automatically.
         </p>
       </header>
 

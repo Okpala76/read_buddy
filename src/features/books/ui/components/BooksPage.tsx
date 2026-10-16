@@ -26,7 +26,7 @@ export function BooksPage({ books }: { books: BookView[] }) {
             ready for it.
           </p>
         </div>
-        <CreateBookForm />
+        <CreateBookForm hasCurrentReading={Boolean(currentReading)} />
       </header>
 
       {currentReading ? (

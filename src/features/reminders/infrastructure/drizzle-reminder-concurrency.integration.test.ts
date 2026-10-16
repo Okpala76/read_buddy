@@ -71,6 +71,78 @@ describe.runIf(runIntegrationTests)(
       await databasePool.end();
     });
 
+    it("logs only pages read after an imported book baseline", async () => {
+      const bookId = crypto.randomUUID();
+      await database.insert(books).values({
+        id: bookId,
+        userId,
+        title: "Already in progress",
+        author: "Reader",
+        totalPages: 300,
+        currentPage: 85,
+        status: "READING",
+      });
+
+      const { DrizzleReadingSessionRepository } =
+        await import("@/features/reading/infrastructure/drizzle-reading-session-repository");
+      const result =
+        await new DrizzleReadingSessionRepository().logReadingSession(userId, {
+          bookId,
+          endPage: 100,
+          mood: null,
+        });
+
+      expect(result.session.startPage).toBe(85);
+      expect(result.session.endPage).toBe(100);
+      expect(result.session.pagesRead).toBe(15);
+      const saved = await database
+        .select({
+          startPage: readingSessions.startPage,
+          endPage: readingSessions.endPage,
+          pagesRead: readingSessions.pagesRead,
+        })
+        .from(readingSessions)
+        .where(eq(readingSessions.bookId, bookId));
+      expect(saved).toEqual([{ startPage: 85, endPage: 100, pagesRead: 15 }]);
+    });
+
+    it("rejects stale and out-of-range ending pages without creating sessions", async () => {
+      const bookId = crypto.randomUUID();
+      await database.insert(books).values({
+        id: bookId,
+        userId,
+        title: "Page validation",
+        author: "Reader",
+        totalPages: 200,
+        currentPage: 95,
+        status: "READING",
+      });
+
+      const { DrizzleReadingSessionRepository } =
+        await import("@/features/reading/infrastructure/drizzle-reading-session-repository");
+      const repository = new DrizzleReadingSessionRepository();
+      await expect(
+        repository.logReadingSession(userId, {
+          bookId,
+          endPage: 95,
+          mood: null,
+        }),
+      ).rejects.toThrow("Choose a page after");
+      await expect(
+        repository.logReadingSession(userId, {
+          bookId,
+          endPage: 201,
+          mood: null,
+        }),
+      ).rejects.toThrow("This book ends at page 200");
+
+      const saved = await database
+        .select()
+        .from(readingSessions)
+        .where(eq(readingSessions.bookId, bookId));
+      expect(saved).toHaveLength(0);
+    });
+
     it("allows two workers to claim a row only once", async () => {
       const now = new Date("2026-10-05T18:05:00.000Z");
       await database.insert(reminderDeliveries).values({

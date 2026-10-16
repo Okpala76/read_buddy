@@ -40,7 +40,7 @@ export function LogReadingForm({
 }: LogReadingFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pages, setPages] = useState("");
+  const [endingPage, setEndingPage] = useState("");
   const [mood, setMood] = useState<ReadingMood | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -48,8 +48,18 @@ export function LogReadingForm({
   const maxPages = currentBook
     ? Math.max(0, currentBook.totalPages - currentBook.currentPage)
     : 0;
-  const submittedPages = Number.parseInt(pages, 10) || 0;
-  const willFinishBook = maxPages > 0 && submittedPages === maxPages;
+  const parsedEndingPage = endingPage.trim() ? Number(endingPage) : NaN;
+  const isValidEndingPage =
+    currentBook !== null &&
+    Number.isInteger(parsedEndingPage) &&
+    parsedEndingPage > currentBook.currentPage &&
+    parsedEndingPage <= currentBook.totalPages;
+  const previewPages =
+    currentBook && isValidEndingPage
+      ? parsedEndingPage - currentBook.currentPage
+      : 0;
+  const willFinishBook =
+    isValidEndingPage && parsedEndingPage === currentBook?.totalPages;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,33 +71,27 @@ export function LogReadingForm({
       return;
     }
 
-    const parsedPages = Number.parseInt(pages, 10);
-    if (Number.isNaN(parsedPages) || parsedPages <= 0) {
-      setError("Enter the number of pages you read.");
+    if (!isValidEndingPage) {
+      setError(
+        `Enter a whole-number page after ${currentBook.currentPage}, up to ${currentBook.totalPages}.`,
+      );
       return;
     }
-
-    if (parsedPages > maxPages) {
-      setError(`This book only has ${maxPages} pages remaining.`);
-      return;
-    }
-
-    const completedBook = parsedPages === maxPages;
 
     setIsSubmitting(true);
     try {
-      await logReading({
+      const result = await logReading({
         bookId: currentBook.id,
-        submittedPages: parsedPages,
+        endPage: parsedEndingPage,
         mood,
       });
 
-      setPages("");
+      setEndingPage("");
       setMood(null);
       setSuccess(
-        completedBook
-          ? `${parsedPages} pages logged. You finished ${currentBook.title}.`
-          : `${parsedPages} pages logged. Your progress is up to date.`,
+        result.wasCompleted
+          ? `${result.pagesRead} pages logged. You finished ${currentBook.title}.`
+          : `${result.pagesRead} pages logged. You reached page ${result.newCurrentPage}.`,
       );
       router.refresh();
     } catch (err) {
@@ -158,7 +162,8 @@ export function LogReadingForm({
 
           <div className="sm:text-right">
             <p className="text-foreground text-sm font-medium">
-              Page {currentBook.currentPage} of {currentBook.totalPages}
+              Last saved page: {currentBook.currentPage} of{" "}
+              {currentBook.totalPages}
             </p>
             <p className="text-muted-foreground text-xs">
               {maxPages} pages remaining
@@ -181,7 +186,7 @@ export function LogReadingForm({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 p-5 sm:p-6">
+      <form onSubmit={handleSubmit} noValidate className="space-y-6 p-5 sm:p-6">
         {success && (
           <div
             className="bg-primary/10 text-primary motion-feedback-in flex items-start gap-3 rounded-xl p-4 text-sm"
@@ -207,10 +212,10 @@ export function LogReadingForm({
         <div>
           <div className="flex items-end justify-between gap-4">
             <label
-              htmlFor="pages"
+              htmlFor="endingPage"
               className="text-foreground text-base font-semibold"
             >
-              Pages read
+              What page did you stop at?
             </label>
             <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
               <Target className="size-4" aria-hidden="true" />
@@ -220,34 +225,40 @@ export function LogReadingForm({
 
           <div className="border-input focus-within:ring-ring bg-background mt-2 flex items-center rounded-xl border px-4 focus-within:ring-2 focus-within:ring-offset-2">
             <input
-              id="pages"
+              id="endingPage"
               type="number"
               inputMode="numeric"
-              min={1}
-              max={maxPages}
-              value={pages}
+              step="1"
+              min={currentBook.currentPage + 1}
+              max={currentBook.totalPages}
+              value={endingPage}
               onChange={(event) => {
-                setPages(event.target.value);
+                setEndingPage(event.target.value);
                 setError(null);
                 setSuccess(null);
               }}
               placeholder={String(
-                Math.min(dailyTarget, maxPages || dailyTarget),
+                Math.min(
+                  currentBook.totalPages,
+                  currentBook.currentPage + dailyTarget,
+                ),
               )}
               disabled={isSubmitting}
               autoFocus
               className="text-foreground h-16 min-w-0 flex-1 bg-transparent text-2xl font-semibold outline-none disabled:opacity-60"
             />
-            <span className="text-muted-foreground text-sm">pages</span>
+            <span className="text-muted-foreground text-sm">page</span>
           </div>
 
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
             <p className="text-muted-foreground">
-              Enter only what you read in this session.
+              Last saved: page {currentBook.currentPage}. Just enter the last
+              page you finished.
             </p>
-            {willFinishBook && (
-              <p className="text-primary font-medium">
-                This will finish the book.
+            {isValidEndingPage && (
+              <p className="text-primary font-medium" role="status">
+                {previewPages} {previewPages === 1 ? "page" : "pages"} read
+                {willFinishBook ? " · Book complete!" : ""}
               </p>
             )}
           </div>
@@ -300,8 +311,8 @@ export function LogReadingForm({
             ? "Saving…"
             : willFinishBook
               ? "Log reading and finish book"
-              : submittedPages > 0
-                ? `Save ${submittedPages} pages`
+              : isValidEndingPage
+                ? `Save page ${parsedEndingPage}`
                 : "Save reading"}
         </button>
       </form>

@@ -186,6 +186,60 @@ describe("Analytics domain", () => {
       expect(result.longestStreak).toBe(3);
     });
 
+    it("shows the whole streak from yesterday before today's first log", () => {
+      const dates = ["2026-10-12", "2026-10-13", "2026-10-14"];
+      const dayMap = new Map(
+        dates.map((date) => [
+          date,
+          { date: new Date(date), pagesRead: 8, sessions: [] },
+        ]),
+      );
+      const now = new Date("2026-10-15T13:00:00Z");
+
+      const before = calculateStreak(dayMap, "UTC", now);
+      expect(before.currentStreak).toBe(3);
+      expect(before.longestStreak).toBe(3);
+
+      dayMap.set("2026-10-15", {
+        date: new Date("2026-10-15"),
+        pagesRead: 8,
+        sessions: [],
+      });
+      const after = calculateStreak(dayMap, "UTC", now);
+      expect(after.currentStreak).toBe(4);
+      expect(after.longestStreak).toBe(4);
+    });
+
+    it("counts consecutive local days across timezone midnight and DST", () => {
+      const sessions = [
+        createSession({ id: "1", readAt: new Date("2026-03-07T23:30:00Z") }),
+        createSession({ id: "2", readAt: new Date("2026-03-09T03:30:00Z") }),
+      ];
+      // In Toronto these sessions occurred on March 7 and March 8.
+      const map = groupSessionsByDay(sessions, "America/Toronto");
+      const now = new Date("2026-03-09T02:00:00Z");
+      expect(calculateStreak(map, "America/Toronto", now).currentStreak).toBe(
+        2,
+      );
+    });
+
+    it("retains the longest past streak after a missed full day", () => {
+      const dayMap = new Map(
+        ["2026-10-10", "2026-10-11", "2026-10-12", "2026-10-14"].map((date) => [
+          date,
+          { date: new Date(date), pagesRead: 8, sessions: [] },
+        ]),
+      );
+
+      const result = calculateStreak(
+        dayMap,
+        "UTC",
+        new Date("2026-10-16T12:00:00Z"),
+      );
+      expect(result.currentStreak).toBe(0);
+      expect(result.longestStreak).toBe(3);
+    });
+
     it("handles gap in streak", () => {
       const today = new Date();
       const todayStr = today.toISOString().split("T")[0];
