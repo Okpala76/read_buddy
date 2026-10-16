@@ -25,7 +25,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -52,6 +51,8 @@ export function BookCard({
   const [undoResumePage, setUndoResumePage] = useState("");
   const [undoError, setUndoError] = useState<string | null>(null);
   const [undoOpen, setUndoOpen] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
   const undoPageId = useId();
 
   const remainingPages = Math.max(0, book.totalPages - book.currentPage);
@@ -65,6 +66,22 @@ export function BookCard({
         await action();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Action failed");
+      }
+    });
+  }
+
+  function handleRemoveBook() {
+    startTransition(async () => {
+      setRemoveError(null);
+      try {
+        await deleteBook({ bookId: book.id });
+        setRemoveOpen(false);
+      } catch (err) {
+        setRemoveError(
+          err instanceof Error
+            ? err.message
+            : "Could not remove the book. Please try again.",
+        );
       }
     });
   }
@@ -242,7 +259,14 @@ export function BookCard({
           )}
 
           {book.status !== BookStatus.COMPLETED && (
-            <AlertDialog>
+            <AlertDialog
+              open={removeOpen}
+              onOpenChange={(open) => {
+                if (isPending) return;
+                setRemoveOpen(open);
+                if (open) setRemoveError(null);
+              }}
+            >
               <AlertDialogTrigger asChild>
                 <button
                   type="button"
@@ -257,19 +281,31 @@ export function BookCard({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Remove this book?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    {book.title} will be removed from your library. This action
-                    cannot be undone.
+                    {book.title} will disappear from your library. Reading
+                    sessions you already logged will stay in your history,
+                    streak, and analytics.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
+                {removeError && (
+                  <p className="text-destructive text-sm" role="alert">
+                    {removeError}
+                  </p>
+                )}
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Keep book</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() =>
-                      handleAction(() => deleteBook({ bookId: book.id }))
-                    }
+                  <AlertDialogCancel disabled={isPending}>
+                    Keep book
+                  </AlertDialogCancel>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={isPending}
+                    onClick={handleRemoveBook}
                   >
+                    {isPending && (
+                      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    )}
                     Remove book
-                  </AlertDialogAction>
+                  </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
