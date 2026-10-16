@@ -1,6 +1,6 @@
 import { db } from "@/db/client";
 import { books, readingSessions } from "@/db/schema";
-import { eq, and, desc, gte, lte } from "drizzle-orm";
+import { eq, and, desc, gte, lte, isNull } from "drizzle-orm";
 import {
   ReadingSession,
   ReadingMood,
@@ -151,7 +151,13 @@ export class DrizzleReadingSessionRepository implements ReadingSessionRepository
       const lockedBooks = await tx
         .select()
         .from(books)
-        .where(and(eq(books.userId, userId), eq(books.status, "READING")))
+        .where(
+          and(
+            eq(books.userId, userId),
+            eq(books.status, "READING"),
+            isNull(books.removedAt),
+          ),
+        )
         .limit(1)
         .for("update");
 

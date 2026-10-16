@@ -70,6 +70,47 @@ describe("BookCard", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("removes an active book after confirmation", async () => {
+    render(<BookCard book={baseBook} isCurrentReading />);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Remove Test Book from library",
+      }),
+    );
+    expect(
+      screen.getByText(/Reading sessions you already logged/),
+    ).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove book" }));
+
+    await waitFor(() =>
+      expect(deleteBookMock).toHaveBeenCalledWith({ bookId: baseBook.id }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("keeps the removal dialog open on a server failure", async () => {
+    deleteBookMock.mockRejectedValueOnce(
+      new Error("Could not remove this book"),
+    );
+    render(<BookCard book={baseBook} isCurrentReading />);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Remove Test Book from library",
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Remove book" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not remove this book",
+    );
+    expect(screen.getByRole("alertdialog")).toBeVisible();
+  });
+
   it("moves the active book back to the queue", async () => {
     render(<BookCard book={baseBook} isCurrentReading />);
 
