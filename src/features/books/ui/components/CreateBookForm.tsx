@@ -109,7 +109,10 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
         aria-labelledby="create-book-title"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 id="create-book-title" className="text-foreground text-xl font-semibold">
+          <h2
+            id="create-book-title"
+            className="text-foreground text-xl font-semibold"
+          >
             Add a book
           </h2>
           <button
@@ -125,13 +128,19 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {errors.form && (
-            <div className="bg-destructive/10 text-destructive rounded-md p-3 text-sm" role="alert">
+            <div
+              className="bg-destructive/10 text-destructive rounded-md p-3 text-sm"
+              role="alert"
+            >
               {errors.form}
             </div>
           )}
 
           <div>
-            <label htmlFor="title" className="text-foreground mb-1 block text-sm font-medium">
+            <label
+              htmlFor="title"
+              className="text-foreground mb-1 block text-sm font-medium"
+            >
               Book title
             </label>
             <input
@@ -145,11 +154,16 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
               placeholder="Book title"
               disabled={isSubmitting}
             />
-            {errors.title && <p className="text-destructive mt-1 text-sm">{errors.title}</p>}
+            {errors.title && (
+              <p className="text-destructive mt-1 text-sm">{errors.title}</p>
+            )}
           </div>
 
           <div>
-            <label htmlFor="author" className="text-foreground mb-1 block text-sm font-medium">
+            <label
+              htmlFor="author"
+              className="text-foreground mb-1 block text-sm font-medium"
+            >
               Author
             </label>
             <input
@@ -163,11 +177,16 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
               placeholder="Author name"
               disabled={isSubmitting}
             />
-            {errors.author && <p className="text-destructive mt-1 text-sm">{errors.author}</p>}
+            {errors.author && (
+              <p className="text-destructive mt-1 text-sm">{errors.author}</p>
+            )}
           </div>
 
           <div>
-            <label htmlFor="totalPages" className="text-foreground mb-1 block text-sm font-medium">
+            <label
+              htmlFor="totalPages"
+              className="text-foreground mb-1 block text-sm font-medium"
+            >
               Total pages
             </label>
             <input
@@ -185,7 +204,9 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
               disabled={isSubmitting}
             />
             {errors.totalPages && (
-              <p className="text-destructive mt-1 text-sm">{errors.totalPages}</p>
+              <p className="text-destructive mt-1 text-sm">
+                {errors.totalPages}
+              </p>
             )}
           </div>
 
@@ -193,10 +214,12 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
             <legend className="text-foreground mb-2 text-sm font-semibold">
               Where are you with this book?
             </legend>
-            <label className={cn(
-              "border-border flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm",
-              !alreadyReading && "border-primary bg-primary/5",
-            )}>
+            <label
+              className={cn(
+                "border-border flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm",
+                !alreadyReading && "border-primary bg-primary/5",
+              )}
+            >
               <input
                 type="radio"
                 name="reading-start"
@@ -206,10 +229,12 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
               />
               Starting from the beginning
             </label>
-            <label className={cn(
-              "border-border flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm",
-              alreadyReading && "border-primary bg-primary/5",
-            )}>
+            <label
+              className={cn(
+                "border-border flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm",
+                alreadyReading && "border-primary bg-primary/5",
+              )}
+            >
               <input
                 type="radio"
                 name="reading-start"
@@ -223,7 +248,10 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
 
           {alreadyReading && (
             <div>
-              <label htmlFor="lastFinishedPage" className="text-foreground mb-1 block text-sm font-medium">
+              <label
+                htmlFor="lastFinishedPage"
+                className="text-foreground mb-1 block text-sm font-medium"
+              >
                 Last page you finished
               </label>
               <input
@@ -231,7 +259,9 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
                 type="number"
                 min="1"
                 step="1"
-                max={Number(totalPages) > 0 ? Number(totalPages) - 1 : undefined}
+                max={
+                  Number(totalPages) > 0 ? Number(totalPages) - 1 : undefined
+                }
                 value={lastFinishedPage}
                 onChange={(event) => setLastFinishedPage(event.target.value)}
                 className={cn(
@@ -242,10 +272,13 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
                 disabled={isSubmitting}
               />
               <p className="text-muted-foreground mt-1 text-xs">
-                We'll pick up after this page. Earlier pages count toward book progress, not your in-app reading history.
+                We'll pick up after this page. Earlier pages count toward book
+                progress, not your in-app reading history.
               </p>
               {errors.lastFinishedPage && (
-                <p className="text-destructive mt-1 text-sm">{errors.lastFinishedPage}</p>
+                <p className="text-destructive mt-1 text-sm">
+                  {errors.lastFinishedPage}
+                </p>
               )}
             </div>
           )}
@@ -280,8 +313,12 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
               disabled={isSubmitting}
               className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
             >
-              {isSubmitting && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-              {startNow && !hasCurrentReading ? "Add and start" : "Add to library"}
+              {isSubmitting && (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              )}
+              {startNow && !hasCurrentReading
+                ? "Add and start"
+                : "Add to library"}
             </button>
           </div>
         </form>

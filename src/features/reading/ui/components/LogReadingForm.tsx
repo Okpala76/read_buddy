@@ -54,9 +54,10 @@ export function LogReadingForm({
     Number.isInteger(parsedEndingPage) &&
     parsedEndingPage > currentBook.currentPage &&
     parsedEndingPage <= currentBook.totalPages;
-  const previewPages = currentBook && isValidEndingPage
-    ? parsedEndingPage - currentBook.currentPage
-    : 0;
+  const previewPages =
+    currentBook && isValidEndingPage
+      ? parsedEndingPage - currentBook.currentPage
+      : 0;
   const willFinishBook =
     isValidEndingPage && parsedEndingPage === currentBook?.totalPages;
 
@@ -71,7 +72,9 @@ export function LogReadingForm({
     }
 
     if (!isValidEndingPage) {
-      setError(`Enter a whole-number page after ${currentBook.currentPage}, up to ${currentBook.totalPages}.`);
+      setError(
+        `Enter a whole-number page after ${currentBook.currentPage}, up to ${currentBook.totalPages}.`,
+      );
       return;
     }
 
@@ -159,7 +162,8 @@ export function LogReadingForm({
 
           <div className="sm:text-right">
             <p className="text-foreground text-sm font-medium">
-              Last saved page: {currentBook.currentPage} of {currentBook.totalPages}
+              Last saved page: {currentBook.currentPage} of{" "}
+              {currentBook.totalPages}
             </p>
             <p className="text-muted-foreground text-xs">
               {maxPages} pages remaining
@@ -233,7 +237,12 @@ export function LogReadingForm({
                 setError(null);
                 setSuccess(null);
               }}
-              placeholder={String(Math.min(currentBook.totalPages, currentBook.currentPage + dailyTarget))}
+              placeholder={String(
+                Math.min(
+                  currentBook.totalPages,
+                  currentBook.currentPage + dailyTarget,
+                ),
+              )}
               disabled={isSubmitting}
               autoFocus
               className="text-foreground h-16 min-w-0 flex-1 bg-transparent text-2xl font-semibold outline-none disabled:opacity-60"
@@ -243,11 +252,13 @@ export function LogReadingForm({
 
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
             <p className="text-muted-foreground">
-              Last saved: page {currentBook.currentPage}. Just enter the last page you finished.
+              Last saved: page {currentBook.currentPage}. Just enter the last
+              page you finished.
             </p>
             {isValidEndingPage && (
               <p className="text-primary font-medium" role="status">
-                {previewPages} {previewPages === 1 ? "page" : "pages"} read{willFinishBook ? " · Book complete!" : ""}
+                {previewPages} {previewPages === 1 ? "page" : "pages"} read
+                {willFinishBook ? " · Book complete!" : ""}
               </p>
             )}
           </div>

@@ -85,14 +85,12 @@ describe.runIf(runIntegrationTests)(
 
       const { DrizzleReadingSessionRepository } =
         await import("@/features/reading/infrastructure/drizzle-reading-session-repository");
-      const result = await new DrizzleReadingSessionRepository().logReadingSession(
-        userId,
-        {
+      const result =
+        await new DrizzleReadingSessionRepository().logReadingSession(userId, {
           bookId,
           endPage: 100,
           mood: null,
-        },
-      );
+        });
 
       expect(result.session.startPage).toBe(85);
       expect(result.session.endPage).toBe(100);
@@ -105,9 +103,7 @@ describe.runIf(runIntegrationTests)(
         })
         .from(readingSessions)
         .where(eq(readingSessions.bookId, bookId));
-      expect(saved).toEqual([
-        { startPage: 85, endPage: 100, pagesRead: 15 },
-      ]);
+      expect(saved).toEqual([{ startPage: 85, endPage: 100, pagesRead: 15 }]);
     });
 
     it("rejects stale and out-of-range ending pages without creating sessions", async () => {
@@ -125,16 +121,20 @@ describe.runIf(runIntegrationTests)(
       const { DrizzleReadingSessionRepository } =
         await import("@/features/reading/infrastructure/drizzle-reading-session-repository");
       const repository = new DrizzleReadingSessionRepository();
-      await expect(repository.logReadingSession(userId, {
-        bookId,
-        endPage: 95,
-        mood: null,
-      })).rejects.toThrow("Choose a page after");
-      await expect(repository.logReadingSession(userId, {
-        bookId,
-        endPage: 201,
-        mood: null,
-      })).rejects.toThrow("This book ends at page 200");
+      await expect(
+        repository.logReadingSession(userId, {
+          bookId,
+          endPage: 95,
+          mood: null,
+        }),
+      ).rejects.toThrow("Choose a page after");
+      await expect(
+        repository.logReadingSession(userId, {
+          bookId,
+          endPage: 201,
+          mood: null,
+        }),
+      ).rejects.toThrow("This book ends at page 200");
 
       const saved = await database
         .select()

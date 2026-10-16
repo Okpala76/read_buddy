@@ -218,17 +218,17 @@ describe("Analytics domain", () => {
       // In Toronto these sessions occurred on March 7 and March 8.
       const map = groupSessionsByDay(sessions, "America/Toronto");
       const now = new Date("2026-03-09T02:00:00Z");
-      expect(calculateStreak(map, "America/Toronto", now).currentStreak).toBe(2);
+      expect(calculateStreak(map, "America/Toronto", now).currentStreak).toBe(
+        2,
+      );
     });
 
     it("retains the longest past streak after a missed full day", () => {
       const dayMap = new Map(
-        ["2026-10-10", "2026-10-11", "2026-10-12", "2026-10-14"].map(
-          (date) => [
-            date,
-            { date: new Date(date), pagesRead: 8, sessions: [] },
-          ],
-        ),
+        ["2026-10-10", "2026-10-11", "2026-10-12", "2026-10-14"].map((date) => [
+          date,
+          { date: new Date(date), pagesRead: 8, sessions: [] },
+        ]),
       );
 
       const result = calculateStreak(

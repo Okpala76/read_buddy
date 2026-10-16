@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CreateBookForm } from "./CreateBookForm";
@@ -94,7 +100,9 @@ describe("CreateBookForm", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Add and start" }));
-    expect(screen.getByText(/last page you finished \(before the final page\)/i)).toBeVisible();
+    expect(
+      screen.getByText(/last page you finished \(before the final page\)/i),
+    ).toBeVisible();
     expect(createBookMock).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LogReadingForm } from "./LogReadingForm";
@@ -61,7 +67,9 @@ describe("LogReadingForm", () => {
         mood: null,
       }),
     );
-    expect(await screen.findByText(/15 pages logged\. You reached page 100/)).toBeVisible();
+    expect(
+      await screen.findByText(/15 pages logged\. You reached page 100/),
+    ).toBeVisible();
     expect(refreshMock).toHaveBeenCalledOnce();
   });
 
@@ -90,7 +98,9 @@ describe("LogReadingForm", () => {
     });
 
     expect(screen.getByText(/Book complete!/)).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Log reading and finish book" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Log reading and finish book" }),
+    );
 
     expect(await screen.findByText(/You finished A Long Read/)).toBeVisible();
   });

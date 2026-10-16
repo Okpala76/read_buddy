@@ -167,7 +167,9 @@ export class DrizzleReadingSessionRepository implements ReadingSessionRepository
 
       const startPage = currentBook.currentPage;
       if (!Number.isInteger(input.endPage) || input.endPage <= startPage) {
-        throw new Error(`Choose a page after your last saved page (${startPage}).`);
+        throw new Error(
+          `Choose a page after your last saved page (${startPage}).`,
+        );
       }
       if (input.endPage > currentBook.totalPages) {
         throw new Error(`This book ends at page ${currentBook.totalPages}.`);
