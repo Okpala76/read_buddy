@@ -186,7 +186,7 @@ export function LogReadingForm({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 p-5 sm:p-6">
+      <form onSubmit={handleSubmit} noValidate className="space-y-6 p-5 sm:p-6">
         {success && (
           <div
             className="bg-primary/10 text-primary motion-feedback-in flex items-start gap-3 rounded-xl p-4 text-sm"
