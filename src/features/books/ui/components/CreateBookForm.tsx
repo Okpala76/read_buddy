@@ -272,7 +272,7 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
                 disabled={isSubmitting}
               />
               <p className="text-muted-foreground mt-1 text-xs">
-                We&apos;ll pick up after this page. Earlier pages count toward book
+                We’ll pick up after this page. Earlier pages count toward book
                 progress, not your in-app reading history.
               </p>
               {errors.lastFinishedPage && (
