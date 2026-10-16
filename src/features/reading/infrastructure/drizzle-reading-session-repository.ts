@@ -166,15 +166,15 @@ export class DrizzleReadingSessionRepository implements ReadingSessionRepository
       }
 
       const startPage = currentBook.currentPage;
-      const effectiveEndPage = Math.min(
-        startPage + input.submittedPages,
-        currentBook.totalPages,
-      );
-      const pagesRead = effectiveEndPage - startPage;
-
-      if (pagesRead <= 0) {
-        throw new Error("No progress made; already at or past total pages");
+      if (!Number.isInteger(input.endPage) || input.endPage <= startPage) {
+        throw new Error(`Choose a page after your last saved page (${startPage}).`);
       }
+      if (input.endPage > currentBook.totalPages) {
+        throw new Error(`This book ends at page ${currentBook.totalPages}.`);
+      }
+
+      const effectiveEndPage = input.endPage;
+      const pagesRead = effectiveEndPage - startPage;
 
       const sessionId = crypto.randomUUID();
       const readAt = input.readAt ?? new Date();
