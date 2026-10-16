@@ -8,7 +8,7 @@ import { Book } from "@/features/books/domain";
 
 export const logReadingInputSchema = z.object({
   bookId: z.string().uuid(),
-  submittedPages: z.number().int().positive(),
+  endPage: z.number().int().positive(),
   mood: z
     .enum(["FOCUSED", "RELAXED", "ENERGIZED", "DISTRACTED", "TIRED"])
     .nullable()
@@ -45,12 +45,12 @@ export class LogReadingUseCase {
     // Create a new object with the properly typed mood
     const domainInput: {
       bookId: string;
-      submittedPages: number;
+      endPage: number;
       mood: "FOCUSED" | "RELAXED" | "ENERGIZED" | "DISTRACTED" | "TIRED" | null;
       readAt?: Date;
     } = {
       bookId: parsed.bookId,
-      submittedPages: parsed.submittedPages,
+      endPage: parsed.endPage,
       mood: parsed.mood ?? null,
       readAt: parsed.readAt,
     };
