@@ -46,11 +46,16 @@ export async function logReading(input: unknown) {
   const user = await requireAuth();
   const { logReading } = getReadingUseCases();
   const parsed = logReadingInputSchema.parse(input);
-  await logReading.execute(user.id, parsed);
+  const result = await logReading.execute(user.id, parsed);
   revalidatePath("/dashboard");
   revalidatePath("/books");
   revalidatePath("/sessions");
   revalidatePath("/analytics");
+  return {
+    pagesRead: result.session.pagesRead,
+    newCurrentPage: result.newCurrentPage,
+    wasCompleted: result.wasCompleted,
+  };
 }
 
 export async function getReadingSessions(input: unknown = {}) {
