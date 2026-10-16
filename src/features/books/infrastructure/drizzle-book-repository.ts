@@ -47,7 +47,13 @@ export class DrizzleBookRepository implements BookRepository {
     const rows = await database
       .select()
       .from(books)
-      .where(and(eq(books.id, id), eq(books.userId, userId), isNull(books.removedAt)))
+      .where(
+        and(
+          eq(books.id, id),
+          eq(books.userId, userId),
+          isNull(books.removedAt),
+        ),
+      )
       .limit(1);
     if (rows.length === 0) return null;
     return toDomain(rows[0]);

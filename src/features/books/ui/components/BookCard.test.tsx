@@ -78,7 +78,9 @@ describe("BookCard", () => {
         name: "Remove Test Book from library",
       }),
     );
-    expect(screen.getByText(/Reading sessions you already logged/)).toBeVisible();
+    expect(
+      screen.getByText(/Reading sessions you already logged/),
+    ).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Remove book" }));
 
@@ -91,7 +93,9 @@ describe("BookCard", () => {
   });
 
   it("keeps the removal dialog open on a server failure", async () => {
-    deleteBookMock.mockRejectedValueOnce(new Error("Could not remove this book"));
+    deleteBookMock.mockRejectedValueOnce(
+      new Error("Could not remove this book"),
+    );
     render(<BookCard book={baseBook} isCurrentReading />);
 
     fireEvent.click(
