@@ -1,6 +1,6 @@
 import { db } from "@/db/client";
 import { books, readingSessions } from "@/db/schema";
-import { eq, and, desc, max } from "drizzle-orm";
+import { eq, and, desc, max, isNull } from "drizzle-orm";
 import { Book, BookStatus, BookRepository } from "../domain";
 
 function toDomain(row: typeof books.$inferSelect): Book {
@@ -47,7 +47,7 @@ export class DrizzleBookRepository implements BookRepository {
     const rows = await database
       .select()
       .from(books)
-      .where(and(eq(books.id, id), eq(books.userId, userId)))
+      .where(and(eq(books.id, id), eq(books.userId, userId), isNull(books.removedAt)))
       .limit(1);
     if (rows.length === 0) return null;
     return toDomain(rows[0]);
@@ -58,7 +58,7 @@ export class DrizzleBookRepository implements BookRepository {
     const rows = await database
       .select()
       .from(books)
-      .where(eq(books.userId, userId))
+      .where(and(eq(books.userId, userId), isNull(books.removedAt)))
       .orderBy(desc(books.createdAt));
     return rows.map(toDomain);
   }
@@ -69,7 +69,11 @@ export class DrizzleBookRepository implements BookRepository {
       .select()
       .from(books)
       .where(
-        and(eq(books.userId, userId), eq(books.status, BookStatus.READING)),
+        and(
+          eq(books.userId, userId),
+          eq(books.status, BookStatus.READING),
+          isNull(books.removedAt),
+        ),
       )
       .limit(1);
     if (rows.length === 0) return null;
@@ -98,9 +102,23 @@ export class DrizzleBookRepository implements BookRepository {
 
   async delete(id: string, userId: string): Promise<void> {
     const database = getDb();
+    // Keep the book row as the parent of immutable reading sessions.
+    // Requeue the removed row to release the one-active-book constraint.
+    const removedAt = new Date();
     await database
-      .delete(books)
-      .where(and(eq(books.id, id), eq(books.userId, userId)));
+      .update(books)
+      .set({
+        status: BookStatus.QUEUED,
+        removedAt,
+        updatedAt: removedAt,
+      })
+      .where(
+        and(
+          eq(books.id, id),
+          eq(books.userId, userId),
+          isNull(books.removedAt),
+        ),
+      );
   }
 
   async findMaxSessionPageByBookId(
