@@ -126,7 +126,7 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           {errors.form && (
             <div
               className="bg-destructive/10 text-destructive rounded-md p-3 text-sm"
