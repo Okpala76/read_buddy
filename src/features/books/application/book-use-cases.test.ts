@@ -66,6 +66,68 @@ describe("CreateBookUseCase", () => {
     expect(repo.save).toHaveBeenCalled();
   });
 
+  it("imports an in-progress book without creating an artificial reading session", async () => {
+    vi.mocked(repo.save).mockResolvedValue(undefined);
+    vi.mocked(repo.findReadingByUserId).mockResolvedValue(null);
+
+    const book = await useCase.execute(testUserId, {
+      title: "Started Elsewhere",
+      author: "An Author",
+      totalPages: 300,
+      initialPage: 85,
+      startNow: true,
+    });
+
+    expect(book.currentPage).toBe(85);
+    expect(book.status).toBe(BookStatus.READING);
+    expect(repo.save).toHaveBeenCalledOnce();
+  });
+
+  it("keeps an imported book in the queue when requested", async () => {
+    vi.mocked(repo.save).mockResolvedValue(undefined);
+
+    const book = await useCase.execute(testUserId, {
+      title: "Queued and started",
+      author: "Author",
+      totalPages: 200,
+      initialPage: 50,
+      startNow: false,
+    });
+
+    expect(book.currentPage).toBe(50);
+    expect(book.status).toBe(BookStatus.QUEUED);
+    expect(repo.findReadingByUserId).not.toHaveBeenCalled();
+  });
+
+  it("does not start a second book while another is active", async () => {
+    vi.mocked(repo.findReadingByUserId).mockResolvedValue(
+      Book.create({ ...baseBook.toPersistence(), status: BookStatus.READING }),
+    );
+
+    await expect(
+      useCase.execute(testUserId, {
+        title: "Another book",
+        author: "Author",
+        totalPages: 200,
+        initialPage: 45,
+        startNow: true,
+      }),
+    ).rejects.toThrow("Move your current book to the queue");
+    expect(repo.save).not.toHaveBeenCalled();
+  });
+
+  it("rejects imported positions at or beyond the last page", async () => {
+    await expect(
+      useCase.execute(testUserId, {
+        title: "Already complete",
+        author: "Author",
+        totalPages: 200,
+        initialPage: 200,
+      }),
+    ).rejects.toThrow();
+    expect(repo.save).not.toHaveBeenCalled();
+  });
+
   it("validates input with Zod", async () => {
     await expect(
       useCase.execute(testUserId, {
