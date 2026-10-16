@@ -113,96 +113,64 @@ export function groupSessionsByDay(
 /**
  * Calculates streak from daily data
  */
-export function calculateStreak(dayMap: Map<string, DayEntry>): StreakResult {
-  if (dayMap.size === 0) {
-    return {
-      currentStreak: 0,
-      longestStreak: 0,
-      lastReadDate: null,
-    };
+export function calculateStreak(
+  dayMap: Map<string, DayEntry>,
+  timezone = "UTC",
+  now = new Date(),
+): StreakResult {
+  const dates = [...dayMap.keys()]
+    .map((key) => Temporal.PlainDate.from(key))
+    .sort(Temporal.PlainDate.compare);
+
+  if (dates.length === 0) {
+    return { currentStreak: 0, longestStreak: 0, lastReadDate: null };
   }
 
-  // Get all dates with reading activity, sorted
-  const datesWithReading = Array.from(dayMap.keys())
-    .map((k) => new Date(k))
-    .sort((a, b) => a.getTime() - b.getTime());
+  // Streaks use the reader's local calendar day, including at UTC midnight
+  // and across daylight-saving changes.
+  const today = Temporal.Instant.fromEpochMilliseconds(now.getTime())
+    .toZonedDateTimeISO(timezone)
+    .toPlainDate();
+  const yesterday = today.subtract({ days: 1 });
+  const last = dates[dates.length - 1];
 
-  const today = new Date();
-  const todayStart = new Date(today.toISOString().split("T")[0]);
+  // Current streak survives until the reader's *local* day ends.
+  const isContinuing =
+    Temporal.PlainDate.compare(last, today) === 0 ||
+    Temporal.PlainDate.compare(last, yesterday) === 0;
 
   let currentStreak = 0;
-  let longestStreak = 0;
-  let lastReadDate: Date | null = null;
-
-  // Check from most recent date backwards
-  for (let i = datesWithReading.length - 1; i >= 0; i--) {
-    const currentDate = datesWithReading[i];
-    const expectedDate = new Date(todayStart);
-    expectedDate.setDate(expectedDate.getDate() - currentStreak);
-
-    if (currentDate.getTime() === expectedDate.getTime()) {
+  if (isContinuing) {
+    let expected = last;
+    for (let index = dates.length - 1; index >= 0; index--) {
+      if (Temporal.PlainDate.compare(dates[index], expected) !== 0) break;
       currentStreak++;
-      longestStreak = Math.max(longestStreak, currentStreak);
-      lastReadDate = currentDate;
-    } else if (currentDate < expectedDate) {
-      // Gap found, streak broken
-      break;
+      expected = expected.subtract({ days: 1 });
     }
   }
 
-  // If no reading today, check if yesterday was read
-  if (currentStreak === 0 && datesWithReading.length > 0) {
-    const lastDate = datesWithReading[datesWithReading.length - 1];
-    const yesterday = new Date(todayStart);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (lastDate.getTime() === yesterday.getTime()) {
-      // Start counting from yesterday
-      currentStreak = 1;
-      longestStreak = Math.max(longestStreak, 1);
-      lastReadDate = lastDate;
-
-      // Continue checking backwards
-      for (let i = datesWithReading.length - 2; i >= 0; i--) {
-        const currentDate = datesWithReading[i];
-        const expectedDate = new Date(yesterday);
-        expectedDate.setDate(expectedDate.getDate() - (currentStreak - 1));
-
-        if (currentDate.getTime() === expectedDate.getTime()) {
-          currentStreak++;
-          longestStreak = Math.max(longestStreak, currentStreak);
-          lastReadDate = currentDate;
-        } else if (currentDate < expectedDate) {
-          break;
-        }
-      }
+  // The longest streak is independent of whether the current one is active.
+  let longestStreak = 0;
+  let run = 0;
+  for (let index = 0; index < dates.length; index++) {
+    if (
+      index > 0 &&
+      Temporal.PlainDate.compare(
+        dates[index],
+        dates[index - 1].add({ days: 1 }),
+      ) === 0
+    ) {
+      run++;
+    } else {
+      run = 1;
     }
-
-    // Calculate longest streak overall
-    let tempStreak = 0;
-    for (let i = 0; i < datesWithReading.length; i++) {
-      if (i === 0) {
-        tempStreak = 1;
-      } else {
-        const prevDate = datesWithReading[i - 1];
-        const currentDate = datesWithReading[i];
-        const diffDays = Math.round(
-          (currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24),
-        );
-        if (diffDays === 1) {
-          tempStreak++;
-        } else {
-          tempStreak = 1;
-        }
-      }
-      longestStreak = Math.max(longestStreak, tempStreak);
-    }
+    longestStreak = Math.max(longestStreak, run);
   }
 
   return {
     currentStreak,
     longestStreak,
-    lastReadDate,
+    lastReadDate: new Date(`${last.toString()}T00:00:00.000Z`),
   };
 }
 
@@ -314,7 +282,7 @@ export function computeAnalytics(
   const averagePagesPerDay =
     dailyData.length > 0 ? totalPagesRead / dailyData.length : 0;
 
-  const streak = calculateStreak(groupSessionsByDay(sessions, timezone));
+  const streak = calculateStreak(dayMap, timezone);
   const weeklyData = getWeeklyData(groupSessionsByDay(sessions, timezone));
   const monthlyData = getMonthlyData(groupSessionsByDay(sessions, timezone));
 
