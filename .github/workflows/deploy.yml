@@ -138,26 +138,17 @@ jobs:
             -o UserKnownHostsFile="$HOME/.ssh/known_hosts"
           )
           remote="${SSH_USER}@${SSH_HOST}"
-          remote_dir="/home/read_buddy_deploy/releases/${RELEASE_SHA}"
           ssh "${ssh_options[@]}" "$remote" \
-            "install -d -m 700 '$remote_dir'"
-          scp \
-            -i "$HOME/.ssh/read_buddy_deploy" \
-            -P "$SSH_PORT" \
-            -o BatchMode=yes \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
-            .release/migrations.tgz \
-            .release/migrations.hmac \
-            "$remote:$remote_dir/"
+            "stage-bundle $RELEASE_SHA" < .release/migrations.tgz
+          ssh "${ssh_options[@]}" "$remote" \
+            "stage-signature $RELEASE_SHA" < .release/migrations.hmac
 
           database_mode=apply
           if [[ "$RELEASE_MODE" == "status-only" ]]; then
             database_mode=status
           fi
           ssh "${ssh_options[@]}" "$remote" \
-            "sudo -n /home/gochi/read_buddy/bin/reconcile-migrations '$remote_dir' '$database_mode'"
+            "reconcile $RELEASE_SHA $database_mode"
 
       - name: Set up pnpm
         if: env.RELEASE_MODE == 'release'
@@ -272,4 +263,4 @@ jobs:
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
             "${SSH_USER}@${SSH_HOST}" \
-            "rm -rf '/home/read_buddy_deploy/releases/${RELEASE_SHA}'" || true
+            "cleanup ${RELEASE_SHA}" || true

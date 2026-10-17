@@ -37,43 +37,45 @@ only in the approved activation window and in this order.
 
 Install `rclone` on the VPS. Configure an object-storage remote and an `rclone
 crypt` remote named by `BACKUP_REMOTE`. Keep the rclone configuration readable
-only by root. Enable object versioning and an object-lock/lifecycle policy retaining
-daily database objects for at least 35 days. Do not put provider credentials in
-Git, GitHub Actions, or `release.env`.
+only by `gochi`. Enable object versioning and an object-lock/lifecycle policy
+retaining daily database objects for at least 35 days. Do not put provider
+credentials in Git, GitHub Actions, or `release.env`.
 
 Copy `ops/vps/read-buddy-release.env.example` to
 `/home/gochi/read_buddy/release.env`, set the crypt remote path, and install it as
-`root:root` mode `600`. The example container/database/role names are the values
-verified on the current VPS; re-audit them before copying this configuration to a
-different host.
+mode `600`. The example container/database/role names are the values verified on
+the current VPS; re-audit them before copying this configuration to a different
+host.
 
 ### 2. Install the fixed VPS commands
 
-Review the files from the release commit before installation, then install:
+Review the files from the release commit before installation, then install them as
+the existing `gochi` account:
 
 ```bash
-sudo install -o root -g root -m 750 ops/vps/backup-database.sh \
+install -m 700 ops/vps/backup-database.sh \
   /home/gochi/read_buddy/bin/backup-database
-sudo install -o root -g root -m 750 ops/vps/reconcile-migrations.sh \
+install -m 700 ops/vps/reconcile-migrations.sh \
   /home/gochi/read_buddy/bin/reconcile-migrations
-sudo install -o root -g root -m 750 ops/vps/verify-backup-restore.sh \
+install -m 700 ops/vps/verify-backup-restore.sh \
   /home/gochi/read_buddy/bin/verify-backup-restore
+install -m 700 ops/vps/deploy-ssh-command.sh \
+  /home/gochi/read_buddy/bin/deploy-ssh-command
 ```
 
 The host requires Bash, Python 3, OpenSSL, `flock`, Docker, and `rclone`. Generate a
 random migration-bundle HMAC key through a trusted channel, install it at the
-`BUNDLE_HMAC_KEY_FILE` path as `root:root` mode `600`, and store the same value in
+`BUNDLE_HMAC_KEY_FILE` path as mode `600`, and store the same value in
 the GitHub environment secret described below. The key signs the release SHA and
 archive; a stolen SSH deploy key therefore cannot fabricate migration SQL.
 
-Create a dedicated `read_buddy_deploy` Unix account without Docker-group
-membership. Its SSH key should use `restrict` (or explicit no-forwarding/no-PTY
-options), and `/home/read_buddy_deploy/releases` must be owned by that account with
-mode `700`. Grant passwordless sudo only for the fixed
-`/home/gochi/read_buddy/bin/reconcile-migrations` command. The reconciler rejects
-paths outside that staging root, non-commit directory names, invalid hashes, and
-psql meta-commands. It verifies the HMAC before extracting the archive into a
-root-owned temporary directory.
+Add a dedicated deploy public key to `/home/gochi/.ssh/authorized_keys` with
+`restrict` and the forced command
+`/home/gochi/read_buddy/bin/deploy-ssh-command`. The key cannot open a shell,
+forward ports, select arbitrary commands, or use SFTP. The wrapper permits only
+commit-addressed staging, reconciliation, and cleanup. The reconciler rejects paths
+outside its staging root, invalid hashes, and psql meta-commands, and verifies the
+HMAC before extracting the archive into a private temporary directory.
 
 ### 3. Harden database roles
 
@@ -99,9 +101,11 @@ the stored object back, and run `verify-backup-restore` against it. The restore
 drill creates a temporary PostgreSQL 16 container with no network and removes it on
 exit. It never connects to or overwrites production.
 
-Install and enable `ops/vps/read-buddy-backup.service` and
-`ops/vps/read-buddy-backup.timer`. Verify the timer and the first service result.
-Alert on a failed unit and on a backup age greater than 26 hours.
+Add `/home/gochi/read_buddy/bin/backup-database` to the existing `gochi` crontab at
+02:30 UTC and log its exit status. The shared maintenance lock prevents overlap
+with release migrations. Verify the first run and alert on a backup age greater
+than 26 hours. The included systemd unit/timer remain an option if privileged host
+administration becomes available later.
 
 ### 5. Configure GitHub
 
@@ -113,13 +117,13 @@ prevent administrator bypass where the repository plan permits it, and add:
 | -------------------- | --------------------------------- | ------------------------------------------- |
 | Environment secret   | `PRODUCTION_SSH_PRIVATE_KEY`      | Dedicated deploy account key                |
 | Environment secret   | `PRODUCTION_SSH_KNOWN_HOSTS`      | Pinned VPS host key from a trusted channel  |
-| Environment secret   | `MIGRATION_BUNDLE_HMAC_KEY`       | Same random key as the root-only VPS file   |
+| Environment secret   | `MIGRATION_BUNDLE_HMAC_KEY`       | Same random key as the private VPS file     |
 | Environment secret   | `VERCEL_TOKEN`                    | Narrowly scoped Vercel deployment token     |
 | Environment secret   | `PRODUCTION_HEALTH_CHECK_SECRET`  | Authenticates the database-backed probe     |
 | Environment secret   | `VERCEL_AUTOMATION_BYPASS_SECRET` | Optional deployment-protection health check |
 | Environment variable | `PRODUCTION_SSH_HOST`             | VPS SSH hostname or address                 |
 | Environment variable | `PRODUCTION_SSH_PORT`             | SSH port, normally `22`                     |
-| Environment variable | `PRODUCTION_SSH_USER`             | `read_buddy_deploy`                         |
+| Environment variable | `PRODUCTION_SSH_USER`             | `gochi`                                     |
 | Environment variable | `VERCEL_ORG_ID`                   | Vercel team ID                              |
 | Environment variable | `VERCEL_PROJECT_ID`               | Reading Buddy project ID                    |
 
