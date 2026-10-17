@@ -40,10 +40,20 @@ edit schema
   -> review generated SQL and constraints
   -> pnpm verify
   -> commit schema and migration together
-  -> pnpm db:migrate in deployment
+  -> merge after CI
+  -> approval-gated production reconciliation
+  -> coordinated Vercel deployment
 ```
 
-Never use `drizzle-kit push` against production. Take a backup before destructive migrations, make large changes expand-and-contract, and run migration jobs once rather than from every Vercel instance.
+Never use `drizzle-kit push` against production. The deployment workflow validates
+the complete Drizzle journal against production history and runs only missing
+committed SQL migrations. See [Production Deployment](./DEPLOYMENT.md).
+
+Schema changes must be backward compatible with the currently running release.
+Use expand-and-contract changes across separate releases. A migration containing a
+drop, rename, table rewrite, `CREATE INDEX CONCURRENTLY`, or another operation that
+cannot safely run in the reconciler transaction requires a separately reviewed
+rollout plan.
 
 ## Connections
 
@@ -56,25 +66,37 @@ The VPS must expose only PgBouncer, never PostgreSQL. Use a valid server certifi
 
 ## Backup and restore
 
-Recommended baseline:
+Production baseline:
 
-- Nightly custom-format logical backup with `pg_dump -Fc` to storage outside the VPS.
-- Encrypt backups, retain daily copies for 14 days and monthly copies according to business needs.
-- Monitor backup age and command exit status.
-- Run a quarterly restore drill against a separate database.
+- Every release with pending migrations creates a custom-format logical backup.
+- A systemd timer creates the same backup nightly, even when there is no release.
+- Each backup is checked with `pg_restore --list`, checksummed, copied through an
+  encrypted `rclone crypt` remote, downloaded for checksum verification, and only
+  then considered successful.
+- Dumps intentionally omit owner and ACL metadata. Disaster recovery must recreate
+  the migration, backup, and runtime roles plus the versioned runtime grants before
+  reopening application traffic.
+- Local copies are retained for 14 days. The object store must enforce versioning
+  and at least 35 days of retention; the release job never deletes remote backups.
+- Run `ops/vps/verify-backup-restore.sh` quarterly against a disposable,
+  network-isolated PostgreSQL 16 container and record the result.
 
-Example commands, run from a trusted host with secrets provided by its environment:
+Do not restore into production as a test. A real production restore is a
+destructive disaster-recovery action requiring maintenance mode, explicit approval,
+and a documented recovery point. The normal drill is:
 
 ```bash
-pg_dump --format=custom --no-owner --file="read_buddy_$(date +%F).dump" "$DATABASE_URL"
-createdb read_buddy_restore_test
-pg_restore --no-owner --exit-on-error --dbname="$RESTORE_DATABASE_URL" read_buddy_YYYY-MM-DD.dump
+sudo /home/gochi/read_buddy/bin/verify-backup-restore \
+  /home/gochi/read_buddy/backups/read_buddy_YYYYMMDDTHHMMSSZ.dump
 ```
 
-After restore, run migration status checks, verify row counts and constraints, and execute an application smoke test before declaring the backup usable.
+After an actual disaster restore, reconcile migration history, compare critical row
+counts, verify constraints, and execute application smoke tests before reopening
+traffic.
 
 ## Open database decisions
 
-- The production hostname, certificate authority, and backup destination are deployment-specific.
+- The encrypted object-storage provider and retention policy must be selected during
+  deployment activation.
 - Legacy Auth.js adapter tables are retained temporarily for rollback and require a later cleanup migration.
 - Before the first migration is considered shipped, use the generated SQL review to correct any portability or operational concerns.
