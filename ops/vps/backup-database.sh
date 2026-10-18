@@ -16,6 +16,7 @@ source "$CONFIG_FILE"
 : "${BACKUP_ROLE:?BACKUP_ROLE is required}"
 : "${BACKUP_DIR:?BACKUP_DIR is required}"
 : "${BACKUP_REMOTE:?BACKUP_REMOTE is required}"
+: "${RCLONE_BIN:?RCLONE_BIN is required}"
 : "${LOCAL_RETENTION_DAYS:?LOCAL_RETENTION_DAYS is required}"
 : "${DATABASE_MAINTENANCE_LOCK_FILE:?DATABASE_MAINTENANCE_LOCK_FILE is required}"
 
@@ -64,18 +65,18 @@ chmod 600 "$backup_path"
 sha256sum "$backup_path" > "$checksum_path"
 chmod 600 "$checksum_path"
 
-if ! command -v rclone >/dev/null 2>&1; then
+if [[ ! -x "$RCLONE_BIN" ]]; then
   echo "ERROR: rclone is required for verified off-host backups" >&2
   exit 1
 fi
 
 remote_backup="${BACKUP_REMOTE%/}/${backup_name}"
 remote_checksum="${remote_backup}.sha256"
-rclone copyto "$backup_path" "$remote_backup"
-rclone copyto "$checksum_path" "$remote_checksum"
+"$RCLONE_BIN" copyto "$backup_path" "$remote_backup"
+"$RCLONE_BIN" copyto "$checksum_path" "$remote_checksum"
 
 local_hash="$(sha256sum "$backup_path" | cut -d ' ' -f 1)"
-remote_hash="$(rclone cat "$remote_backup" | sha256sum | cut -d ' ' -f 1)"
+remote_hash="$("$RCLONE_BIN" cat "$remote_backup" | sha256sum | cut -d ' ' -f 1)"
 if [[ "$local_hash" != "$remote_hash" ]]; then
   echo "ERROR: off-host backup checksum verification failed" >&2
   exit 1
