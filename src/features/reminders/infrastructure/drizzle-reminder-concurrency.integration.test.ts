@@ -71,6 +71,97 @@ describe.runIf(runIntegrationTests)(
       await databasePool.end();
     });
 
+    it("removes an active book without deleting its reading sessions", async () => {
+      const bookId = crypto.randomUUID();
+      const sessionId = crypto.randomUUID();
+      await database.insert(books).values({
+        id: bookId,
+        userId,
+        title: "Remove from library",
+        author: "Reader",
+        totalPages: 140,
+        currentPage: 96,
+        status: "READING",
+      });
+      await database.insert(readingSessions).values({
+        id: sessionId,
+        userId,
+        bookId,
+        startPage: 85,
+        endPage: 96,
+        pagesRead: 11,
+        readAt: new Date("2026-10-16T16:00:00.000Z"),
+      });
+
+      const { DrizzleBookRepository } =
+        await import("@/features/books/infrastructure/drizzle-book-repository");
+      const repository = new DrizzleBookRepository();
+
+      await repository.delete(bookId, userId);
+
+      expect(await repository.findById(bookId, userId)).toBeNull();
+      expect(await repository.findByUserId(userId)).toHaveLength(0);
+      expect(await repository.findReadingByUserId(userId)).toBeNull();
+
+      const [preserved] = await database
+        .select()
+        .from(books)
+        .where(eq(books.id, bookId));
+      expect(preserved.status).toBe("QUEUED");
+      expect(preserved.currentPage).toBe(96);
+      expect(preserved.removedAt).toBeInstanceOf(Date);
+
+      const sessions = await database
+        .select()
+        .from(readingSessions)
+        .where(eq(readingSessions.bookId, bookId));
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0]).toMatchObject({
+        id: sessionId,
+        startPage: 85,
+        endPage: 96,
+        pagesRead: 11,
+      });
+
+      // The removed READING row cannot block selection of another active book.
+      const nextBookId = crypto.randomUUID();
+      await database.insert(books).values({
+        id: nextBookId,
+        userId,
+        title: "Next book",
+        author: "Reader",
+        totalPages: 200,
+        status: "READING",
+      });
+      const nextBook = await repository.findReadingByUserId(userId);
+      expect(nextBook?.id).toBe(nextBookId);
+    });
+
+    it("removing a queued book without sessions is safe and repeatable", async () => {
+      const bookId = crypto.randomUUID();
+      await database.insert(books).values({
+        id: bookId,
+        userId,
+        title: "Unstarted book",
+        author: "Reader",
+        totalPages: 200,
+        status: "QUEUED",
+      });
+      const { DrizzleBookRepository } =
+        await import("@/features/books/infrastructure/drizzle-book-repository");
+      const repository = new DrizzleBookRepository();
+
+      await repository.delete(bookId, userId);
+      await repository.delete(bookId, userId);
+
+      expect(await repository.findByUserId(userId)).toHaveLength(0);
+      const [preserved] = await database
+        .select()
+        .from(books)
+        .where(eq(books.id, bookId));
+      expect(preserved.removedAt).not.toBeNull();
+    });
+
     it("logs only pages read after an imported book baseline", async () => {
       const bookId = crypto.randomUUID();
       await database.insert(books).values({

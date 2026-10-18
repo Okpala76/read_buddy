@@ -27,6 +27,7 @@ export const books = pgTable(
     currentPage: integer("current_page").notNull().default(0),
     status: bookStatus("status").notNull().default("QUEUED"),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    removedAt: timestamp("removed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
