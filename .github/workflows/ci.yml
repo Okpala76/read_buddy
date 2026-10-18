@@ -111,6 +111,51 @@ jobs:
       - name: Apply historical migrations sequentially
         run: node scripts/ci-apply-migrations.mjs
 
+      - name: Test production migration reconciliation
+        shell: bash
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          set -euo pipefail
+          release_sha="$(git rev-parse HEAD)"
+          staging_root="$RUNNER_TEMP/releases"
+          staging_dir="$staging_root/$release_sha"
+          bundle_root="$RUNNER_TEMP/bundle"
+          hmac_key='ci-only-release-bundle-key-32-bytes-minimum'
+
+          mkdir -p "$staging_dir" "$bundle_root/.release"
+          node scripts/release/create-migration-manifest.mjs \
+            "$bundle_root/.release/migrations.tsv"
+          tar -czf "$staging_dir/migrations.tgz" \
+            -C "$bundle_root" .release/migrations.tsv \
+            -C "$GITHUB_WORKSPACE" src/db/migrations/meta/_journal.json \
+            src/db/migrations/*.sql
+          MIGRATION_BUNDLE_HMAC_KEY="$hmac_key" \
+            node scripts/release/sign-migration-bundle.mjs \
+              "$release_sha" \
+              "$staging_dir/migrations.tgz" \
+              "$staging_dir/migrations.hmac"
+          printf '%s' "$hmac_key" > "$RUNNER_TEMP/migration-hmac-key"
+          chmod 600 "$RUNNER_TEMP/migration-hmac-key"
+
+          docker exec "$POSTGRES_CONTAINER" createdb \
+            --username=postgres read_buddy_reconciler_test
+          common_environment=(
+            READ_BUDDY_RELEASE_CONFIG=/dev/null
+            READ_BUDDY_BACKUP_COMMAND=/usr/bin/true
+            POSTGRES_CONTAINER="$POSTGRES_CONTAINER"
+            POSTGRES_DATABASE=read_buddy_reconciler_test
+            MIGRATION_ROLE=postgres
+            DATABASE_MAINTENANCE_LOCK_FILE="$RUNNER_TEMP/database-maintenance.lock"
+            MIGRATION_LOCK_WAIT_SECONDS=0
+            RELEASE_STAGING_ROOT="$staging_root"
+            BUNDLE_HMAC_KEY_FILE="$RUNNER_TEMP/migration-hmac-key"
+          )
+          env "${common_environment[@]}" \
+            bash ops/vps/reconcile-migrations.sh "$staging_dir" apply
+          env "${common_environment[@]}" \
+            bash ops/vps/reconcile-migrations.sh "$staging_dir" apply
+
       - name: Run PostgreSQL concurrency tests
         run: >-
           pnpm exec vitest run
