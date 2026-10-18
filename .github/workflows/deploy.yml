@@ -172,9 +172,8 @@ jobs:
             --environment=production \
             --token="$VERCEL_TOKEN"
 
-      - name: Deploy without assigning production domains
+      - name: Deploy to Vercel production
         if: env.RELEASE_MODE == 'release'
-        id: deploy
         shell: bash
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -184,33 +183,17 @@ jobs:
           VERCEL_GIT_COMMIT_SHA: ${{ env.RELEASE_SHA }}
         run: |
           set -euo pipefail
-          deployment_url="$(pnpm dlx vercel@62.1.0 deploy \
+          git fetch origin main
+          if [[ "$(git rev-parse origin/main)" != "$RELEASE_SHA" ]]; then
+            echo "main advanced while this release was running; refusing deployment."
+            exit 1
+          fi
+          pnpm dlx vercel@62.1.0 deploy \
             --prod \
-            --skip-domain \
             --archive=tgz \
             --env="RELEASE_SHA=$RELEASE_SHA" \
             --meta="githubCommitSha=$RELEASE_SHA" \
             --meta="githubCommitRef=main" \
-            --token="$VERCEL_TOKEN")"
-          echo "deployment_url=$deployment_url" >> "$GITHUB_OUTPUT"
-
-      - name: Promote the ready candidate
-        if: env.RELEASE_MODE == 'release'
-        shell: bash
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          set -euo pipefail
-          git fetch origin main
-          if [[ "$(git rev-parse origin/main)" != "$RELEASE_SHA" ]]; then
-            echo "main advanced while this release was running; refusing promotion."
-            exit 1
-          fi
-          pnpm dlx vercel@62.1.0 promote \
-            "${{ steps.deploy.outputs.deployment_url }}" \
-            --yes \
-            --scope="$VERCEL_ORG_ID" \
-            --timeout=10m \
             --token="$VERCEL_TOKEN"
 
       - name: Verify production
