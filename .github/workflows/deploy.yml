@@ -193,10 +193,6 @@ jobs:
             --meta="githubCommitRef=main" \
             --token="$VERCEL_TOKEN")"
           echo "deployment_url=$deployment_url" >> "$GITHUB_OUTPUT"
-          pnpm dlx vercel@62.1.0 inspect "$deployment_url" \
-            --wait \
-            --timeout=10m \
-            --token="$VERCEL_TOKEN"
 
       - name: Promote the ready candidate
         if: env.RELEASE_MODE == 'release'
@@ -213,6 +209,7 @@ jobs:
           pnpm dlx vercel@62.1.0 promote \
             "${{ steps.deploy.outputs.deployment_url }}" \
             --yes \
+            --scope="$VERCEL_ORG_ID" \
             --timeout=10m \
             --token="$VERCEL_TOKEN"
 
