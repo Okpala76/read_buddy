@@ -1,0 +1,16 @@
+[Unit]
+Description=Reading Buddy PostgreSQL off-host backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/home/gochi/read_buddy/bin/backup-database
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+[Install]
+WantedBy=multi-user.target

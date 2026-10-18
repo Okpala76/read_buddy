@@ -1,12 +1,5 @@
 import { spawnSync } from "node:child_process";
 
-const productionUrl = process.env.PRODUCTION_DATABASE_URL;
-
-if (!productionUrl) {
-  console.error("ERROR: PRODUCTION_DATABASE_URL is not set.");
-  process.exit(1);
-}
-
 if (process.env.CONFIRM_PRODUCTION_MIGRATION !== "READ_BUDDY_PRODUCTION") {
   console.error(`
 Production migration blocked.
@@ -21,16 +14,28 @@ before running this command.
   process.exit(1);
 }
 
-console.log("Running Reading Buddy PRODUCTION database migrations...");
+console.log("Requesting the approval-gated production migration workflow...");
 
 const result = spawnSync(
-  "pnpm",
-  ["exec", "drizzle-kit", "migrate", "--config=drizzle.prod.config.ts"],
+  "gh",
+  [
+    "workflow",
+    "run",
+    "deploy.yml",
+    "--ref",
+    "main",
+    "--field",
+    "mode=migrations-only",
+  ],
   {
     stdio: "inherit",
-    shell: true,
     env: process.env,
   },
 );
+
+if (result.error?.code === "ENOENT") {
+  console.error("ERROR: GitHub CLI (gh) is required.");
+  process.exit(1);
+}
 
 process.exit(result.status ?? 1);

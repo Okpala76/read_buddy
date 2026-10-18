@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the Reading Buddy PostgreSQL backup nightly
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 UTC
+Persistent=true
+RandomizedDelaySec=10m
+Unit=read-buddy-backup.service
+
+[Install]
+WantedBy=timers.target
