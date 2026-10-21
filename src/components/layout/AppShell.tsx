@@ -9,6 +9,7 @@ import {
   InstallAppGuide,
 } from "@/features/pwa/ui/InstallAppExperience";
 import { PwaInstallProvider } from "@/features/pwa/ui/PwaInstallProvider";
+import { InstalledPushActivation } from "@/features/push-notifications/ui/InstalledPushActivation";
 import { PushSubscriptionReconciler } from "@/features/push-notifications/ui/PushSubscriptionReconciler";
 import { Header } from "./Header";
 import { MobileNav } from "./MobileNav";
@@ -63,6 +64,7 @@ export function AppShell({
         </div>
       </Sheet>
       <InstallAppGuide />
+      <InstalledPushActivation vapidPublicKey={vapidPublicKey} />
     </PwaInstallProvider>
   );
 }
