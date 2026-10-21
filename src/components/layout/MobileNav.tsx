@@ -59,6 +59,7 @@ export function MobileNav({ onNavigate }: { onNavigate?: () => void } = {}) {
             </SheetClose>
           );
         })}
+        <InstallAppMenuItem onSelect={onNavigate} />
       </nav>
 
       <Separator />
