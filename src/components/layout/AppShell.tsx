@@ -4,6 +4,11 @@ import { type ReactNode, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { Sheet } from "@/components/ui/sheet";
+import {
+  InstallAppBanner,
+  InstallAppGuide,
+} from "@/features/pwa/ui/InstallAppExperience";
+import { PwaInstallProvider } from "@/features/pwa/ui/PwaInstallProvider";
 import { PushSubscriptionReconciler } from "@/features/push-notifications/ui/PushSubscriptionReconciler";
 import { Header } from "./Header";
 import { MobileNav } from "./MobileNav";
@@ -42,18 +47,22 @@ export function AppShell({
   }, []);
 
   return (
-    <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-      <PushSubscriptionReconciler vapidPublicKey={vapidPublicKey} />
-      <div className="bg-background min-h-svh lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
-        <Sidebar />
-        <div className="min-w-0">
-          <Header currentStreak={currentStreak} />
-          <main className="mx-auto w-full max-w-7xl min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-            {children}
-          </main>
+    <PwaInstallProvider>
+      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+        <PushSubscriptionReconciler vapidPublicKey={vapidPublicKey} />
+        <div className="bg-background min-h-svh lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
+          <Sidebar />
+          <div className="min-w-0">
+            <Header currentStreak={currentStreak} />
+            <main className="mx-auto w-full max-w-7xl min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+              <InstallAppBanner />
+              {children}
+            </main>
+          </div>
+          <MobileNav onNavigate={() => setMobileNavOpen(false)} />
         </div>
-        <MobileNav />
-      </div>
-    </Sheet>
+      </Sheet>
+      <InstallAppGuide />
+    </PwaInstallProvider>
   );
 }

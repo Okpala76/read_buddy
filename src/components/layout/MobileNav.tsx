@@ -1,5 +1,6 @@
 "use client";
 
+import { InstallAppMenuItem } from "@/features/pwa/ui/InstallAppExperience";
 import { SignOutButton } from "@clerk/nextjs";
 import { BookOpen, LogOut } from "lucide-react";
 import Link from "next/link";
@@ -17,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { isNavigationItemActive, productNavigation } from "./navigation";
 
-export function MobileNav() {
+export function MobileNav({ onNavigate }: { onNavigate?: () => void } = {}) {
   const pathname = usePathname();
 
   return (
@@ -58,6 +59,7 @@ export function MobileNav() {
             </SheetClose>
           );
         })}
+        <InstallAppMenuItem onSelect={onNavigate} />
       </nav>
 
       <Separator />
