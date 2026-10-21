@@ -56,7 +56,7 @@ export function AppShell({
             {children}
           </main>
         </div>
-        <MobileNav />
+        <MobileNav onNavigate={() => setMobileNavOpen(false)} />
       </div>
     </Sheet>
     <InstallAppGuide />
