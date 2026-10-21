@@ -48,7 +48,9 @@ export function usePwaInstall() {
 
 function readDismissal(): boolean {
   try {
-    return Number(window.localStorage.getItem(INSTALL_DISMISSAL_KEY)) > Date.now();
+    return (
+      Number(window.localStorage.getItem(INSTALL_DISMISSAL_KEY)) > Date.now()
+    );
   } catch {
     return false;
   }
@@ -143,7 +145,8 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
       platform,
       ready,
       canPrompt: Boolean(deferredPrompt),
-      showSuggestion: ready && !installed && platform !== "desktop" && !dismissed,
+      showSuggestion:
+        ready && !installed && platform !== "desktop" && !dismissed,
       guideOpen,
       openGuide: () => setGuideOpen(true),
       closeGuide: () => setGuideOpen(false),
