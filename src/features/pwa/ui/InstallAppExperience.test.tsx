@@ -67,7 +67,7 @@ describe("PWA installation experience", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: "Install Reading Buddy" }),
     );
-    expect(await screen.findByText(/Choose Add to Home Screen/)).toBeVisible();
+    expect(await screen.findByText("Add to Home Screen")).toBeVisible();
     expect(screen.getByRole("button", { name: "Got it" })).toBeVisible();
   });
 
