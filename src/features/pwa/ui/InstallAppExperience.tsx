@@ -10,7 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { usePwaInstall } from "./PwaInstallProvider";
+import { useOptionalPwaInstall, usePwaInstall } from "./PwaInstallProvider";
 
 export function InstallAppBanner() {
   const { showSuggestion, installed, install, dismissSuggestion } =
@@ -67,8 +67,9 @@ export function InstallAppBanner() {
 }
 
 export function InstallAppMenuItem({ onSelect }: { onSelect?: () => void }) {
-  const { installed, ready, install } = usePwaInstall();
-  if (!ready || installed) return null;
+  const state = useOptionalPwaInstall();
+  if (!state || !state.ready || state.installed) return null;
+  const { install } = state;
   return (
     <button
       type="button"
