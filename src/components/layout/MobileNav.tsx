@@ -1,5 +1,6 @@
 "use client";
 
+import { InstallAppMenuItem } from "@/features/pwa/ui/InstallAppExperience";
 import { SignOutButton } from "@clerk/nextjs";
 import { BookOpen, LogOut } from "lucide-react";
 import Link from "next/link";
