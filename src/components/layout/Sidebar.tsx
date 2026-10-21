@@ -51,6 +51,7 @@ export function Sidebar() {
             </Link>
           );
         })}
+        <InstallAppMenuItem />
       </nav>
 
       <div className="border-sidebar-border border-t p-4">
