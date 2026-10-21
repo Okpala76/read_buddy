@@ -108,6 +108,25 @@ notification permission.
 Phase 2A has no automated push sender, so a signed-out account cannot initiate a
 test push. Future scheduled delivery must preserve this ownership strategy.
 
+## Installed-app activation prompt
+
+On first authenticated launch in an installed mobile PWA, Reading Buddy
+checks whether this device has an active subscription for the current VAPID
+public key. If notifications are not connected and permission is not blocked,
+the app immediately presents its existing notification settings inside a
+dismissible setup sheet.
+
+The operating system permission dialog is never called automatically.
+Users explicitly tap **Enable on this device**, and the existing
+`PushNotificationSettings` flow requests permission and registers the
+subscription. Users can test notification delivery in the same sheet.
+
+The prompt is not shown to browser-tab users, desktop users, users with
+notifications blocked, or devices with a valid granted subscription. Closing
+the prompt saves a per-account, per-installation local dismissal flag;
+settings remain available under Reminders. No new database table or
+notification backend is required.
+
 ## Enable Flow
 
 1. The settings card inspects browser support and current permission without
