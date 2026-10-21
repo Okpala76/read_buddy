@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { isNavigationItemActive, productNavigation } from "./navigation";
 
-export function MobileNav() {
+export function MobileNav({ onNavigate }: { onNavigate?: () => void } = {}) {
   const pathname = usePathname();
 
   return (
