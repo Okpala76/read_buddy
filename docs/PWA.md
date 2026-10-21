@@ -58,6 +58,30 @@ change succeeded.
 Restoring the network reloads the current page through Serwist's
 `reloadOnOnline` behavior. A manual retry is also available.
 
+## In-app installation (PR: installation experience)
+
+Authenticated mobile browsers show a dismissible install card in the app
+shell. The installation entry remains available in the app navigation even
+after the card is dismissed. Dismissal is browser-local for seven days;
+revisiting the menu always remains available.
+
+- If Chromium fires `beforeinstallprompt`, the user-triggered Install action
+  invokes that browser prompt. Acceptance is not treated as installation until
+  `appinstalled` or standalone display mode confirms it.
+- On iOS, there is no native installation prompt. The app explains Share →
+  Add to Home Screen, with a Safari fallback for browsers lacking the option.
+- If an Android browser does not provide `beforeinstallprompt`, the user
+  receives manual browser-menu instructions.
+- Standalone PWA instances hide both the card and install menu item.
+- Desktop users retain the install menu entry but are not shown the mobile
+  install card automatically.
+- This stage does **not** request notification permission or alter existing
+  push subscription behavior. Notifications are a separate, user-triggered step.
+
+Installation detection is local to the device via display-mode, iOS standalone
+and browser capabilities. No DB schema change, new package, or account-level
+installation flag is introduced.
+
 ## Installation
 
 ### Android and Desktop Chromium
@@ -127,6 +151,6 @@ If a worker from a previous production-mode test still controls localhost:
 - No background sync, IndexedDB data model, queued mutations, or offline
   reading-session writes.
 - No private dashboard or analytics response caching.
-- No custom install banner or native app-store packaging.
+- No native app-store packaging.
 - The offline experience is a fallback page, not an offline-capable copy of the
   authenticated application.
