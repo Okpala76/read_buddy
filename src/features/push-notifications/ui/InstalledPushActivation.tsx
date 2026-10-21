@@ -23,13 +23,19 @@ const INTRO_KEY_PREFIX = "read-buddy:installed-push-intro:v1:";
 
 function wasDismissed(userId: string): boolean {
   try {
-    return window.localStorage.getItem(INTRO_KEY_PREFIX + userId) === "dismissed";
+    return (
+      window.localStorage.getItem(INTRO_KEY_PREFIX + userId) === "dismissed"
+    );
   } catch {
     return false;
   }
 }
 
-export function InstalledPushActivation({ vapidPublicKey }: { vapidPublicKey: string }) {
+export function InstalledPushActivation({
+  vapidPublicKey,
+}: {
+  vapidPublicKey: string;
+}) {
   const { userId } = useAuth();
   const { installed, ready, platform } = usePwaInstall();
   const [open, setOpen] = useState(false);
@@ -107,7 +113,7 @@ export function InstalledPushActivation({ vapidPublicKey }: { vapidPublicKey: st
         <Button
           type="button"
           variant="ghost"
-          className="mt-4 w-full min-h-11"
+          className="mt-4 min-h-11 w-full"
           onClick={close}
         >
           Not now / Done
