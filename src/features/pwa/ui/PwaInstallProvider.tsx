@@ -59,12 +59,16 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [platform, setPlatform] = useState<InstallPlatform>("desktop");
   const [installed, setInstalled] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<InstallPromptEvent | null>(null);
-  const [dismissedUntil, setDismissedUntil] = useState(Number.POSITIVE_INFINITY);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<InstallPromptEvent | null>(null);
+  const [dismissedUntil, setDismissedUntil] = useState(
+    Number.POSITIVE_INFINITY,
+  );
   const [guideOpen, setGuideOpen] = useState(false);
 
   const refreshInstalled = useCallback(() => {
-    const appleStandalone = (navigator as Navigator & { standalone?: boolean }).standalone;
+    const appleStandalone = (navigator as Navigator & { standalone?: boolean })
+      .standalone;
     setInstalled(
       isStandaloneInstall(
         window.matchMedia("(display-mode: standalone)").matches,
@@ -138,14 +142,28 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
       canPrompt: Boolean(deferredPrompt),
       showSuggestion:
         ready &&
-        shouldShowInstallPrompt(installed, platform, dismissedUntil, Date.now()),
+        shouldShowInstallPrompt(
+          installed,
+          platform,
+          dismissedUntil,
+          Date.now(),
+        ),
       guideOpen,
       openGuide: () => setGuideOpen(true),
       closeGuide: () => setGuideOpen(false),
       dismissSuggestion,
       install,
     }),
-    [installed, platform, ready, deferredPrompt, dismissedUntil, guideOpen, dismissSuggestion, install],
+    [
+      installed,
+      platform,
+      ready,
+      deferredPrompt,
+      dismissedUntil,
+      guideOpen,
+      dismissSuggestion,
+      install,
+    ],
   );
 
   return (

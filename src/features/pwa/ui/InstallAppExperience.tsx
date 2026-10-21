@@ -13,7 +13,8 @@ import {
 import { usePwaInstall } from "./PwaInstallProvider";
 
 export function InstallAppBanner() {
-  const { showSuggestion, installed, install, dismissSuggestion } = usePwaInstall();
+  const { showSuggestion, installed, install, dismissSuggestion } =
+    usePwaInstall();
   if (!showSuggestion || installed) return null;
 
   return (
@@ -44,11 +45,20 @@ export function InstallAppBanner() {
         </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Button type="button" onClick={() => void install()} className="min-h-11">
+        <Button
+          type="button"
+          onClick={() => void install()}
+          className="min-h-11"
+        >
           <Download className="size-4" aria-hidden="true" />
           Install Reading Buddy
         </Button>
-        <Button type="button" variant="ghost" onClick={dismissSuggestion} className="min-h-11">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={dismissSuggestion}
+          className="min-h-11"
+        >
           Continue in browser
         </Button>
       </div>
@@ -77,41 +87,77 @@ export function InstallAppMenuItem({ onSelect }: { onSelect?: () => void }) {
 export function InstallAppGuide() {
   const { guideOpen, closeGuide, platform, installed } = usePwaInstall();
   return (
-    <Sheet open={guideOpen && !installed} onOpenChange={(open) => !open && closeGuide()}>
-      <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-3xl pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:inset-x-auto sm:right-0 sm:w-[28rem] sm:rounded-t-2xl">
+    <Sheet
+      open={guideOpen && !installed}
+      onOpenChange={(open) => !open && closeGuide()}
+    >
+      <SheetContent
+        side="bottom"
+        className="max-h-[85dvh] overflow-y-auto rounded-t-3xl pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:inset-x-auto sm:right-0 sm:w-[28rem] sm:rounded-t-2xl"
+      >
         <SheetHeader className="text-left">
           <SheetTitle>Install Reading Buddy</SheetTitle>
           <SheetDescription>
-            Add the app to your Home Screen, then open it there to set up reminders.
+            Add the app to your Home Screen, then open it there to set up
+            reminders.
           </SheetDescription>
         </SheetHeader>
         <div className="text-foreground mt-6 space-y-4 text-sm">
           {platform === "ios-safari" ? (
             <ol className="list-decimal space-y-3 pl-5">
-              <li>Tap the <Share2 className="inline size-4" aria-label="Share" /> Share button in Safari.</li>
-              <li>Choose <strong>Add to Home Screen</strong> (you may need to scroll).</li>
-              <li>Tap <strong>Add</strong>, then open Reading Buddy from your Home Screen.</li>
+              <li>
+                Tap the <Share2 className="inline size-4" aria-label="Share" />{" "}
+                Share button in Safari.
+              </li>
+              <li>
+                Choose <strong>Add to Home Screen</strong> (you may need to
+                scroll).
+              </li>
+              <li>
+                Tap <strong>Add</strong>, then open Reading Buddy from your Home
+                Screen.
+              </li>
             </ol>
           ) : platform === "ios-other" ? (
             <div className="space-y-3">
-              <p>Use your browser’s Share menu and look for <strong>Add to Home Screen</strong>.</p>
-              <p>If that option is missing, open Reading Buddy in Safari and use <strong>Share → Add to Home Screen</strong>.</p>
+              <p>
+                Use your browser’s Share menu and look for{" "}
+                <strong>Add to Home Screen</strong>.
+              </p>
+              <p>
+                If that option is missing, open Reading Buddy in Safari and use{" "}
+                <strong>Share → Add to Home Screen</strong>.
+              </p>
             </div>
           ) : platform === "android" ? (
             <ol className="list-decimal space-y-3 pl-5">
-              <li>Open your browser menu (usually <strong>⋮</strong>).</li>
-              <li>Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
+              <li>
+                Open your browser menu (usually <strong>⋮</strong>).
+              </li>
+              <li>
+                Choose <strong>Install app</strong> or{" "}
+                <strong>Add to Home screen</strong>.
+              </li>
               <li>Confirm, then launch Reading Buddy from your Home Screen.</li>
             </ol>
           ) : (
-            <p>Open your browser’s menu and look for <strong>Install app</strong> or <strong>Add to Home Screen</strong>. Availability varies by browser.</p>
+            <p>
+              Open your browser’s menu and look for <strong>Install app</strong>{" "}
+              or <strong>Add to Home Screen</strong>. Availability varies by
+              browser.
+            </p>
           )}
-          <p className="text-muted-foreground rounded-lg bg-muted p-3">
-            Installation does not enable notifications automatically. You’ll enable
-            them separately from Reading Buddy after installation.
+          <p className="text-muted-foreground bg-muted rounded-lg p-3">
+            Installation does not enable notifications automatically. You’ll
+            enable them separately from Reading Buddy after installation.
           </p>
         </div>
-        <Button type="button" variant="outline" className="mt-6 w-full" onClick={closeGuide}>
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-6 w-full"
+          onClick={closeGuide}
+        >
           Got it
         </Button>
       </SheetContent>
