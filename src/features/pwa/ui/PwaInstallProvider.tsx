@@ -38,6 +38,10 @@ interface PwaInstallContextValue {
 
 const PwaInstallContext = createContext<PwaInstallContextValue | null>(null);
 
+export function useOptionalPwaInstall() {
+  return useContext(PwaInstallContext);
+}
+
 export function usePwaInstall() {
   const context = useContext(PwaInstallContext);
   if (!context) {
