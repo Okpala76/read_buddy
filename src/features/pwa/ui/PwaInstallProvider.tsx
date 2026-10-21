@@ -15,7 +15,6 @@ import {
   INSTALL_DISMISSAL_KEY,
   INSTALL_DISMISSAL_MS,
   isStandaloneInstall,
-  shouldShowInstallPrompt,
   type InstallPlatform,
 } from "@/features/pwa/domain/install-state";
 
@@ -47,11 +46,11 @@ export function usePwaInstall() {
   return context;
 }
 
-function readDismissal(): number {
+function readDismissal(): boolean {
   try {
-    return Number(window.localStorage.getItem(INSTALL_DISMISSAL_KEY)) || 0;
+    return Number(window.localStorage.getItem(INSTALL_DISMISSAL_KEY)) > Date.now();
   } catch {
-    return 0;
+    return false;
   }
 }
 
@@ -61,9 +60,7 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
   const [installed, setInstalled] = useState(false);
   const [deferredPrompt, setDeferredPrompt] =
     useState<InstallPromptEvent | null>(null);
-  const [dismissedUntil, setDismissedUntil] = useState(
-    Number.POSITIVE_INFINITY,
-  );
+  const [dismissed, setDismissed] = useState(true);
   const [guideOpen, setGuideOpen] = useState(false);
 
   const refreshInstalled = useCallback(() => {
@@ -78,10 +75,15 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    setPlatform(getInstallPlatform(navigator.userAgent));
-    setDismissedUntil(readDismissal());
-    refreshInstalled();
-    setReady(true);
+    let cancelled = false;
+    // Defer browser-state hydration outside the synchronous effect body.
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setPlatform(getInstallPlatform(navigator.userAgent));
+      setDismissed(readDismissal());
+      refreshInstalled();
+      setReady(true);
+    });
 
     const onInstallAvailable = (event: Event) => {
       event.preventDefault();
@@ -97,6 +99,7 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
     window.addEventListener("beforeinstallprompt", onInstallAvailable);
     window.addEventListener("appinstalled", onInstalled);
     return () => {
+      cancelled = true;
       displayMode.removeEventListener("change", refreshInstalled);
       window.removeEventListener("beforeinstallprompt", onInstallAvailable);
       window.removeEventListener("appinstalled", onInstalled);
@@ -110,7 +113,7 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
     } catch {
       // Storage can be disabled; the current view is still dismissed.
     }
-    setDismissedUntil(until);
+    setDismissed(true);
     setGuideOpen(false);
   }, []);
 
@@ -140,14 +143,7 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
       platform,
       ready,
       canPrompt: Boolean(deferredPrompt),
-      showSuggestion:
-        ready &&
-        shouldShowInstallPrompt(
-          installed,
-          platform,
-          dismissedUntil,
-          Date.now(),
-        ),
+      showSuggestion: ready && !installed && platform !== "desktop" && !dismissed,
       guideOpen,
       openGuide: () => setGuideOpen(true),
       closeGuide: () => setGuideOpen(false),
@@ -159,7 +155,7 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
       platform,
       ready,
       deferredPrompt,
-      dismissedUntil,
+      dismissed,
       guideOpen,
       dismissSuggestion,
       install,
