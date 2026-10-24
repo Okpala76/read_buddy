@@ -6,3 +6,4 @@ export * from "./reminders";
 export * from "./push-subscriptions";
 export * from "./users";
 export * from "./reading-behavior-profiles";
+export * from "./book-documents";
