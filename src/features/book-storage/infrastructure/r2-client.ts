@@ -64,7 +64,9 @@ export async function signPdfDownload(key: string) {
 
 export async function inspectPdfUpload(key: string) {
   const { client, bucket } = getClient();
-  const response = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+  const response = await client.send(
+    new HeadObjectCommand({ Bucket: bucket, Key: key }),
+  );
   return {
     sizeBytes: response.ContentLength ?? 0,
     contentType: response.ContentType ?? "",

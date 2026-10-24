@@ -14,7 +14,10 @@ export const pdfUploadInput = z.object({
 });
 
 export function createDocumentObjectKey(userId: string, documentId: string) {
-  if (!z.uuid().safeParse(userId).success || !z.uuid().safeParse(documentId).success) {
+  if (
+    !z.uuid().safeParse(userId).success ||
+    !z.uuid().safeParse(documentId).success
+  ) {
     throw new Error("Invalid document storage owner or identifier");
   }
   return `private/books/${userId}/${documentId}.pdf`;
