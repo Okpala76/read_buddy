@@ -2,6 +2,7 @@ import { BookStatus } from "@/features/books/domain";
 import type { BookView } from "@/features/books/ui/book-view";
 import { BookList } from "./BookList";
 import { CreateBookForm } from "./CreateBookForm";
+import { FreeBookDiscovery } from "./FreeBookDiscovery";
 
 export function BooksPage({ books }: { books: BookView[] }) {
   const queuedBooks = books.filter((book) => book.status === BookStatus.QUEUED);
@@ -28,6 +29,8 @@ export function BooksPage({ books }: { books: BookView[] }) {
         </div>
         <CreateBookForm hasCurrentReading={Boolean(currentReading)} />
       </header>
+
+      <FreeBookDiscovery />
 
       {currentReading ? (
         <BookList
