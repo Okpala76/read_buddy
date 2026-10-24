@@ -74,3 +74,24 @@ This schema is additive. Ship its migration before any code that queries its
 new tables. Keep production deployment gated by current GitHub Actions CI and
 Hetzner migration reconciliation. No remote storage credential, destructive
 migration, or production data modification is needed in the PR itself.
+
+## Cloudflare R2 storage integration (Phase 2)
+
+Use a private bucket with **no public-access domain**. The provider uses the
+S3-compatible endpoint `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`
+with region `auto`. Provide credentials through Vercel's server-only
+`R2_ACCOUNT_ID`, `R2_BUCKET_NAME`, `R2_ACCESS_KEY_ID`, and
+`R2_SECRET_ACCESS_KEY` settings, not source control or the conversation.
+
+The initial policy supports PDFs only, up to **25 MiB**. Presigned URLs are
+short-lived (five minutes), and bucket CORS must allow `PUT` and `GET` from
+Reading Buddy's production origin; it must not allow unrestricted origins.
+Before saving a document record, the server must check owner/book membership,
+verify the uploaded object's size and content type using HEAD, and confirm the
+`%PDF-` signature from a ranged GET. Signed downloads require authenticated
+ownership. A bucket lifecycle cleanup for abandoned uploads must be configured
+before opening uploads broadly. EPUB remains a later phase.
+
+This PR prepares the R2 client and validation policy; it **does not activate
+browser upload endpoints** or create credentials. Those follow in a separate
+reviewed change once R2 setup is confirmed.
