@@ -203,7 +203,12 @@ export function BookCard({
             </p>
           )}
 
-          <BookDocumentControl bookId={book.id} />
+          <BookDocumentControl
+            bookId={book.id}
+            currentPage={book.currentPage}
+            totalPages={book.totalPages}
+            isReading={book.status === BookStatus.READING}
+          />
 
           {error && (
             <p className="text-destructive mt-3 text-sm" role="alert">
