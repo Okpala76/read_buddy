@@ -104,7 +104,9 @@ export function BookDocumentControl({
       setSavedPage(finishedPage);
       setSaveMessage(`Saved through page ${finishedPage}.`);
     } catch (error) {
-      setSaveMessage(error instanceof Error ? error.message : "Could not save progress");
+      setSaveMessage(
+        error instanceof Error ? error.message : "Could not save progress",
+      );
     } finally {
       setBusy(false);
     }
@@ -154,7 +156,8 @@ export function BookDocumentControl({
                 {reader.fileName}
               </p>
               <p className="text-muted-foreground text-xs">
-                PDF reader · Page position is saved only when you select Save progress
+                PDF reader · Page position is saved only when you select Save
+                progress
               </p>
             </div>
             <button
@@ -190,7 +193,8 @@ export function BookDocumentControl({
                 value={page}
                 onChange={(event) => {
                   const next = Number(event.target.value);
-                  if (Number.isInteger(next) && next >= 1 && next <= totalPages) setPage(next);
+                  if (Number.isInteger(next) && next >= 1 && next <= totalPages)
+                    setPage(next);
                 }}
                 className="bg-background w-20 rounded-lg border px-2 py-2"
               />
@@ -198,15 +202,28 @@ export function BookDocumentControl({
             <button
               type="button"
               disabled={page >= totalPages}
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              onClick={() =>
+                setPage((current) => Math.min(totalPages, current + 1))
+              }
               className="rounded-lg border px-3 py-2 text-sm"
             >
               Next
             </button>
             {isReading && (
-              <button type="button" disabled={busy} onClick={() => void saveProgress()} className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-40">Save progress</button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void saveProgress()}
+                className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-40"
+              >
+                Save progress
+              </button>
             )}
-            {saveMessage && <span role="status" className="text-xs">{saveMessage}</span>}
+            {saveMessage && (
+              <span role="status" className="text-xs">
+                {saveMessage}
+              </span>
+            )}
           </footer>
         </div>
       )}
