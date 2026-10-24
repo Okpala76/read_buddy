@@ -5,7 +5,10 @@ import { requireAuth } from "@/lib/auth/server";
 import { revalidatePath } from "next/cache";
 import { DrizzleBookRepository } from "@/features/books/infrastructure";
 import { CreateBookUseCase } from "@/features/books/application";
-import { getGutendexBook, searchGutendex } from "@/features/books/infrastructure/gutendex";
+import {
+  getGutendexBook,
+  searchGutendex,
+} from "@/features/books/infrastructure/gutendex";
 
 const searchSchema = z.object({
   query: z.string().trim().min(2).max(100),
@@ -30,10 +33,13 @@ export async function addFreeBook(input: unknown) {
   const repo = new DrizzleBookRepository();
   const existing = await repo.findByUserId(user.id);
   const normalized = (value: string) => value.trim().toLocaleLowerCase();
-  if (existing.some((book) =>
-    normalized(book.title) === normalized(catalogBook.title) &&
-    normalized(book.author) === normalized(catalogBook.author)
-  )) {
+  if (
+    existing.some(
+      (book) =>
+        normalized(book.title) === normalized(catalogBook.title) &&
+        normalized(book.author) === normalized(catalogBook.author),
+    )
+  ) {
     throw new Error("This book is already in your library");
   }
   await new CreateBookUseCase(repo).execute(user.id, {

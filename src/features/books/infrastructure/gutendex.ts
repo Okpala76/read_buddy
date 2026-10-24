@@ -26,7 +26,8 @@ export function normalizeFreeBook(book: z.infer<typeof bookSchema>): FreeBook {
   return {
     id: book.id,
     title: book.title,
-    author: book.authors.map((author) => author.name).join(", ") || "Unknown author",
+    author:
+      book.authors.map((author) => author.name).join(", ") || "Unknown author",
     downloads: book.download_count ?? 0,
     epubAvailable: Object.keys(book.formats ?? {}).some((format) =>
       format.startsWith("application/epub+zip"),
@@ -34,7 +35,10 @@ export function normalizeFreeBook(book: z.infer<typeof bookSchema>): FreeBook {
   };
 }
 
-export async function searchGutendex(query: string, page = 1): Promise<{
+export async function searchGutendex(
+  query: string,
+  page = 1,
+): Promise<{
   count: number;
   hasNext: boolean;
   books: FreeBook[];
@@ -47,7 +51,8 @@ export async function searchGutendex(query: string, page = 1): Promise<{
     signal: AbortSignal.timeout(8000),
     cache: "no-store",
   });
-  if (!response.ok) throw new Error("Free-book catalog is temporarily unavailable");
+  if (!response.ok)
+    throw new Error("Free-book catalog is temporarily unavailable");
   const data = responseSchema.parse(await response.json());
   return {
     count: data.count,
