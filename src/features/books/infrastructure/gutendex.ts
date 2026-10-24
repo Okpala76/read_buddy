@@ -44,7 +44,10 @@ function catalogUrl(path: string): string {
   if (parsed.protocol !== "https:") {
     throw new Error("Gutendex API must use HTTPS");
   }
-  return new URL(path, parsed.href.endsWith("/") ? parsed.href : parsed.href + "/").toString();
+  return new URL(
+    path,
+    parsed.href.endsWith("/") ? parsed.href : parsed.href + "/",
+  ).toString();
 }
 
 export async function searchGutendex(
