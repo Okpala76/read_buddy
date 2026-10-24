@@ -87,6 +87,7 @@ export function PdfReader({
     let cancelled = false;
     let renderTask: import("pdfjs-dist").RenderTask | null = null;
     async function render() {
+      if (!document || !canvas) return;
       try {
         const pdfPage = await document.getPage(page);
         if (cancelled) return;
