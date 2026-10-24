@@ -206,7 +206,6 @@ export function BookCard({
           <BookDocumentControl
             bookId={book.id}
             currentPage={book.currentPage}
-            totalPages={book.totalPages}
             isReading={book.status === BookStatus.READING}
           />
 
