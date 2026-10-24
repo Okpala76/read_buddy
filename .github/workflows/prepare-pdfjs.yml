@@ -1,0 +1,33 @@
+name: Prepare PDF.js reader
+on:
+  push:
+    branches:
+      - feat/readon-pdfjs-auto-progress
+    paths:
+      - .github/workflows/prepare-pdfjs.yml
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/readon-pdfjs-auto-progress
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm add pdfjs-dist@5.4.449 --save-exact
+      - run: pnpm exec prettier --write package.json src/features/book-documents/ui/PdfReader.tsx src/features/book-documents/ui/BookDocumentControl.tsx src/features/books/ui/components/BookCard.tsx
+      - name: Commit dependency and formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json pnpm-lock.yaml src/features/book-documents/ui/PdfReader.tsx src/features/book-documents/ui/BookDocumentControl.tsx src/features/books/ui/components/BookCard.tsx
+          git diff --cached --quiet || git commit -m "build: install PDF.js and format reader"
+          git push origin HEAD:feat/readon-pdfjs-auto-progress
