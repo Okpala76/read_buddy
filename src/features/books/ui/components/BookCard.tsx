@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BookDocumentControl } from "@/features/book-documents/ui/BookDocumentControl";
 import { useId, useState, useTransition } from "react";
 import {
   BookOpen,
@@ -201,6 +202,8 @@ export function BookCard({
               Move your current book back to the queue before starting this one.
             </p>
           )}
+
+          <BookDocumentControl bookId={book.id} />
 
           {error && (
             <p className="text-destructive mt-3 text-sm" role="alert">
