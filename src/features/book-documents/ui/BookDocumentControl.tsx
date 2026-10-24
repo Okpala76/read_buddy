@@ -29,7 +29,6 @@ export function BookDocumentControl({
     contentType: string;
   } | null>(null);
 
-
   async function upload(file: File) {
     if (
       !(
@@ -72,7 +71,6 @@ export function BookDocumentControl({
     try {
       const document = await getDocumentDownload({ bookId });
       if (document.contentType === "application/pdf") {
-
         setReader({
           url: document.url,
           fileName: document.fileName,

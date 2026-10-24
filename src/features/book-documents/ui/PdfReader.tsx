@@ -61,10 +61,14 @@ export function PdfReader({
         documentRef.current = document;
         setPageCount(document.numPages);
         setPage((current) => Math.min(document.numPages, current));
-        setSaveState(isReading ? "Progress saves automatically" : "Read-only progress");
+        setSaveState(
+          isReading ? "Progress saves automatically" : "Read-only progress",
+        );
       } catch (cause) {
         if (!cancelled) {
-          setError(cause instanceof Error ? cause.message : "Could not open PDF");
+          setError(
+            cause instanceof Error ? cause.message : "Could not open PDF",
+          );
         }
       }
     }
@@ -104,8 +108,16 @@ export function PdfReader({
         });
         await renderTask.promise;
       } catch (cause) {
-        if (!cancelled && !(cause instanceof Error && cause.name === "RenderingCancelledException")) {
-          setError(cause instanceof Error ? cause.message : "Page rendering failed");
+        if (
+          !cancelled &&
+          !(
+            cause instanceof Error &&
+            cause.name === "RenderingCancelledException"
+          )
+        ) {
+          setError(
+            cause instanceof Error ? cause.message : "Page rendering failed",
+          );
         }
       }
     }
@@ -132,7 +144,9 @@ export function PdfReader({
             latestSavedRef.current = completed;
             setSaveState(`Saved through page ${completed}`);
           } catch (cause) {
-            setSaveState(cause instanceof Error ? cause.message : "Save failed");
+            setSaveState(
+              cause instanceof Error ? cause.message : "Save failed",
+            );
           }
         });
     }, 900);
@@ -143,7 +157,8 @@ export function PdfReader({
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
       if (event.target instanceof HTMLInputElement) return;
-      if (event.key === "ArrowRight") setPage((p) => Math.min(pageCount || p, p + 1));
+      if (event.key === "ArrowRight")
+        setPage((p) => Math.min(pageCount || p, p + 1));
       if (event.key === "ArrowLeft") setPage((p) => Math.max(1, p - 1));
     }
     window.addEventListener("keydown", onKeyDown);
@@ -151,21 +166,63 @@ export function PdfReader({
   }, [onClose, pageCount]);
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={`Read ${fileName}`} className="bg-background fixed inset-0 z-50 flex flex-col">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Read ${fileName}`}
+      className="bg-background fixed inset-0 z-50 flex flex-col"
+    >
       <header className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{fileName}</p>
-          <p role="status" className="text-muted-foreground text-xs">{saveState}</p>
+          <p role="status" className="text-muted-foreground text-xs">
+            {saveState}
+          </p>
         </div>
-        <button type="button" onClick={onClose} className="rounded-lg border px-3 py-2 text-sm">Close reader</button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg border px-3 py-2 text-sm"
+        >
+          Close reader
+        </button>
       </header>
-      <div ref={containerRef} className="min-h-0 flex-1 overflow-auto bg-muted/40 p-4 text-center">
-        {error ? <p role="alert" className="text-destructive">{error}</p> : <canvas ref={canvasRef} aria-label={`PDF page ${page}`} className="mx-auto bg-white shadow" />}
+      <div
+        ref={containerRef}
+        className="bg-muted/40 min-h-0 flex-1 overflow-auto p-4 text-center"
+      >
+        {error ? (
+          <p role="alert" className="text-destructive">
+            {error}
+          </p>
+        ) : (
+          <canvas
+            ref={canvasRef}
+            aria-label={`PDF page ${page}`}
+            className="mx-auto bg-white shadow"
+          />
+        )}
       </div>
       <footer className="flex items-center justify-center gap-3 border-t px-4 py-3">
-        <button type="button" disabled={page <= 1 || !pageCount} onClick={() => setPage((p) => Math.max(1, p - 1))} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Previous</button>
-        <span className="text-sm" aria-live="polite">Page {page} of {pageCount || "…"}</span>
-        <button type="button" disabled={!pageCount || page >= pageCount} onClick={() => setPage((p) => Math.min(pageCount, p + 1))} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Next</button>
+        <button
+          type="button"
+          disabled={page <= 1 || !pageCount}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40"
+        >
+          Previous
+        </button>
+        <span className="text-sm" aria-live="polite">
+          Page {page} of {pageCount || "…"}
+        </span>
+        <button
+          type="button"
+          disabled={!pageCount || page >= pageCount}
+          onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+          className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40"
+        >
+          Next
+        </button>
       </footer>
     </div>
   );
