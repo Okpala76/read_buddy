@@ -35,6 +35,21 @@ export function normalizeFreeBook(book: z.infer<typeof bookSchema>): FreeBook {
   };
 }
 
+function catalogUrl(path: string): string {
+  const base = process.env.GUTENDEX_API_BASE_URL;
+  if (!base) {
+    throw new Error("GUTENDEX_API_BASE_URL is not configured");
+  }
+  const parsed = new URL(base);
+  if (parsed.protocol !== "https:") {
+    throw new Error("Gutendex API must use HTTPS");
+  }
+  return new URL(
+    path,
+    parsed.href.endsWith("/") ? parsed.href : parsed.href + "/",
+  ).toString();
+}
+
 export async function searchGutendex(
   query: string,
   page = 1,
@@ -47,7 +62,7 @@ export async function searchGutendex(
     search: query,
     page: String(page),
   });
-  const response = await fetch(`https://gutendex.com/books/?${params}`, {
+  const response = await fetch(catalogUrl(`books/?${params}`), {
     signal: AbortSignal.timeout(8000),
     cache: "no-store",
   });
@@ -62,7 +77,7 @@ export async function searchGutendex(
 }
 
 export async function getGutendexBook(id: number): Promise<FreeBook> {
-  const response = await fetch(`https://gutendex.com/books/${id}/`, {
+  const response = await fetch(catalogUrl(`books/${id}/`), {
     signal: AbortSignal.timeout(8000),
     cache: "no-store",
   });
