@@ -23,7 +23,11 @@ export async function searchFreeBooks(input: unknown) {
     return { ok: true as const, data };
   } catch (error) {
     console.error("Gutendex search failed", error);
-    return { ok: false as const, error: "Free-book search is unavailable right now. Please try again shortly." };
+    return {
+      ok: false as const,
+      error:
+        "Free-book search is unavailable right now. Please try again shortly.",
+    };
   }
 }
 
@@ -40,7 +44,11 @@ export async function addFreeBook(input: unknown) {
     catalogBook = await getGutendexBook(gutendexId);
   } catch (error) {
     console.error("Gutendex book lookup failed", error);
-    return { ok: false as const, error: "This book could not be retrieved right now. Please try again shortly." };
+    return {
+      ok: false as const,
+      error:
+        "This book could not be retrieved right now. Please try again shortly.",
+    };
   }
   const repo = new DrizzleBookRepository();
   const existing = await repo.findByUserId(user.id);
@@ -52,7 +60,10 @@ export async function addFreeBook(input: unknown) {
         normalized(book.author) === normalized(catalogBook.author),
     )
   ) {
-    return { ok: false as const, error: "This book is already in your library" };
+    return {
+      ok: false as const,
+      error: "This book is already in your library",
+    };
   }
   try {
     await new CreateBookUseCase(repo).execute(user.id, {
@@ -63,7 +74,10 @@ export async function addFreeBook(input: unknown) {
     });
   } catch (error) {
     console.error("Adding a free book failed", error);
-    return { ok: false as const, error: "Could not add this book. Please try again." };
+    return {
+      ok: false as const,
+      error: "Could not add this book. Please try again.",
+    };
   }
   revalidatePath("/books");
   revalidatePath("/dashboard");

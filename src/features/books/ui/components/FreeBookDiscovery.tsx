@@ -60,7 +60,10 @@ export function FreeBookDiscovery() {
     setBusy(true);
     setError("");
     try {
-      const result = await addFreeBook({ gutendexId: selected.id, totalPages: pages });
+      const result = await addFreeBook({
+        gutendexId: selected.id,
+        totalPages: pages,
+      });
       if (!result.ok) {
         setError(result.error);
         return;
