@@ -30,6 +30,12 @@ vi.mock("@/features/books/ui/book-actions", () => ({
   startBook: startBookMock,
 }));
 
+vi.mock("@/features/book-documents/ui/document-actions", () => ({
+  beginDocumentUpload: vi.fn(),
+  completeDocumentUpload: vi.fn(),
+  getDocumentDownload: vi.fn(),
+}));
+
 const baseBook: BookView = {
   id: "550e8400-e29b-41d4-a716-446655440001",
   title: "Test Book",
