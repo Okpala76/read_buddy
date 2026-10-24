@@ -120,7 +120,9 @@ export function BookDocumentControl({ bookId }: { bookId: string }) {
         >
           <header className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{reader.fileName}</p>
+              <p className="truncate text-sm font-semibold">
+                {reader.fileName}
+              </p>
               <p className="text-muted-foreground text-xs">
                 PDF reader · Use the page controls below or the PDF toolbar
               </p>
