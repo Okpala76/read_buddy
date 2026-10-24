@@ -52,7 +52,7 @@ jobs:
         if: github.event_name == 'pull_request' && github.head_ref == 'feat/r2-document-storage'
         run: |
           pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
-          pnpm exec prettier --write src/features/book-storage .env.example docs/IN_APP_READING_ARCHITECTURE.md
+          pnpm exec prettier --write src/features/book-storage docs/IN_APP_READING_ARCHITECTURE.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json pnpm-lock.yaml src/features/book-storage docs/IN_APP_READING_ARCHITECTURE.md
