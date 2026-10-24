@@ -8,6 +8,7 @@ One library book may have an optional digital edition. The existing physical
 book and manual progress experience must not change for historical users.
 
 Reading evidence is distinct from origin:
+
 - **Off-app / self-reported**: existing physical-book workflow and, later,
   deliberate manual hybrid logging.
 - **In-app / page-confirmed**: an explicit confirmation action in the reader.

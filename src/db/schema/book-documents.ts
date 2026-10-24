@@ -47,7 +47,10 @@ export const bookDocuments = pgTable(
       name: "book_documents_book_owner_fk",
     }).onDelete("no action"),
     index("book_documents_user_id_idx").on(table.userId),
-    check("book_documents_format_check", sql`${table.format} in ('PDF', 'EPUB')`),
+    check(
+      "book_documents_format_check",
+      sql`${table.format} in ('PDF', 'EPUB')`,
+    ),
     check("book_documents_size_positive_check", sql`${table.sizeBytes} > 0`),
     check(
       "book_documents_page_count_positive_check",
