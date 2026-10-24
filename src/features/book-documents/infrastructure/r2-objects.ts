@@ -77,7 +77,9 @@ function signedRequest(args: {
 
   return {
     url: `https://${host}${path}?${params.toString()}`,
-    headers: args.contentType ? { "Content-Type": args.contentType } : {},
+    headers: args.contentType
+      ? ({ "Content-Type": args.contentType } as Record<string, string>)
+      : ({} as Record<string, string>),
   };
 }
 
