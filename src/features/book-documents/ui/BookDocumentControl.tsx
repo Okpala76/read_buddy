@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { updateBookProgress } from "@/features/books/ui/book-actions";
 
 import {
   beginDocumentUpload,
@@ -10,7 +11,17 @@ import {
 
 const MAX_SIZE = 50 * 1024 * 1024;
 
-export function BookDocumentControl({ bookId }: { bookId: string }) {
+export function BookDocumentControl({
+  bookId,
+  currentPage = 0,
+  totalPages = 1,
+  isReading = false,
+}: {
+  bookId: string;
+  currentPage?: number;
+  totalPages?: number;
+  isReading?: boolean;
+}) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [hasDocument, setHasDocument] = useState(false);
@@ -20,6 +31,8 @@ export function BookDocumentControl({ bookId }: { bookId: string }) {
     contentType: string;
   } | null>(null);
   const [page, setPage] = useState(1);
+  const [savedPage, setSavedPage] = useState(currentPage);
+  const [saveMessage, setSaveMessage] = useState("");
 
   async function upload(file: File) {
     if (
@@ -63,7 +76,8 @@ export function BookDocumentControl({ bookId }: { bookId: string }) {
     try {
       const document = await getDocumentDownload({ bookId });
       if (document.contentType === "application/pdf") {
-        setPage(1);
+        setPage(Math.min(totalPages, Math.max(1, savedPage + 1)));
+        setSaveMessage("");
         setReader({
           url: document.url,
           fileName: document.fileName,
@@ -75,6 +89,22 @@ export function BookDocumentControl({ bookId }: { bookId: string }) {
       setHasDocument(true);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Document not found");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveProgress() {
+    if (!isReading) return;
+    setBusy(true);
+    setSaveMessage("");
+    try {
+      const finishedPage = Math.min(totalPages, Math.max(savedPage, page - 1));
+      await updateBookProgress({ bookId, page: finishedPage });
+      setSavedPage(finishedPage);
+      setSaveMessage(`Saved through page ${finishedPage}.`);
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : "Could not save progress");
     } finally {
       setBusy(false);
     }
@@ -124,7 +154,7 @@ export function BookDocumentControl({ bookId }: { bookId: string }) {
                 {reader.fileName}
               </p>
               <p className="text-muted-foreground text-xs">
-                PDF reader · Use the page controls below or the PDF toolbar
+                PDF reader · Page position is saved only when you select Save progress
               </p>
             </div>
             <button
@@ -156,21 +186,27 @@ export function BookDocumentControl({ bookId }: { bookId: string }) {
                 aria-label="PDF page"
                 type="number"
                 min={1}
+                max={totalPages}
                 value={page}
                 onChange={(event) => {
                   const next = Number(event.target.value);
-                  if (Number.isInteger(next) && next >= 1) setPage(next);
+                  if (Number.isInteger(next) && next >= 1 && next <= totalPages) setPage(next);
                 }}
                 className="bg-background w-20 rounded-lg border px-2 py-2"
               />
             </label>
             <button
               type="button"
-              onClick={() => setPage((current) => current + 1)}
+              disabled={page >= totalPages}
+              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
               className="rounded-lg border px-3 py-2 text-sm"
             >
               Next
             </button>
+            {isReading && (
+              <button type="button" disabled={busy} onClick={() => void saveProgress()} className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-40">Save progress</button>
+            )}
+            {saveMessage && <span role="status" className="text-xs">{saveMessage}</span>}
           </footer>
         </div>
       )}
