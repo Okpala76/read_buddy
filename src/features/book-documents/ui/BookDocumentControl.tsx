@@ -18,8 +18,7 @@ export function BookDocumentControl({ bookId }: { bookId: string }) {
   async function upload(file: File) {
     if (
       !(
-        file.type === "application/pdf" ||
-        file.type === "application/epub+zip"
+        file.type === "application/pdf" || file.type === "application/epub+zip"
       ) ||
       file.size === 0 ||
       file.size > MAX_SIZE

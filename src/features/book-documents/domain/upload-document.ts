@@ -11,9 +11,9 @@ export const uploadDocumentSchema = z
   })
   .refine(
     (file) =>
-      file.fileName.toLowerCase().endsWith(
-        file.contentType === "application/pdf" ? ".pdf" : ".epub",
-      ),
+      file.fileName
+        .toLowerCase()
+        .endsWith(file.contentType === "application/pdf" ? ".pdf" : ".epub"),
     { message: "File extension does not match the content type" },
   );
 

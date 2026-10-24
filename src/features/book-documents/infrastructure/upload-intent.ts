@@ -39,7 +39,10 @@ export function createUploadIntent(
   return { intent, token: `${encoded}.${sign(encoded)}` };
 }
 
-export function verifyUploadIntent(token: string, userId: string): UploadIntent {
+export function verifyUploadIntent(
+  token: string,
+  userId: string,
+): UploadIntent {
   if (token.length > 4096) throw new Error("Invalid upload intent");
   const [encoded, signature, extra] = token.split(".");
   if (!encoded || !signature || extra !== undefined) {
@@ -47,7 +50,10 @@ export function verifyUploadIntent(token: string, userId: string): UploadIntent 
   }
   const expected = Buffer.from(sign(encoded));
   const provided = Buffer.from(signature);
-  if (expected.length !== provided.length || !timingSafeEqual(expected, provided)) {
+  if (
+    expected.length !== provided.length ||
+    !timingSafeEqual(expected, provided)
+  ) {
     throw new Error("Invalid upload intent signature");
   }
   let data: unknown;
@@ -62,9 +68,7 @@ export function verifyUploadIntent(token: string, userId: string): UploadIntent 
   }
   const suffix = intent.contentType === "application/pdf" ? "pdf" : "epub";
   if (
-    !intent.storageKey.startsWith(
-      `users/${userId}/books/${intent.bookId}/`,
-    ) ||
+    !intent.storageKey.startsWith(`users/${userId}/books/${intent.bookId}/`) ||
     !intent.storageKey.endsWith(`.${suffix}`)
   ) {
     throw new Error("Invalid upload storage key");

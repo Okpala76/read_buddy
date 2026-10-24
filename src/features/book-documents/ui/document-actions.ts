@@ -67,7 +67,9 @@ export async function beginDocumentUpload(input: unknown) {
 
 export async function completeDocumentUpload(input: unknown) {
   const user = await requireAuth();
-  const { uploadToken } = z.object({ uploadToken: z.string().min(1) }).parse(input);
+  const { uploadToken } = z
+    .object({ uploadToken: z.string().min(1) })
+    .parse(input);
   const intent = verifyUploadIntent(uploadToken, user.id);
   await requireOwnedBook(intent.bookId, user.id);
 
@@ -111,10 +113,7 @@ export async function getDocumentDownload(input: unknown) {
     })
     .from(bookDocuments)
     .where(
-      and(
-        eq(bookDocuments.bookId, bookId),
-        eq(bookDocuments.userId, user.id),
-      ),
+      and(eq(bookDocuments.bookId, bookId), eq(bookDocuments.userId, user.id)),
     )
     .limit(1);
 

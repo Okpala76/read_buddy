@@ -1,9 +1,11 @@
 # ReadOn R2 storage integration
 
 ## Decision
+
 Use the existing Next.js App Router application on Vercel, PostgreSQL on the VPS, and the private Cloudflare R2 bucket `reading-buddy-books`. No additional backend service is required.
 
 ## Current infrastructure
+
 - Production origin: https://read-buddy.ogalandlord.com.ng
 - Development origin: http://localhost:3000
 - R2 public managed domain: disabled; no custom public domains.
@@ -11,6 +13,7 @@ Use the existing Next.js App Router application on Vercel, PostgreSQL on the VPS
 - Existing `book_documents` schema stores book ownership, format, storage key, original filename, MIME type, byte count and optional page count. Do not duplicate this table.
 
 ## Implementation contract
+
 1. Add `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner` with pnpm and commit the lockfile.
 2. Define server-only validated environment variables `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and `R2_BUCKET_NAME`; never use `NEXT_PUBLIC_` for secrets.
 3. Create a server-only S3 client using region `auto` and endpoint `https://<account-id>.r2.cloudflarestorage.com`.
@@ -21,4 +24,5 @@ Use the existing Next.js App Router application on Vercel, PostgreSQL on the VPS
 8. Run `pnpm verify`, deploy to a preview environment, test with a small PDF and EPUB, then merge only after review.
 
 ## Operational note
+
 R2 S3 API credentials are not created yet. Create a bucket-scoped token with only the necessary object permissions and configure it in Vercel's server-side environment. Never commit credentials. Update R2 CORS with the future ReadOn domain before DNS migration.
