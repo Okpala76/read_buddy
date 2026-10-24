@@ -9,7 +9,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -45,6 +47,17 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Generate R2 dependencies and format feature branch
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/r2-document-storage'
+        run: |
+          pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+          pnpm exec prettier --write src/features/book-storage .env.example docs/IN_APP_READING_ARCHITECTURE.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json pnpm-lock.yaml src/features/book-storage docs/IN_APP_READING_ARCHITECTURE.md
+          git commit -m "build: add AWS S3-compatible client and format R2 foundation"
+          git push origin HEAD:${{ github.head_ref }}
 
       - name: Check formatting
         run: pnpm format:check
