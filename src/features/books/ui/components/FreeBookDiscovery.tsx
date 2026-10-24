@@ -32,9 +32,16 @@ export function FreeBookDiscovery() {
         query: query.trim(),
         page: nextPage,
       });
-      setBooks(result.books);
-      setCount(result.count);
-      setHasNext(result.hasNext);
+      if (!result.ok) {
+        setError(result.error);
+        setBooks([]);
+        setCount(0);
+        setHasNext(false);
+        return;
+      }
+      setBooks(result.data.books);
+      setCount(result.data.count);
+      setHasNext(result.data.hasNext);
       setPage(nextPage);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Search failed");
@@ -53,7 +60,14 @@ export function FreeBookDiscovery() {
     setBusy(true);
     setError("");
     try {
-      await addFreeBook({ gutendexId: selected.id, totalPages: pages });
+      const result = await addFreeBook({
+        gutendexId: selected.id,
+        totalPages: pages,
+      });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
       setAddedIds((ids) => [...ids, selected.id]);
       setSelected(null);
       setTotalPages("");
