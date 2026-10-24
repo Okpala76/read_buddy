@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateBookProgress } from "@/features/books/ui/book-actions";
+import { PdfReader } from "./PdfReader";
 
 import {
   beginDocumentUpload,
@@ -14,12 +14,10 @@ const MAX_SIZE = 50 * 1024 * 1024;
 export function BookDocumentControl({
   bookId,
   currentPage = 0,
-  totalPages = 1,
   isReading = false,
 }: {
   bookId: string;
   currentPage?: number;
-  totalPages?: number;
   isReading?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
@@ -30,9 +28,6 @@ export function BookDocumentControl({
     fileName: string;
     contentType: string;
   } | null>(null);
-  const [page, setPage] = useState(1);
-  const [savedPage, setSavedPage] = useState(currentPage);
-  const [saveMessage, setSaveMessage] = useState("");
 
   async function upload(file: File) {
     if (
@@ -76,8 +71,6 @@ export function BookDocumentControl({
     try {
       const document = await getDocumentDownload({ bookId });
       if (document.contentType === "application/pdf") {
-        setPage(Math.min(totalPages, Math.max(1, savedPage + 1)));
-        setSaveMessage("");
         setReader({
           url: document.url,
           fileName: document.fileName,
@@ -89,24 +82,6 @@ export function BookDocumentControl({
       setHasDocument(true);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Document not found");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveProgress() {
-    if (!isReading) return;
-    setBusy(true);
-    setSaveMessage("");
-    try {
-      const finishedPage = Math.min(totalPages, Math.max(savedPage, page - 1));
-      await updateBookProgress({ bookId, page: finishedPage });
-      setSavedPage(finishedPage);
-      setSaveMessage(`Saved through page ${finishedPage}.`);
-    } catch (error) {
-      setSaveMessage(
-        error instanceof Error ? error.message : "Could not save progress",
-      );
     } finally {
       setBusy(false);
     }
@@ -144,88 +119,14 @@ export function BookDocumentControl({
         )}
       </div>
       {reader && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Read ${reader.fileName}`}
-          className="bg-background fixed inset-0 z-50 flex flex-col"
-        >
-          <header className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">
-                {reader.fileName}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                PDF reader · Page position is saved only when you select Save
-                progress
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setReader(null)}
-              className="rounded-lg border px-3 py-2 text-sm font-medium"
-            >
-              Close reader
-            </button>
-          </header>
-          <iframe
-            key={`${reader.url}#page=${page}`}
-            src={`${reader.url}#page=${page}`}
-            title={reader.fileName}
-            className="min-h-0 w-full flex-1"
-          />
-          <footer className="flex items-center justify-center gap-3 border-t px-4 py-2">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40"
-            >
-              Previous
-            </button>
-            <label className="flex items-center gap-2 text-sm">
-              Page
-              <input
-                aria-label="PDF page"
-                type="number"
-                min={1}
-                max={totalPages}
-                value={page}
-                onChange={(event) => {
-                  const next = Number(event.target.value);
-                  if (Number.isInteger(next) && next >= 1 && next <= totalPages)
-                    setPage(next);
-                }}
-                className="bg-background w-20 rounded-lg border px-2 py-2"
-              />
-            </label>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() =>
-                setPage((current) => Math.min(totalPages, current + 1))
-              }
-              className="rounded-lg border px-3 py-2 text-sm"
-            >
-              Next
-            </button>
-            {isReading && (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void saveProgress()}
-                className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-40"
-              >
-                Save progress
-              </button>
-            )}
-            {saveMessage && (
-              <span role="status" className="text-xs">
-                {saveMessage}
-              </span>
-            )}
-          </footer>
-        </div>
+        <PdfReader
+          bookId={bookId}
+          url={reader.url}
+          fileName={reader.fileName}
+          initialCompletedPage={currentPage}
+          isReading={isReading}
+          onClose={() => setReader(null)}
+        />
       )}
     </>
   );
