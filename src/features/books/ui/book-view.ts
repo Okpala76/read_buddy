@@ -11,6 +11,7 @@ export interface BookView {
   createdAt: Date;
   updatedAt: Date;
   progressPercent: number;
+  epubProgress?: { locationIndex: number | null; locationTotal: number | null; progressPercent: number | null };
 }
 
 export function toBookView(book: Book): BookView {
