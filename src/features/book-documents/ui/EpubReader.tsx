@@ -23,6 +23,7 @@ export function EpubReader({
   } | null>(null);
   const [status, setStatus] = useState("Opening EPUB…");
   const [error, setError] = useState("");
+  const [location, setLocation] = useState<{ index: number; total: number; percent: number } | null>(null);
 
   useEffect(() => {
     let stopped = false;
@@ -41,6 +42,7 @@ export function EpubReader({
         const epub = module.default(bytes);
         book = epub;
         await epub.ready;
+        await epub.locations.generate(1024);
         if (stopped || !target.current) return;
         const view = epub.renderTo(target.current, {
           width: "100%",
@@ -52,15 +54,21 @@ export function EpubReader({
         let latest = Promise.resolve();
         view.on("relocated", (location) => {
           if (stopped || !location?.start?.cfi) return;
+          const cfi = location.start.cfi;
+          const total = epub.locations.length();
+          const ordinal = epub.locations.locationFromCfi(cfi);
+          if (total < 1 || ordinal < 0) return;
+          const index = Math.min(total, ordinal + 1);
+          const percent = Math.min(100, Math.round((index / total) * 100));
+          setLocation({ index, total, percent });
           if (firstLocation) {
             firstLocation = false;
             setStatus("Reading position restored");
             return;
           }
-          const cfi = location.start.cfi;
           latest = latest
             .catch(() => undefined)
-            .then(() => saveEpubPosition({ bookId, cfi }))
+            .then(() => saveEpubPosition({ bookId, cfi, locationIndex: index, locationTotal: total, progressPercent: percent }))
             .then(() => setStatus("Position saved"))
             .catch(() => setStatus("Could not save position"));
         });
@@ -110,7 +118,7 @@ export function EpubReader({
         </p>
       )}
       <div ref={target} className="min-h-0 flex-1 overflow-hidden" />
-      <footer className="flex justify-center gap-3 border-t p-3">
+      <footer className="flex items-center justify-center gap-3 border-t p-3">
         <button
           type="button"
           onClick={() => void rendition.current?.prev()}
@@ -118,6 +126,9 @@ export function EpubReader({
         >
           Previous
         </button>
+        <span className="text-muted-foreground text-xs tabular-nums" aria-live="polite">
+          {location ? `Location ${location.index} of ${location.total} · ${location.percent}%` : "Calculating locations…"}
+        </span>
         <button
           type="button"
           onClick={() => void rendition.current?.next()}
