@@ -35,6 +35,13 @@ vi.mock("@/features/book-documents/ui/epub-position-actions", () => ({
   saveEpubPosition: vi.fn(),
 }));
 
+vi.mock("@/features/book-documents/ui/pdf-reading-actions", () => ({
+  getPdfReadingState: vi.fn(),
+  alignPdfReading: vi.fn(),
+  savePdfViewedPage: vi.fn(),
+  completePdfReading: vi.fn(),
+}));
+
 vi.mock("@/features/book-documents/ui/document-actions", () => ({
   beginDocumentUpload: vi.fn(),
   completeDocumentUpload: vi.fn(),
