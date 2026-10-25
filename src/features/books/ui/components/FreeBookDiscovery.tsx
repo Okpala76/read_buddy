@@ -17,14 +17,9 @@ export function FreeBookDiscovery() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<FreeBook | null>(null);
-  const [totalPages, setTotalPages] = useState("");
   const [addedIds, setAddedIds] = useState<number[]>([]);
 
   async function search(nextPage = 1) {
-    if (query.trim().length < 2) {
-      setError("Enter at least two characters");
-      return;
-    }
     setBusy(true);
     setError("");
     try {
@@ -52,17 +47,11 @@ export function FreeBookDiscovery() {
 
   async function addBook() {
     if (!selected) return;
-    const pages = Number(totalPages);
-    if (!Number.isInteger(pages) || pages < 1) {
-      setError("Enter a positive whole-number page count");
-      return;
-    }
     setBusy(true);
     setError("");
     try {
       const result = await addFreeBook({
-        gutendexId: selected.id,
-        totalPages: pages,
+        gutenbergId: selected.id,
       });
       if (!result.ok) {
         setError(result.error);
@@ -70,7 +59,6 @@ export function FreeBookDiscovery() {
       }
       setAddedIds((ids) => [...ids, selected.id]);
       setSelected(null);
-      setTotalPages("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not add book");
     } finally {
@@ -92,9 +80,8 @@ export function FreeBookDiscovery() {
           <div>
             <h2 className="text-xl font-semibold">Discover free books</h2>
             <p className="text-muted-foreground mt-1 text-sm">
-              Search Project Gutenberg’s public-domain catalog via Gutendex.
-              Adding a title saves its details to your library; EPUB reading is
-              coming next.
+              Browse 25 verified free EPUBs. Add one to your library and read
+              directly inside ReadOn, with your position saved.
             </p>
           </div>
           <form
@@ -108,7 +95,7 @@ export function FreeBookDiscovery() {
               aria-label="Search free books"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Title or author"
+              placeholder="Search free books"
               maxLength={100}
               className="bg-background min-h-11 min-w-0 flex-1 rounded-lg border px-3"
             />
@@ -147,10 +134,7 @@ export function FreeBookDiscovery() {
                     {book.author}
                   </p>
                   <p className="text-muted-foreground mt-2 text-xs">
-                    {book.epubAvailable
-                      ? "EPUB available from Gutenberg"
-                      : "Catalog listing"}{" "}
-                    · {book.downloads.toLocaleString()} downloads
+                    EPUB available · Free to read
                   </p>
                 </div>
                 <button
@@ -158,7 +142,6 @@ export function FreeBookDiscovery() {
                   disabled={busy || addedIds.includes(book.id)}
                   onClick={() => {
                     setSelected(book);
-                    setTotalPages("");
                     setError("");
                   }}
                   className="border-border min-h-11 rounded-lg border px-3 text-sm disabled:opacity-50"
@@ -201,26 +184,9 @@ export function FreeBookDiscovery() {
               <div className="bg-card w-full max-w-md space-y-4 rounded-xl p-6">
                 <h3 className="text-lg font-semibold">Add {selected.title}</h3>
                 <p className="text-muted-foreground text-sm">
-                  Gutendex does not provide a reliable page count. Enter the
-                  number of pages in the edition you plan to read. You can add
-                  it to your queue now; digital reading support is next.
+                  Read this EPUB directly inside ReadOn. Its reading position
+                  will be saved automatically.
                 </p>
-                <label
-                  className="block text-sm font-medium"
-                  htmlFor="free-book-pages"
-                >
-                  Total pages
-                </label>
-                <input
-                  id="free-book-pages"
-                  type="number"
-                  min="1"
-                  max="100000"
-                  step="1"
-                  value={totalPages}
-                  onChange={(event) => setTotalPages(event.target.value)}
-                  className="bg-background min-h-11 w-full rounded-lg border px-3"
-                />
                 {error && (
                   <p role="alert" className="text-destructive text-sm">
                     {error}
@@ -244,7 +210,7 @@ export function FreeBookDiscovery() {
                     onClick={() => void addBook()}
                     className="bg-primary text-primary-foreground min-h-11 flex-1 rounded-lg px-3 disabled:opacity-50"
                   >
-                    {busy ? "Adding…" : "Add to queue"}
+                    {busy ? "Adding…" : "Add EPUB"}
                   </button>
                 </div>
               </div>
