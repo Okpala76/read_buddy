@@ -119,7 +119,9 @@ async function main() {
     if (verified.length >= limit) break;
   }
   console.log("Verified downloadable EPUBs:", verified.length);
-  if (!verified.length) throw Error("No valid EPUBs; database unchanged");
+  if (verified.length !== limit) {
+    throw Error(`Only ${verified.length} of ${limit} requested EPUBs verified; database unchanged`);
+  }
   if (!apply) {
     console.log(
       "DRY RUN: no database changes. Pass --apply to persist verified records.",
