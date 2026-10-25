@@ -30,6 +30,11 @@ vi.mock("@/features/books/ui/book-actions", () => ({
   startBook: startBookMock,
 }));
 
+vi.mock("@/features/book-documents/ui/epub-position-actions", () => ({
+  loadEpubPosition: vi.fn(),
+  saveEpubPosition: vi.fn(),
+}));
+
 vi.mock("@/features/book-documents/ui/document-actions", () => ({
   beginDocumentUpload: vi.fn(),
   completeDocumentUpload: vi.fn(),
