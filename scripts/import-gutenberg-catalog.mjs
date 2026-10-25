@@ -94,10 +94,11 @@ async function epubAvailable(id) {
   try {
     const res = await fetch(url, {
       signal: AbortSignal.timeout(10_000),
-      redirect: "manual",
+      redirect: "follow",
       headers: { Range: "bytes=0-3" },
     });
     if (res.status !== 200 && res.status !== 206) return null;
+    if (new URL(res.url).hostname !== "www.gutenberg.org") return null;
     const reader = res.body?.getReader();
     if (!reader) return null;
     const part = await reader.read();
