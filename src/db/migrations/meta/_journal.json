@@ -92,6 +92,13 @@
       "when": 1792890000000,
       "tag": "0012_gutenberg_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792976400000,
+      "tag": "0013_epub_positions",
+      "breakpoints": true
     }
   ]
 }
