@@ -42,11 +42,11 @@ export async function searchGutenbergCatalog(query: string, page = 1) {
     count: total,
     hasNext: page * 24 < total,
     books: rows.map((book): FreeBook => ({
-        id: book.id,
-        title: book.title,
-        author: book.author,
-        downloads: 0,
-        epubAvailable: true,
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      downloads: 0,
+      epubAvailable: true,
     })),
   };
 }
