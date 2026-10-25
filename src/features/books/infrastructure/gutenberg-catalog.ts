@@ -41,15 +41,13 @@ export async function searchGutenbergCatalog(query: string, page = 1) {
   return {
     count: total,
     hasNext: page * 24 < total,
-    books: rows.map(
-      (book): FreeBook => ({
+    books: rows.map((book): FreeBook => ({
         id: book.id,
         title: book.title,
         author: book.author,
         downloads: 0,
         epubAvailable: true,
-      }),
-    ),
+    })),
   };
 }
 
