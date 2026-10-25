@@ -8,7 +8,10 @@ declare module "epubjs" {
     destroy(): void;
   }
   interface EpubBook {
-    renderTo(element: HTMLElement, options: { width: string; height: string; flow: string }): Rendition;
+    renderTo(
+      element: HTMLElement,
+      options: { width: string; height: string; flow: string },
+    ): Rendition;
     ready: Promise<unknown>;
     destroy(): void;
   }
