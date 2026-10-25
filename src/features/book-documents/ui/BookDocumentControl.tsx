@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PdfReader } from "./PdfReader";
+import { EpubReader } from "./EpubReader";
 
 import {
   beginDocumentUpload,
@@ -77,7 +78,11 @@ export function BookDocumentControl({
           contentType: document.contentType,
         });
       } else {
-        window.open(document.url, "_blank", "noopener,noreferrer");
+        setReader({
+          url: document.url,
+          fileName: document.fileName,
+          contentType: document.contentType,
+        });
       }
       setHasDocument(true);
     } catch (error) {
@@ -118,7 +123,15 @@ export function BookDocumentControl({
           </p>
         )}
       </div>
-      {reader && (
+      {reader?.contentType === "application/epub+zip" && (
+        <EpubReader
+          bookId={bookId}
+          url={reader.url}
+          fileName={reader.fileName}
+          onClose={() => setReader(null)}
+        />
+      )}
+      {reader?.contentType === "application/pdf" && (
         <PdfReader
           bookId={bookId}
           url={reader.url}
