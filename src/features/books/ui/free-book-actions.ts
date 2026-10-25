@@ -72,10 +72,17 @@ async function downloadVerifiedEpub(url: string) {
   if (declaredLength > MAX_EPUB_SIZE) throw new Error("EPUB is too large");
   const chunks: Uint8Array[] = [];
   let length = 0;
-  for await (const chunk of response.body) {
-    length += chunk.byteLength;
-    if (length > MAX_EPUB_SIZE) throw new Error("EPUB exceeds 20 MB");
-    chunks.push(chunk);
+  const reader = response.body.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      length += value.byteLength;
+      if (length > MAX_EPUB_SIZE) throw new Error("EPUB exceeds 20 MB");
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
   }
   const bytes = Buffer.concat(chunks, length);
   if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
