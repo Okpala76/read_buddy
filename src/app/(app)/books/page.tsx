@@ -1,6 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
-import { bookDocuments, epubPositions } from "@/db/schema";
+import { bookDocuments, epubPositions, pdfReadingStates } from "@/db/schema";
 import { GetBooksUseCase } from "@/features/books/application";
 import { DrizzleBookRepository } from "@/features/books/infrastructure";
 import { BooksPage as BooksPageComponent } from "@/features/books/ui/components/BooksPage";
@@ -51,11 +51,28 @@ export default async function BooksPage() {
       },
     ]),
   );
+  const pdfRows = await db.select({
+    bookId: bookDocuments.bookId,
+    confirmedPage: pdfReadingStates.confirmedPage,
+    pageCount: pdfReadingStates.pageCount,
+    viewedPage: pdfReadingStates.viewedPage,
+  }).from(bookDocuments)
+    .innerJoin(pdfReadingStates, and(
+      eq(pdfReadingStates.documentId, bookDocuments.id),
+      eq(pdfReadingStates.userId, user.id),
+    ))
+    .where(and(
+      eq(bookDocuments.userId, user.id),
+      eq(bookDocuments.format, "PDF"),
+      inArray(bookDocuments.bookId, views.map((book) => book.id)),
+    ));
+  const pdfById = new Map(pdfRows.map(({ bookId, ...progress }) => [bookId, progress]));
   return (
     <BooksPageComponent
       books={views.map((book) => ({
         ...book,
         epubProgress: progressById.get(book.id),
+        pdfProgress: pdfById.get(book.id),
       }))}
     />
   );
