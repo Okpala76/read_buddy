@@ -120,7 +120,9 @@ async function main() {
   }
   console.log("Verified downloadable EPUBs:", verified.length);
   if (verified.length !== limit) {
-    throw Error(`Only ${verified.length} of ${limit} requested EPUBs verified; database unchanged`);
+    throw Error(
+      `Only ${verified.length} of ${limit} requested EPUBs verified; database unchanged`,
+    );
   }
   if (!apply) {
     console.log(
