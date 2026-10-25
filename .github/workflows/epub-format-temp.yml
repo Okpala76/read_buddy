@@ -1,0 +1,30 @@
+name: Format EPUB implementation temporary
+on:
+  push:
+    branches: [feat/lightweight-gutenberg-catalog]
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/lightweight-gutenberg-catalog
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.x
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.27.0
+          run_install: false
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prettier --write scripts/import-gutenberg-catalog.mjs src/features/books/ui/free-book-actions.ts src/features/books/ui/components/FreeBookDiscovery.tsx src/features/book-documents/ui/EpubReader.tsx src/features/book-documents/ui/BookDocumentControl.tsx src/features/book-documents/ui/epub-position-actions.ts src/db/schema/epub-positions.ts
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/import-gutenberg-catalog.mjs src
+          if ! git diff --cached --quiet; then
+            git commit -m "style: format EPUB feature"
+            git push origin HEAD:feat/lightweight-gutenberg-catalog
+          fi
