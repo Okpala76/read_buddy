@@ -24,12 +24,14 @@ export async function loadEpubPosition(input: unknown) {
     .select({ cfi: epubPositions.cfi })
     .from(epubPositions)
     .innerJoin(books, eq(books.id, epubPositions.bookId))
-    .where(and(
-      eq(epubPositions.bookId, bookId),
-      eq(epubPositions.userId, user.id),
-      eq(books.userId, user.id),
-      isNull(books.removedAt),
-    ))
+    .where(
+      and(
+        eq(epubPositions.bookId, bookId),
+        eq(epubPositions.userId, user.id),
+        eq(books.userId, user.id),
+        isNull(books.removedAt),
+      ),
+    )
     .limit(1);
   return rows[0]?.cfi ?? null;
 }
@@ -40,7 +42,13 @@ export async function saveEpubPosition(input: unknown) {
   const owned = await database()
     .select({ id: books.id })
     .from(books)
-    .where(and(eq(books.id, bookId), eq(books.userId, user.id), isNull(books.removedAt)))
+    .where(
+      and(
+        eq(books.id, bookId),
+        eq(books.userId, user.id),
+        isNull(books.removedAt),
+      ),
+    )
     .limit(1);
   if (!owned[0]) throw new Error("Book not found");
   await database()

@@ -1,4 +1,11 @@
-import { foreignKey, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import {
+  foreignKey,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 import { books } from "@/db/schema/books";
 import { users } from "@/db/schema/users";
@@ -9,9 +16,13 @@ export const epubPositions = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     bookId: uuid("book_id").notNull(),
-    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     cfi: text("cfi").notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     unique("epub_positions_book_unique").on(table.bookId),

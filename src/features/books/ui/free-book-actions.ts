@@ -28,12 +28,17 @@ function database() {
 
 export async function searchFreeBooks(input: unknown) {
   await requireAuth();
-  const { query, page } = z.object({
-    query: z.string().trim().max(100).default(""),
-    page: z.number().int().min(1).max(10).default(1),
-  }).parse(input);
+  const { query, page } = z
+    .object({
+      query: z.string().trim().max(100).default(""),
+      page: z.number().int().min(1).max(10).default(1),
+    })
+    .parse(input);
   try {
-    return { ok: true as const, data: await searchGutenbergCatalog(query, page) };
+    return {
+      ok: true as const,
+      data: await searchGutenbergCatalog(query, page),
+    };
   } catch (error) {
     console.error("Gutenberg catalog search failed", error);
     return {
@@ -45,9 +50,11 @@ export async function searchFreeBooks(input: unknown) {
 
 async function downloadVerifiedEpub(url: string) {
   const requested = new URL(url);
-  if (requested.protocol !== "https:" ||
-      requested.hostname !== "www.gutenberg.org" ||
-      !/^\/ebooks\/[1-9]\d*\.epub3\.images$/.test(requested.pathname)) {
+  if (
+    requested.protocol !== "https:" ||
+    requested.hostname !== "www.gutenberg.org" ||
+    !/^\/ebooks\/[1-9]\d*\.epub3\.images$/.test(requested.pathname)
+  ) {
     throw new Error("Catalog EPUB URL is not trusted");
   }
   const response = await fetch(url, {
@@ -55,8 +62,11 @@ async function downloadVerifiedEpub(url: string) {
     redirect: "follow",
     cache: "no-store",
   });
-  if (!response.ok || !response.body ||
-      new URL(response.url).hostname !== "www.gutenberg.org") {
+  if (
+    !response.ok ||
+    !response.body ||
+    new URL(response.url).hostname !== "www.gutenberg.org"
+  ) {
     throw new Error("EPUB download is unavailable");
   }
   const declaredLength = Number(response.headers.get("content-length") || "0");
@@ -77,19 +87,31 @@ async function downloadVerifiedEpub(url: string) {
 
 export async function addFreeBook(input: unknown) {
   const user = await requireAuth();
-  const { gutenbergId } = z.object({
-    gutenbergId: z.number().int().min(initialCatalogIds.min).max(initialCatalogIds.max),
-  }).parse(input);
+  const { gutenbergId } = z
+    .object({
+      gutenbergId: z
+        .number()
+        .int()
+        .min(initialCatalogIds.min)
+        .max(initialCatalogIds.max),
+    })
+    .parse(input);
   const book = await getGutenbergCatalogBook(gutenbergId);
   if (!book) return { ok: false as const, error: "Free book not found" };
   const repo = new DrizzleBookRepository();
   const existing = await repo.findByUserId(user.id);
   const normalized = (value: string) => value.trim().toLocaleLowerCase();
-  if (existing.some((entry) =>
-    normalized(entry.title) === normalized(book.title) &&
-    normalized(entry.author) === normalized(book.author)
-  )) {
-    return { ok: false as const, error: "This book is already in your library" };
+  if (
+    existing.some(
+      (entry) =>
+        normalized(entry.title) === normalized(book.title) &&
+        normalized(entry.author) === normalized(book.author),
+    )
+  ) {
+    return {
+      ok: false as const,
+      error: "This book is already in your library",
+    };
   }
 
   let createdId: string | null = null;
@@ -113,24 +135,32 @@ export async function addFreeBook(input: unknown) {
       signal: AbortSignal.timeout(25_000),
     });
     if (!upload.ok) throw new Error("Unable to store the EPUB in R2");
-    await database().insert(bookDocuments).values({
-      bookId: created.id,
-      userId: user.id,
-      format: "EPUB",
-      storageKey,
-      originalFileName: `gutenberg-${book.id}.epub`,
-      contentType: EPUB_TYPE,
-      sizeBytes: epub.byteLength,
-    });
+    await database()
+      .insert(bookDocuments)
+      .values({
+        bookId: created.id,
+        userId: user.id,
+        format: "EPUB",
+        storageKey,
+        originalFileName: `gutenberg-${book.id}.epub`,
+        contentType: EPUB_TYPE,
+        sizeBytes: epub.byteLength,
+      });
     revalidatePath("/books");
     revalidatePath("/dashboard");
     return { ok: true as const, title: book.title };
   } catch (error) {
     if (createdId) {
-      try { await repo.delete(createdId, user.id); }
-      catch (cleanupError) { console.error("Failed to clean up book", cleanupError); }
+      try {
+        await repo.delete(createdId, user.id);
+      } catch (cleanupError) {
+        console.error("Failed to clean up book", cleanupError);
+      }
     }
     console.error("Adding Gutenberg EPUB failed", error);
-    return { ok: false as const, error: "Could not download and attach this EPUB. Try again." };
+    return {
+      ok: false as const,
+      error: "Could not download and attach this EPUB. Try again.",
+    };
   }
 }
