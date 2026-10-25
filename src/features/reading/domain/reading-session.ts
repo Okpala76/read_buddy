@@ -36,6 +36,7 @@ export class ReadingSession {
     startPage: number;
     endPage: number;
     pagesRead: number;
+    source?: "PHYSICAL" | "PDF" | "EPUB";
     mood: MoodValue | null;
     readAt: Date;
     createdAt: Date;
