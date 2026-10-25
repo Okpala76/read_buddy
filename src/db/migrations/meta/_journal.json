@@ -85,6 +85,13 @@
       "when": 1792800000000,
       "tag": "0011_in_app_reading_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792890000000,
+      "tag": "0012_gutenberg_catalog",
+      "breakpoints": true
     }
   ]
 }
