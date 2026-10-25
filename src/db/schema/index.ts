@@ -9,3 +9,4 @@ export * from "./reading-behavior-profiles";
 export * from "./book-documents";
 export * from "./gutenberg-catalog";
 export * from "./epub-positions";
+export * from "./pdf-reading-states";
