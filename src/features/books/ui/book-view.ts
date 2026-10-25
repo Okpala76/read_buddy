@@ -11,6 +11,11 @@ export interface BookView {
   createdAt: Date;
   updatedAt: Date;
   progressPercent: number;
+  pdfProgress?: {
+    confirmedPage: number;
+    pageCount: number;
+    viewedPage: number;
+  };
   epubProgress?: {
     locationIndex: number | null;
     locationTotal: number | null;

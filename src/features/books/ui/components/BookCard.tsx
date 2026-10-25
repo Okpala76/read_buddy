@@ -58,9 +58,14 @@ export function BookCard({
 
   const remainingPages = Math.max(0, book.totalPages - book.currentPage);
   const isEpub = book.epubProgress !== undefined;
+  const isPdf = book.pdfProgress !== undefined;
   const shownPercent = isEpub
     ? (book.epubProgress?.progressPercent ?? 0)
-    : book.progressPercent;
+    : isPdf
+      ? Math.round(
+          (book.pdfProgress!.confirmedPage / book.pdfProgress!.pageCount) * 100,
+        )
+      : book.progressPercent;
   const canStartQueuedBook =
     book.status === BookStatus.QUEUED && !hasCurrentReading;
 
@@ -171,7 +176,9 @@ export function BookCard({
                     book.epubProgress?.locationTotal
                     ? `Location ${book.epubProgress.locationIndex} of ${book.epubProgress.locationTotal}`
                     : "EPUB · Ready to read"
-                  : `${book.currentPage} of ${book.totalPages} pages`}
+                  : isPdf
+                    ? `PDF ${book.pdfProgress!.confirmedPage} of ${book.pdfProgress!.pageCount} pages`
+                    : `${book.currentPage} of ${book.totalPages} pages`}
               </span>
               <span className="text-muted-foreground">
                 {shownPercent}% complete
@@ -194,7 +201,7 @@ export function BookCard({
             </div>
           </div>
 
-          {book.status === BookStatus.READING && !isEpub && (
+          {book.status === BookStatus.READING && !isEpub && !isPdf && (
             <p className="text-muted-foreground mt-2 text-xs">
               {remainingPages} pages remaining. Log reading to update progress.
             </p>
@@ -212,6 +219,12 @@ export function BookCard({
             </p>
           )}
 
+          {isPdf && (
+            <p className="text-muted-foreground mt-2 text-xs">
+              Physical edition: {book.currentPage} of {book.totalPages} pages.
+              PDF progress is tracked separately.
+            </p>
+          )}
           <BookDocumentControl
             bookId={book.id}
             currentPage={book.currentPage}

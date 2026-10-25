@@ -16,6 +16,7 @@ export interface ReadingSessionProps {
   startPage: number;
   endPage: number;
   pagesRead: number;
+  source?: "PHYSICAL" | "PDF" | "EPUB";
   mood: MoodValue | null;
   readAt: Date;
   createdAt: Date;
@@ -35,6 +36,7 @@ export class ReadingSession {
     startPage: number;
     endPage: number;
     pagesRead: number;
+    source?: "PHYSICAL" | "PDF" | "EPUB";
     mood: MoodValue | null;
     readAt: Date;
     createdAt: Date;
@@ -54,6 +56,7 @@ export class ReadingSession {
 
     return new ReadingSession({
       ...props,
+      source: props.source ?? "PHYSICAL",
       createdAt: new Date(),
     });
   }
