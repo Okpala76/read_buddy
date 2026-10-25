@@ -4,6 +4,7 @@ import {
   foreignKey,
   index,
   integer,
+  text,
   pgTable,
   timestamp,
   uuid,
@@ -24,6 +25,7 @@ export const readingSessions = pgTable(
     startPage: integer("start_page").notNull(),
     endPage: integer("end_page").notNull(),
     pagesRead: integer("pages_read").notNull(),
+    source: text("source").notNull().default("PHYSICAL"),
     mood: readingMood("mood"),
     readAt: timestamp("read_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -42,6 +44,7 @@ export const readingSessions = pgTable(
       "reading_sessions_page_range_check",
       sql`${table.startPage} >= 0 and ${table.endPage} > ${table.startPage}`,
     ),
+    check("reading_sessions_source_check", sql`${table.source} in ('PHYSICAL','PDF','EPUB')`),
     check(
       "reading_sessions_pages_read_check",
       sql`${table.pagesRead} = ${table.endPage} - ${table.startPage}`,
