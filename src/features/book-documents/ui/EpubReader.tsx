@@ -23,7 +23,11 @@ export function EpubReader({
   } | null>(null);
   const [status, setStatus] = useState("Opening EPUB…");
   const [error, setError] = useState("");
-  const [location, setLocation] = useState<{ index: number; total: number; percent: number } | null>(null);
+  const [location, setLocation] = useState<{
+    index: number;
+    total: number;
+    percent: number;
+  } | null>(null);
 
   useEffect(() => {
     let stopped = false;
@@ -68,7 +72,15 @@ export function EpubReader({
           }
           latest = latest
             .catch(() => undefined)
-            .then(() => saveEpubPosition({ bookId, cfi, locationIndex: index, locationTotal: total, progressPercent: percent }))
+            .then(() =>
+              saveEpubPosition({
+                bookId,
+                cfi,
+                locationIndex: index,
+                locationTotal: total,
+                progressPercent: percent,
+              }),
+            )
             .then(() => setStatus("Position saved"))
             .catch(() => setStatus("Could not save position"));
         });
@@ -126,8 +138,13 @@ export function EpubReader({
         >
           Previous
         </button>
-        <span className="text-muted-foreground text-xs tabular-nums" aria-live="polite">
-          {location ? `Location ${location.index} of ${location.total} · ${location.percent}%` : "Calculating locations…"}
+        <span
+          className="text-muted-foreground text-xs tabular-nums"
+          aria-live="polite"
+        >
+          {location
+            ? `Location ${location.index} of ${location.total} · ${location.percent}%`
+            : "Calculating locations…"}
         </span>
         <button
           type="button"

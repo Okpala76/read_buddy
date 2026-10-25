@@ -58,7 +58,9 @@ export function BookCard({
 
   const remainingPages = Math.max(0, book.totalPages - book.currentPage);
   const isEpub = book.epubProgress !== undefined;
-  const shownPercent = isEpub ? (book.epubProgress?.progressPercent ?? 0) : book.progressPercent;
+  const shownPercent = isEpub
+    ? (book.epubProgress?.progressPercent ?? 0)
+    : book.progressPercent;
   const canStartQueuedBook =
     book.status === BookStatus.QUEUED && !hasCurrentReading;
 
@@ -165,7 +167,8 @@ export function BookCard({
             <div className="mb-2 flex items-center justify-between gap-4 text-xs">
               <span className="text-muted-foreground">
                 {isEpub
-                  ? book.epubProgress?.locationIndex && book.epubProgress?.locationTotal
+                  ? book.epubProgress?.locationIndex &&
+                    book.epubProgress?.locationTotal
                     ? `Location ${book.epubProgress.locationIndex} of ${book.epubProgress.locationTotal}`
                     : "EPUB · Ready to read"
                   : `${book.currentPage} of ${book.totalPages} pages`}
