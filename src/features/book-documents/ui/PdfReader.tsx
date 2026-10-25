@@ -332,7 +332,9 @@ export function PdfReader({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
         >
           <section className="bg-background w-full max-w-md space-y-4 rounded-xl p-6">
-            <h2 className="text-lg font-semibold">Finish today&apos;s reading?</h2>
+            <h2 className="text-lg font-semibold">
+              Finish today&apos;s reading?
+            </h2>
             <p className="text-muted-foreground text-sm">
               Your last confirmed PDF page was {confirmedPage}. You're viewing
               page {page}. What page did you actually finish reading?
