@@ -5,7 +5,7 @@ import {
   addFreeBook,
   searchFreeBooks,
 } from "@/features/books/ui/free-book-actions";
-import type { FreeBook } from "@/features/books/infrastructure/gutendex";
+import type { FreeBook } from "@/features/books/infrastructure/gutenberg-catalog";
 
 export function FreeBookDiscovery() {
   const [open, setOpen] = useState(false);
@@ -70,7 +70,10 @@ export function FreeBookDiscovery() {
     <section className="space-y-4">
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          setOpen(!open);
+          if (!open) void search(1);
+        }}
         className="border-border bg-card hover:bg-muted min-h-11 rounded-lg border px-4 text-sm font-medium"
       >
         {open ? "Hide free books" : "Discover free books"}
@@ -119,7 +122,7 @@ export function FreeBookDiscovery() {
           )}
           {books.length === 0 && count === 0 && !busy && (
             <p className="text-muted-foreground text-sm">
-              Search by title or author to explore the catalog.
+              No matching books found. Try another title or author.
             </p>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
