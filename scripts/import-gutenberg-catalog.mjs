@@ -10,23 +10,33 @@ if (!Number.isInteger(limit) || limit < 1 || limit > 200) {
 }
 
 function* csvRows(text) {
-  let row = [], field = "", quoted = false;
+  let row = [],
+    field = "",
+    quoted = false;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     if (quoted) {
-      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
-      else if (c === '"') quoted = false;
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (c === '"') quoted = false;
       else field += c;
     } else if (c === '"') quoted = true;
-    else if (c === ",") { row.push(field); field = ""; }
-    else if (c === "\n") {
+    else if (c === ",") {
+      row.push(field);
+      field = "";
+    } else if (c === "\n") {
       row.push(field.replace(/\r$/, ""));
       yield row;
-      row = []; field = "";
+      row = [];
+      field = "";
     } else field += c;
   }
   if (quoted) throw Error("Unterminated quoted CSV field");
-  if (field || row.length) { row.push(field.replace(/\r$/, "")); yield row; }
+  if (field || row.length) {
+    row.push(field.replace(/\r$/, ""));
+    yield row;
+  }
 }
 
 async function fetchCatalog() {
@@ -42,14 +52,22 @@ async function fetchCatalog() {
     if (bytes > MAX_CSV) throw Error("Catalog exceeds 60 MB safety limit");
     pieces.push(piece);
   }
-  return Buffer.concat(pieces, bytes).toString("utf8").replace(/^\uFEFF/, "");
+  return Buffer.concat(pieces, bytes)
+    .toString("utf8")
+    .replace(/^\uFEFF/, "");
 }
 
 function booksFromCsv(text) {
   const rows = csvRows(text);
   const header = rows.next().value || [];
-  const ix = Object.fromEntries(header.map((key, index) => [key.trim(), index]));
-  if (["Text#", "Type", "Title", "Language", "Authors"].some((key) => ix[key] === undefined))
+  const ix = Object.fromEntries(
+    header.map((key, index) => [key.trim(), index]),
+  );
+  if (
+    ["Text#", "Type", "Title", "Language", "Authors"].some(
+      (key) => ix[key] === undefined,
+    )
+  )
     throw Error("Unexpected Gutenberg catalog CSV columns");
   const books = [];
   for (const row of rows) {
@@ -57,8 +75,13 @@ function booksFromCsv(text) {
     const title = row[ix.Title]?.trim();
     const author = row[ix.Authors]?.trim() || "Unknown author";
     const langs = (row[ix.Language] || "").split(";").map((x) => x.trim());
-    if (Number.isSafeInteger(id) && id > 0 && title &&
-        row[ix.Type]?.trim() === "Text" && langs.includes("en")) {
+    if (
+      Number.isSafeInteger(id) &&
+      id > 0 &&
+      title &&
+      row[ix.Type]?.trim() === "Text" &&
+      langs.includes("en")
+    ) {
       books.push({ id, title, author, language: "en" });
     }
   }
@@ -81,7 +104,9 @@ async function epubAvailable(id) {
     await reader.cancel();
     if (part.value?.[0] !== 0x50 || part.value?.[1] !== 0x4b) return null;
     return url;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 async function main() {
@@ -95,10 +120,13 @@ async function main() {
   console.log("Verified downloadable EPUBs:", verified.length);
   if (!verified.length) throw Error("No valid EPUBs; database unchanged");
   if (!apply) {
-    console.log("DRY RUN: no database changes. Pass --apply to persist verified records.");
+    console.log(
+      "DRY RUN: no database changes. Pass --apply to persist verified records.",
+    );
     return;
   }
-  if (!process.env.DATABASE_URL) throw Error("DATABASE_URL required for --apply");
+  if (!process.env.DATABASE_URL)
+    throw Error("DATABASE_URL required for --apply");
   const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
   try {
     const client = await pool.connect();
@@ -107,9 +135,9 @@ async function main() {
       for (const book of verified) {
         await client.query(
           "INSERT INTO gutenberg_catalog (id,title,author,language,epub_url) " +
-          "VALUES ($1,$2,$3,$4,$5) ON CONFLICT (id) DO UPDATE SET " +
-          "title=EXCLUDED.title,author=EXCLUDED.author,language=EXCLUDED.language," +
-          "epub_url=EXCLUDED.epub_url,imported_at=now()",
+            "VALUES ($1,$2,$3,$4,$5) ON CONFLICT (id) DO UPDATE SET " +
+            "title=EXCLUDED.title,author=EXCLUDED.author,language=EXCLUDED.language," +
+            "epub_url=EXCLUDED.epub_url,imported_at=now()",
           [book.id, book.title, book.author, book.language, book.epubUrl],
         );
       }
@@ -118,8 +146,12 @@ async function main() {
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
-    } finally { client.release(); }
-  } finally { await pool.end(); }
+    } finally {
+      client.release();
+    }
+  } finally {
+    await pool.end();
+  }
 }
 
 main().catch((error) => {
