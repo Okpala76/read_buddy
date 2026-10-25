@@ -51,22 +51,34 @@ export default async function BooksPage() {
       },
     ]),
   );
-  const pdfRows = await db.select({
-    bookId: bookDocuments.bookId,
-    confirmedPage: pdfReadingStates.confirmedPage,
-    pageCount: pdfReadingStates.pageCount,
-    viewedPage: pdfReadingStates.viewedPage,
-  }).from(bookDocuments)
-    .innerJoin(pdfReadingStates, and(
-      eq(pdfReadingStates.documentId, bookDocuments.id),
-      eq(pdfReadingStates.userId, user.id),
-    ))
-    .where(and(
-      eq(bookDocuments.userId, user.id),
-      eq(bookDocuments.format, "PDF"),
-      inArray(bookDocuments.bookId, views.map((book) => book.id)),
-    ));
-  const pdfById = new Map(pdfRows.map(({ bookId, ...progress }) => [bookId, progress]));
+  const pdfRows = await db
+    .select({
+      bookId: bookDocuments.bookId,
+      confirmedPage: pdfReadingStates.confirmedPage,
+      pageCount: pdfReadingStates.pageCount,
+      viewedPage: pdfReadingStates.viewedPage,
+    })
+    .from(bookDocuments)
+    .innerJoin(
+      pdfReadingStates,
+      and(
+        eq(pdfReadingStates.documentId, bookDocuments.id),
+        eq(pdfReadingStates.userId, user.id),
+      ),
+    )
+    .where(
+      and(
+        eq(bookDocuments.userId, user.id),
+        eq(bookDocuments.format, "PDF"),
+        inArray(
+          bookDocuments.bookId,
+          views.map((book) => book.id),
+        ),
+      ),
+    );
+  const pdfById = new Map(
+    pdfRows.map(({ bookId, ...progress }) => [bookId, progress]),
+  );
   return (
     <BooksPageComponent
       books={views.map((book) => ({

@@ -62,7 +62,9 @@ export function BookCard({
   const shownPercent = isEpub
     ? (book.epubProgress?.progressPercent ?? 0)
     : isPdf
-      ? Math.round((book.pdfProgress!.confirmedPage / book.pdfProgress!.pageCount) * 100)
+      ? Math.round(
+          (book.pdfProgress!.confirmedPage / book.pdfProgress!.pageCount) * 100,
+        )
       : book.progressPercent;
   const canStartQueuedBook =
     book.status === BookStatus.QUEUED && !hasCurrentReading;
@@ -218,7 +220,10 @@ export function BookCard({
           )}
 
           {isPdf && (
-            <p className="text-muted-foreground mt-2 text-xs">Physical edition: {book.currentPage} of {book.totalPages} pages. PDF progress is tracked separately.</p>
+            <p className="text-muted-foreground mt-2 text-xs">
+              Physical edition: {book.currentPage} of {book.totalPages} pages.
+              PDF progress is tracked separately.
+            </p>
           )}
           <BookDocumentControl
             bookId={book.id}
