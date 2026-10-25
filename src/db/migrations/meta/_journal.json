@@ -99,6 +99,13 @@
       "when": 1792976400000,
       "tag": "0013_epub_positions",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793062800000,
+      "tag": "0014_epub_location_progress",
+      "breakpoints": true
     }
   ]
 }
