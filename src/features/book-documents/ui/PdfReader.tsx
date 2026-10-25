@@ -336,7 +336,7 @@ export function PdfReader({
               Finish today&apos;s reading?
             </h2>
             <p className="text-muted-foreground text-sm">
-              Your last confirmed PDF page was {confirmedPage}. You're viewing
+              Your last confirmed PDF page was {confirmedPage}. You&apos;re viewing
               page {page}. What page did you actually finish reading?
             </p>
             <label className="block text-sm font-medium" htmlFor="pdf-end-page">
