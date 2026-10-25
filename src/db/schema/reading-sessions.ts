@@ -44,7 +44,10 @@ export const readingSessions = pgTable(
       "reading_sessions_page_range_check",
       sql`${table.startPage} >= 0 and ${table.endPage} > ${table.startPage}`,
     ),
-    check("reading_sessions_source_check", sql`${table.source} in ('PHYSICAL','PDF','EPUB')`),
+    check(
+      "reading_sessions_source_check",
+      sql`${table.source} in ('PHYSICAL','PDF','EPUB')`,
+    ),
     check(
       "reading_sessions_pages_read_check",
       sql`${table.pagesRead} = ${table.endPage} - ${table.startPage}`,

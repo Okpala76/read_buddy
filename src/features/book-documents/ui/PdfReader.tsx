@@ -77,11 +77,17 @@ export function PdfReader({
         if (progress.state) {
           setAligned(true);
           setConfirmedPage(progress.state.confirmedPage);
-          setPage(Math.max(1, Math.min(document.numPages, progress.state.viewedPage)));
-          setSaveState("Viewing position saved separately from reading sessions");
+          setPage(
+            Math.max(1, Math.min(document.numPages, progress.state.viewedPage)),
+          );
+          setSaveState(
+            "Viewing position saved separately from reading sessions",
+          );
         } else {
           setPage(1);
-          setSaveState("Match this PDF with your existing physical-book progress");
+          setSaveState(
+            "Match this PDF with your existing physical-book progress",
+          );
         }
       } catch (cause) {
         if (!cancelled) {
@@ -186,7 +192,11 @@ export function PdfReader({
       if (aligned) await savePdfViewedPage({ bookId, viewedPage: page });
       onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save the viewing position");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not save the viewing position",
+      );
     } finally {
       setBusy(false);
     }
@@ -195,19 +205,33 @@ export function PdfReader({
   async function confirmAndClose() {
     if (busy) return;
     const endPage = Number(endPageInput);
-    if (!Number.isInteger(endPage) || endPage <= confirmedPage || endPage > pageCount) {
-      setError(`Choose the last page you finished, after ${confirmedPage} and up to ${pageCount}`);
+    if (
+      !Number.isInteger(endPage) ||
+      endPage <= confirmedPage ||
+      endPage > pageCount
+    ) {
+      setError(
+        `Choose the last page you finished, after ${confirmedPage} and up to ${pageCount}`,
+      );
       return;
     }
     setBusy(true);
     setError("");
     try {
-      const saved = await completePdfReading({ bookId, endPage, viewedPage: page });
-      setFeedback(`${saved.pagesRead} PDF pages recorded toward your reading streak`);
+      const saved = await completePdfReading({
+        bookId,
+        endPage,
+        viewedPage: page,
+      });
+      setFeedback(
+        `${saved.pagesRead} PDF pages recorded toward your reading streak`,
+      );
       setConfirmedPage(saved.completedPage);
       onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Reading could not be saved");
+      setError(
+        cause instanceof Error ? cause.message : "Reading could not be saved",
+      );
     } finally {
       setBusy(false);
     }
@@ -248,14 +272,37 @@ export function PdfReader({
         </button>
       </header>
       {!aligned && pageCount > 0 && (
-        <section className="border-b bg-muted/40 p-4 space-y-3" aria-label="Align PDF with physical reading">
+        <section
+          className="bg-muted/40 space-y-3 border-b p-4"
+          aria-label="Align PDF with physical reading"
+        >
           <h2 className="font-semibold">Match your PDF reading position</h2>
-          <p className="text-sm">Your physical book was last recorded at page {physicalPage}. This PDF has {pageCount} pages. Page numbers may differ between editions.</p>
-          <label className="block text-sm" htmlFor="pdf-alignment-page">Last completed page in this PDF (0 if starting here)</label>
-          <input id="pdf-alignment-page" className="rounded-lg border p-2 w-32" type="number" min={0} max={pageCount - 1}
-            value={baseline} onChange={(event) => setBaseline(event.target.value)} />
-          <p className="text-xs text-muted-foreground">Check the corresponding text in the PDF. This alignment does not add reading activity or change your past sessions.</p>
-          <button type="button" disabled={busy} className="bg-primary text-primary-foreground rounded-lg px-4 py-2 disabled:opacity-50" onClick={() => void align()}>
+          <p className="text-sm">
+            Your physical book was last recorded at page {physicalPage}. This
+            PDF has {pageCount} pages. Page numbers may differ between editions.
+          </p>
+          <label className="block text-sm" htmlFor="pdf-alignment-page">
+            Last completed page in this PDF (0 if starting here)
+          </label>
+          <input
+            id="pdf-alignment-page"
+            className="w-32 rounded-lg border p-2"
+            type="number"
+            min={0}
+            max={pageCount - 1}
+            value={baseline}
+            onChange={(event) => setBaseline(event.target.value)}
+          />
+          <p className="text-muted-foreground text-xs">
+            Check the corresponding text in the PDF. This alignment does not add
+            reading activity or change your past sessions.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            className="bg-primary text-primary-foreground rounded-lg px-4 py-2 disabled:opacity-50"
+            onClick={() => void align()}
+          >
             Save PDF starting position
           </button>
         </section>
@@ -278,21 +325,63 @@ export function PdfReader({
         )}
       </div>
       {showClose && (
-        <div role="dialog" aria-modal="true" aria-label="Complete PDF reading session" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Complete PDF reading session"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+        >
           <section className="bg-background w-full max-w-md space-y-4 rounded-xl p-6">
             <h2 className="text-lg font-semibold">Finish today's reading?</h2>
-            <p className="text-sm text-muted-foreground">Your last confirmed PDF page was {confirmedPage}. You're viewing page {page}. What page did you actually finish reading?</p>
-            <label className="block text-sm font-medium" htmlFor="pdf-end-page">Last completed PDF page</label>
-            <input id="pdf-end-page" type="number" min={confirmedPage + 1} max={pageCount} value={endPageInput}
-              onChange={(event) => setEndPageInput(event.target.value)} className="w-full rounded-lg border p-3" />
-            <p className="text-sm">Pages read: {Math.max(0, Number(endPageInput) - confirmedPage) || 0}</p>
-            {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
-            <button type="button" disabled={busy} onClick={() => void confirmAndClose()}
-              className="bg-primary text-primary-foreground w-full rounded-lg p-3 disabled:opacity-50">Save reading and close</button>
-            <button type="button" disabled={busy} onClick={() => void closeWithoutLogging()}
-              className="w-full rounded-lg border p-3 disabled:opacity-50">Close without logging</button>
-            <button type="button" disabled={busy} onClick={() => setShowClose(false)}
-              className="w-full p-2 text-sm underline">Continue reading</button>
+            <p className="text-muted-foreground text-sm">
+              Your last confirmed PDF page was {confirmedPage}. You're viewing
+              page {page}. What page did you actually finish reading?
+            </p>
+            <label className="block text-sm font-medium" htmlFor="pdf-end-page">
+              Last completed PDF page
+            </label>
+            <input
+              id="pdf-end-page"
+              type="number"
+              min={confirmedPage + 1}
+              max={pageCount}
+              value={endPageInput}
+              onChange={(event) => setEndPageInput(event.target.value)}
+              className="w-full rounded-lg border p-3"
+            />
+            <p className="text-sm">
+              Pages read:{" "}
+              {Math.max(0, Number(endPageInput) - confirmedPage) || 0}
+            </p>
+            {error && (
+              <p role="alert" className="text-destructive text-sm">
+                {error}
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void confirmAndClose()}
+              className="bg-primary text-primary-foreground w-full rounded-lg p-3 disabled:opacity-50"
+            >
+              Save reading and close
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void closeWithoutLogging()}
+              className="w-full rounded-lg border p-3 disabled:opacity-50"
+            >
+              Close without logging
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setShowClose(false)}
+              className="w-full p-2 text-sm underline"
+            >
+              Continue reading
+            </button>
           </section>
         </div>
       )}

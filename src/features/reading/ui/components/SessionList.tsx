@@ -44,7 +44,13 @@ export function SessionItem({ session, timezone }: SessionItemProps) {
             <span className="text-muted-foreground">
               ({session.pagesRead} pages)
             </span>
-            <span className="rounded-full border px-2 py-0.5 text-xs">{session.source === "PDF" ? "PDF" : session.source === "EPUB" ? "EPUB" : "Physical"}</span>
+            <span className="rounded-full border px-2 py-0.5 text-xs">
+              {session.source === "PDF"
+                ? "PDF"
+                : session.source === "EPUB"
+                  ? "EPUB"
+                  : "Physical"}
+            </span>
             {session.mood && (
               <span
                 className={cn(
