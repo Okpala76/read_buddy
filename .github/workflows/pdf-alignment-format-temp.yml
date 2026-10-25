@@ -19,7 +19,7 @@ jobs:
           version: 10.27.0
           run_install: false
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec prettier --write src/db/schema/pdf-reading-states.ts src/db/schema/reading-sessions.ts src/features/book-documents/ui/pdf-reading-actions.ts src/features/book-documents/ui/PdfReader.tsx src/features/reading/domain/reading-session.ts src/features/reading/infrastructure/drizzle-reading-session-repository.ts src/features/reading/ui/reading-session-view.ts src/features/reading/ui/components/SessionList.tsx
+      - run: pnpm exec prettier --write src/db/schema/pdf-reading-states.ts src/db/schema/reading-sessions.ts src/features/book-documents/ui/pdf-reading-actions.ts src/features/book-documents/ui/PdfReader.tsx src/features/reading/domain/reading-session.ts src/features/reading/infrastructure/drizzle-reading-session-repository.ts src/features/reading/ui/reading-session-view.ts src/features/reading/ui/components/SessionList.tsx src/features/books/ui/book-view.ts src/features/books/ui/components/BookCard.tsx "src/app/(app)/books/page.tsx"
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
