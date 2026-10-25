@@ -10,6 +10,9 @@ import { requireAuth } from "@/lib/auth/server";
 const inputSchema = z.object({
   bookId: z.string().uuid(),
   cfi: z.string().min(5).max(2048),
+  locationIndex: z.number().int().positive(),
+  locationTotal: z.number().int().positive(),
+  progressPercent: z.number().int().min(0).max(100),
 });
 
 function database() {
@@ -38,7 +41,9 @@ export async function loadEpubPosition(input: unknown) {
 
 export async function saveEpubPosition(input: unknown) {
   const user = await requireAuth();
-  const { bookId, cfi } = inputSchema.parse(input);
+  const { bookId, cfi, locationIndex, locationTotal, progressPercent } =
+    inputSchema.parse(input);
+  if (locationIndex > locationTotal) throw new Error("Invalid EPUB location");
   const owned = await database()
     .select({ id: books.id })
     .from(books)
@@ -53,9 +58,23 @@ export async function saveEpubPosition(input: unknown) {
   if (!owned[0]) throw new Error("Book not found");
   await database()
     .insert(epubPositions)
-    .values({ bookId, userId: user.id, cfi, updatedAt: new Date() })
+    .values({
+      bookId,
+      userId: user.id,
+      cfi,
+      locationIndex,
+      locationTotal,
+      progressPercent,
+      updatedAt: new Date(),
+    })
     .onConflictDoUpdate({
       target: epubPositions.bookId,
-      set: { cfi, updatedAt: new Date() },
+      set: {
+        cfi,
+        locationIndex,
+        locationTotal,
+        progressPercent,
+        updatedAt: new Date(),
+      },
     });
 }

@@ -57,6 +57,10 @@ export function BookCard({
   const undoPageId = useId();
 
   const remainingPages = Math.max(0, book.totalPages - book.currentPage);
+  const isEpub = book.epubProgress !== undefined;
+  const shownPercent = isEpub
+    ? (book.epubProgress?.progressPercent ?? 0)
+    : book.progressPercent;
   const canStartQueuedBook =
     book.status === BookStatus.QUEUED && !hasCurrentReading;
 
@@ -162,10 +166,15 @@ export function BookCard({
           <div className="mt-4">
             <div className="mb-2 flex items-center justify-between gap-4 text-xs">
               <span className="text-muted-foreground">
-                {book.currentPage} of {book.totalPages} pages
+                {isEpub
+                  ? book.epubProgress?.locationIndex &&
+                    book.epubProgress?.locationTotal
+                    ? `Location ${book.epubProgress.locationIndex} of ${book.epubProgress.locationTotal}`
+                    : "EPUB · Ready to read"
+                  : `${book.currentPage} of ${book.totalPages} pages`}
               </span>
               <span className="text-muted-foreground">
-                {book.progressPercent}% complete
+                {shownPercent}% complete
               </span>
             </div>
             <div
@@ -174,18 +183,18 @@ export function BookCard({
               aria-label={`${book.title} progress`}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-valuenow={book.progressPercent}
+              aria-valuenow={shownPercent}
             >
               <div
                 className="bg-primary motion-progress h-full w-full rounded-full"
                 style={{
-                  transform: `scaleX(${book.progressPercent / 100})`,
+                  transform: `scaleX(${shownPercent / 100})`,
                 }}
               />
             </div>
           </div>
 
-          {book.status === BookStatus.READING && (
+          {book.status === BookStatus.READING && !isEpub && (
             <p className="text-muted-foreground mt-2 text-xs">
               {remainingPages} pages remaining. Log reading to update progress.
             </p>

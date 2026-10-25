@@ -1,5 +1,6 @@
 import {
   foreignKey,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -20,6 +21,9 @@ export const epubPositions = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     cfi: text("cfi").notNull(),
+    locationIndex: integer("location_index"),
+    locationTotal: integer("location_total"),
+    progressPercent: integer("progress_percent"),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
