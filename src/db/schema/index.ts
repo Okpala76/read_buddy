@@ -7,3 +7,4 @@ export * from "./push-subscriptions";
 export * from "./users";
 export * from "./reading-behavior-profiles";
 export * from "./book-documents";
+export * from "./gutenberg-catalog";
