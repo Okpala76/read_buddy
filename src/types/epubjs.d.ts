@@ -7,7 +7,13 @@ declare module "epubjs" {
     on(event: "relocated", callback: (location: Location) => void): void;
     destroy(): void;
   }
+  interface EpubLocations {
+    generate(chars?: number): Promise<unknown>;
+    length(): number;
+    locationFromCfi(cfi: string): number;
+  }
   interface EpubBook {
+    locations: EpubLocations;
     renderTo(
       element: HTMLElement,
       options: { width: string; height: string; flow: string },
