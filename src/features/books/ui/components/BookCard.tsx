@@ -20,6 +20,7 @@ import {
   startBook,
 } from "@/features/books/ui/book-actions";
 import { BookStatus } from "@/features/books/domain";
+import { overallConfirmedProgress } from "@/features/books/domain/overall-confirmed-progress";
 import type { BookView } from "@/features/books/ui/book-view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,11 +62,7 @@ export function BookCard({
   const isPdf = book.pdfProgress !== undefined;
   const shownPercent = isEpub
     ? (book.epubProgress?.progressPercent ?? 0)
-    : isPdf
-      ? Math.round(
-          (book.pdfProgress!.confirmedPage / book.pdfProgress!.pageCount) * 100,
-        )
-      : book.progressPercent;
+    : overallConfirmedProgress(book, book.pdfProgress);
   const canStartQueuedBook =
     book.status === BookStatus.QUEUED && !hasCurrentReading;
 
@@ -181,7 +178,7 @@ export function BookCard({
                     : `${book.currentPage} of ${book.totalPages} pages`}
               </span>
               <span className="text-muted-foreground">
-                {shownPercent}% complete
+                {shownPercent}% overall complete
               </span>
             </div>
             <div
@@ -222,7 +219,8 @@ export function BookCard({
           {isPdf && (
             <p className="text-muted-foreground mt-2 text-xs">
               Physical edition: {book.currentPage} of {book.totalPages} pages.
-              PDF progress is tracked separately.
+              PDF progress is tracked separately. Overall progress uses the
+              furthest confirmed percentage.
             </p>
           )}
           <BookDocumentControl

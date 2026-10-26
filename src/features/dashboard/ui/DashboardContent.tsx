@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import type { BookView } from "@/features/books/ui/book-view";
+import { overallConfirmedProgress } from "@/features/books/domain/overall-confirmed-progress";
 import { PushAdoptionPrompt } from "@/features/push-notifications/ui/PushAdoptionPrompt";
 
 interface DashboardContentProps {
@@ -50,10 +51,7 @@ export function DashboardContent({
   }).format(new Date());
 
   const bookProgress = currentBook
-    ? Math.min(
-        100,
-        Math.round((currentBook.currentPage / currentBook.totalPages) * 100),
-      )
+    ? overallConfirmedProgress(currentBook, currentBook.pdfProgress)
     : 0;
 
   const streakMessage = hasReadToday
@@ -105,11 +103,12 @@ export function DashboardContent({
                 <div className="mt-7 space-y-2">
                   <div className="flex items-center justify-between gap-4 text-sm">
                     <span className="text-foreground font-medium">
-                      {currentBook.currentPage} of {currentBook.totalPages}{" "}
-                      pages
+                      {currentBook.pdfProgress
+                        ? `Physical ${currentBook.currentPage}/${currentBook.totalPages} · PDF ${currentBook.pdfProgress.confirmedPage}/${currentBook.pdfProgress.pageCount}`
+                        : `${currentBook.currentPage} of ${currentBook.totalPages} pages`}
                     </span>
                     <span className="text-muted-foreground">
-                      {bookProgress}% complete
+                      {bookProgress}% overall complete
                     </span>
                   </div>
                   <div
@@ -126,11 +125,9 @@ export function DashboardContent({
                     />
                   </div>
                   <p className="text-muted-foreground text-xs">
-                    {Math.max(
-                      0,
-                      currentBook.totalPages - currentBook.currentPage,
-                    )}{" "}
-                    pages left in this book
+                    {currentBook.pdfProgress
+                      ? "Overall completion uses the furthest confirmed position across editions."
+                      : `${Math.max(0, currentBook.totalPages - currentBook.currentPage)} pages left in this book`}
                   </p>
                 </div>
               </div>
