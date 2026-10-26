@@ -5,7 +5,7 @@
  */
 export function overallConfirmedProgress(
   physical: { currentPage: number; totalPages: number },
-  pdf?: { confirmedPage: number; pageCount: number },
+  pdf?: { confirmedPage: number; pageCount: number; viewedPage?: number },
 ): number {
   const physicalFraction =
     physical.totalPages > 0
