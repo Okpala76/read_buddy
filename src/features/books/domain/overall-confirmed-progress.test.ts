@@ -31,7 +31,9 @@ describe("overallConfirmedProgress", () => {
   });
 
   it("preserves physical progress for a PDF that has not been aligned", () => {
-    expect(overallConfirmedProgress({ currentPage: 60, totalPages: 250 })).toBe(24);
+    expect(overallConfirmedProgress({ currentPage: 60, totalPages: 250 })).toBe(
+      24,
+    );
   });
 
   it("clamps progress to 100%", () => {

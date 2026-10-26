@@ -35,22 +35,30 @@ export async function loadDashboardData() {
   ]);
 
   const bookViews = books.map(toBookView);
-  const active = bookViews.find((book) => book.status === BookStatus.READING) ?? null;
+  const active =
+    bookViews.find((book) => book.status === BookStatus.READING) ?? null;
   if (active && db) {
-    const pdf = await db.select({
-      confirmedPage: pdfReadingStates.confirmedPage,
-      pageCount: pdfReadingStates.pageCount,
-      viewedPage: pdfReadingStates.viewedPage,
-    }).from(bookDocuments)
-      .innerJoin(pdfReadingStates, and(
-        eq(pdfReadingStates.documentId, bookDocuments.id),
-        eq(pdfReadingStates.userId, user.id),
-      ))
-      .where(and(
-        eq(bookDocuments.bookId, active.id),
-        eq(bookDocuments.userId, user.id),
-        eq(bookDocuments.format, "PDF"),
-      ))
+    const pdf = await db
+      .select({
+        confirmedPage: pdfReadingStates.confirmedPage,
+        pageCount: pdfReadingStates.pageCount,
+        viewedPage: pdfReadingStates.viewedPage,
+      })
+      .from(bookDocuments)
+      .innerJoin(
+        pdfReadingStates,
+        and(
+          eq(pdfReadingStates.documentId, bookDocuments.id),
+          eq(pdfReadingStates.userId, user.id),
+        ),
+      )
+      .where(
+        and(
+          eq(bookDocuments.bookId, active.id),
+          eq(bookDocuments.userId, user.id),
+          eq(bookDocuments.format, "PDF"),
+        ),
+      )
       .limit(1);
     if (pdf[0]) active.pdfProgress = pdf[0];
   }

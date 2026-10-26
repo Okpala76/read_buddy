@@ -219,7 +219,8 @@ export function BookCard({
           {isPdf && (
             <p className="text-muted-foreground mt-2 text-xs">
               Physical edition: {book.currentPage} of {book.totalPages} pages.
-              PDF progress is tracked separately. Overall progress uses the furthest confirmed percentage.
+              PDF progress is tracked separately. Overall progress uses the
+              furthest confirmed percentage.
             </p>
           )}
           <BookDocumentControl
