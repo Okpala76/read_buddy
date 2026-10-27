@@ -120,6 +120,13 @@
       "when": 1793200000000,
       "tag": "0016_reading_friends",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793290000000,
+      "tag": "0017_streak_partnerships",
+      "breakpoints": true
     }
   ]
 }
