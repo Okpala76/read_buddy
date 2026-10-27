@@ -11,3 +11,4 @@ export * from "./gutenberg-catalog";
 export * from "./epub-positions";
 export * from "./pdf-reading-states";
 export * from "./reading-friends";
+export * from "./streak-partnerships";
