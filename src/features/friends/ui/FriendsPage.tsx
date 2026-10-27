@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Search, UserRoundPlus, UsersRound, X } from "lucide-react";
+import { StreakPartnerships } from "@/features/streak-buddies/ui/StreakPartnerships";
+import type { StreakPartnershipView } from "@/features/streak-buddies/ui/streak-actions";
 import {
   findReadingFriends,
   removeFriendship,
@@ -15,8 +17,10 @@ type SearchResult = Awaited<ReturnType<typeof findReadingFriends>>[number];
 
 export function FriendsPage({
   relationships,
+  partnerships,
 }: {
   relationships: FriendView[];
+  partnerships: StreakPartnershipView[];
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -76,14 +80,13 @@ export function FriendsPage({
     <div className="space-y-9">
       <header className="max-w-2xl">
         <p className="text-primary text-sm font-medium">
-          Reading Buddies · Batch 1/6
+          Reading Buddies · Batch 2/6
         </p>
         <h1 className="text-foreground mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Friends & invitations
+          Friends & streak buddies
         </h1>
         <p className="text-muted-foreground mt-2">
-          Connect with readers first. A friendship doesn&apos;t automatically
-          enroll anyone in a streak partnership.
+          Connect with readers and invite individual friends to build a reading streak together. Friendships and streak partnerships require separate acceptance.
         </p>
       </header>
 
@@ -299,7 +302,7 @@ export function FriendsPage({
                 <div>
                   <p className="font-semibold">{r.name}</p>
                   <p className="text-muted-foreground text-xs">
-                    Reading friend · Streak invitations available in Batch 2/6
+                    Reading friend · Invite to a streak journey below
                   </p>
                 </div>
                 <button
@@ -320,6 +323,7 @@ export function FriendsPage({
           </ul>
         )}
       </section>
+      <StreakPartnerships friends={relationships} partnerships={partnerships} />
     </div>
   );
 }
