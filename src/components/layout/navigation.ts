@@ -1,4 +1,11 @@
-import { BarChart3, Bell, BookOpenText, Home, Library, UsersRound } from "lucide-react";
+import {
+  BarChart3,
+  Bell,
+  BookOpenText,
+  Home,
+  Library,
+  UsersRound,
+} from "lucide-react";
 
 export const productNavigation = [
   { name: "Home", href: "/dashboard", icon: Home },
