@@ -86,7 +86,9 @@ export function FriendsPage({
           Friends & streak buddies
         </h1>
         <p className="text-muted-foreground mt-2">
-          Connect with readers and invite individual friends to build a reading streak together. Friendships and streak partnerships require separate acceptance.
+          Connect with readers and invite individual friends to build a reading
+          streak together. Friendships and streak partnerships require separate
+          acceptance.
         </p>
       </header>
 

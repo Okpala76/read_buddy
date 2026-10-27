@@ -1,4 +1,5 @@
-export type PartnershipStatus = "PENDING" | "ACTIVE" | "PAUSED" | "DECLINED" | "ENDED";
+export type PartnershipStatus =
+  "PENDING" | "ACTIVE" | "PAUSED" | "DECLINED" | "ENDED";
 export type PartnerDecision = "ACTIVE" | "DECLINED";
 
 export function canReplyToStreakInvite(
@@ -15,6 +16,9 @@ export function mayChangeStreakPartnership(
 ) {
   if (action === "PAUSE") return relationship.status === "ACTIVE";
   if (action === "RESUME")
-    return relationship.status === "PAUSED" && relationship.pausedByUserId === actorId;
+    return (
+      relationship.status === "PAUSED" &&
+      relationship.pausedByUserId === actorId
+    );
   return relationship.status === "ACTIVE" || relationship.status === "PAUSED";
 }
