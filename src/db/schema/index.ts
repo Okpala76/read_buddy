@@ -10,3 +10,4 @@ export * from "./book-documents";
 export * from "./gutenberg-catalog";
 export * from "./epub-positions";
 export * from "./pdf-reading-states";
+export * from "./reading-friends";
