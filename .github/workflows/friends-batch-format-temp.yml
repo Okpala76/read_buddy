@@ -1,0 +1,30 @@
+name: Format friendship batch temporary
+on:
+  push:
+    branches: [feat/reading-buddies-1-friends]
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/reading-buddies-1-friends
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.x
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.27.0
+          run_install: false
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prettier --write src/db/schema/reading-friends.ts src/features/friends/domain/friendship.ts src/features/friends/domain/friendship.test.ts src/features/friends/ui/friend-actions.ts src/features/friends/ui/FriendsPage.tsx "src/app/(app)/friends/page.tsx" src/components/layout/navigation.ts
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src
+          if ! git diff --cached --quiet; then
+            git commit -m "style: format friends batch 1"
+            git push origin HEAD:feat/reading-buddies-1-friends
+          fi
