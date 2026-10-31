@@ -169,9 +169,13 @@ export async function completePdfReading(input: unknown) {
     return { pagesRead, completedPage: endPage, sessionId, readAt };
   });
   const celebration = await celebrationForSavedSession({
-    userId: user.id, timezone: user.timezone,
-    sessionId: result.sessionId, readAt: result.readAt,
-    bookTitle: document.title, pagesRead: result.pagesRead, source: "PDF",
+    userId: user.id,
+    timezone: user.timezone,
+    sessionId: result.sessionId,
+    readAt: result.readAt,
+    bookTitle: document.title,
+    pagesRead: result.pagesRead,
+    source: "PDF",
   });
   for (const path of ["/books", "/dashboard", "/sessions", "/analytics"])
     revalidatePath(path);

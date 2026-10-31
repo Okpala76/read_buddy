@@ -79,7 +79,10 @@ describe("LogReadingForm", () => {
       newCurrentPage: 100,
       wasCompleted: false,
       celebration: {
-        bookTitle: "A Long Read", pagesRead: 15, streakDays: 3, source: "PHYSICAL",
+        bookTitle: "A Long Read",
+        pagesRead: 15,
+        streakDays: 3,
+        source: "PHYSICAL",
       },
     });
     render(<LogReadingForm currentBook={book} dailyTarget={20} />);
@@ -87,11 +90,17 @@ describe("LogReadingForm", () => {
       target: { value: "100" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save page 100" }));
-    expect(await screen.findByRole("dialog", { name: "Daily reading celebration" })).toBeVisible();
+    expect(
+      await screen.findByRole("dialog", { name: "Daily reading celebration" }),
+    ).toBeVisible();
     expect(screen.getByText(/3-day reading streak/)).toBeVisible();
-    expect(screen.getByRole("button", { name: /Nudge my buddies/ })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Nudge my buddies/ }),
+    ).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Maybe later" }));
-    expect(screen.queryByRole("dialog", { name: "Daily reading celebration" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("dialog", { name: "Daily reading celebration" }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not show celebration for subsequent sessions", async () => {
@@ -101,7 +110,9 @@ describe("LogReadingForm", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Save page 100" }));
     await screen.findByText(/15 pages logged/);
-    expect(screen.queryByRole("dialog", { name: "Daily reading celebration" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("dialog", { name: "Daily reading celebration" }),
+    ).not.toBeInTheDocument();
   });
 
   it("rejects a page that is not after the last saved page", () => {

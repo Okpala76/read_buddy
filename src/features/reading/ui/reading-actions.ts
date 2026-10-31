@@ -52,7 +52,10 @@ export async function logReading(input: unknown) {
   revalidatePath("/books");
   revalidatePath("/sessions");
   revalidatePath("/analytics");
-  const book = await new DrizzleBookRepository().findById(parsed.bookId, user.id);
+  const book = await new DrizzleBookRepository().findById(
+    parsed.bookId,
+    user.id,
+  );
   const celebration = await celebrationForSavedSession({
     userId: user.id,
     timezone: user.timezone,
