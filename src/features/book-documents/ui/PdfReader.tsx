@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DailyReadingCelebration } from "@/features/reading/ui/components/DailyReadingCelebration";
+import type { DailyCelebration } from "@/features/reading/ui/celebration-types";
 import {
   alignPdfReading,
   completePdfReading,
@@ -36,6 +38,7 @@ export function PdfReader({
   const [endPageInput, setEndPageInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [celebration, setCelebration] = useState<DailyCelebration | null>(null);
   const [page, setPage] = useState(Math.max(1, initialCompletedPage + 1));
   const [pageCount, setPageCount] = useState(0);
   const [width, setWidth] = useState(800);
@@ -227,7 +230,12 @@ export function PdfReader({
         `${saved.pagesRead} PDF pages recorded toward your reading streak`,
       );
       setConfirmedPage(saved.completedPage);
-      onClose();
+      setShowClose(false);
+      if (saved.celebration) {
+        setCelebration(saved.celebration);
+      } else {
+        onClose();
+      }
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Reading could not be saved",
@@ -256,6 +264,15 @@ export function PdfReader({
       aria-label={`Read ${fileName}`}
       className="bg-background fixed inset-0 z-50 flex flex-col"
     >
+      {celebration && (
+        <DailyReadingCelebration
+          celebration={celebration}
+          onDismiss={() => {
+            setCelebration(null);
+            onClose();
+          }}
+        />
+      )}
       <header className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{fileName}</p>
