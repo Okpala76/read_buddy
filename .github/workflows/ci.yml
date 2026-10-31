@@ -160,3 +160,4 @@ jobs:
         run: >-
           pnpm exec vitest run
           src/features/reminders/infrastructure/drizzle-reminder-concurrency.integration.test.ts
+          src/features/streak-buddies/infrastructure/milestone-repository.integration.test.ts

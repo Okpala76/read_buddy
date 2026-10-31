@@ -1,4 +1,5 @@
 import "server-only";
+import { recordReadingMilestone } from "@/features/streak-buddies/infrastructure/milestone-repository";
 import { and, asc, eq, gte, lte } from "drizzle-orm";
 import { db } from "@/db/client";
 import { readingSessions } from "@/db/schema";
@@ -33,6 +34,7 @@ export async function celebrationForSavedSession({
   source: "PHYSICAL" | "PDF";
 }): Promise<DailyCelebration | null> {
   if (!db || pagesRead <= 0) return null;
+  await recordReadingMilestone(userId, timezone, readAt);
   const day = getUserDayUtcRange(readAt, timezone);
   const first = await db
     .select({ id: readingSessions.id })
