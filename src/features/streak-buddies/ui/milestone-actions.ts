@@ -24,4 +24,5 @@ export async function congratulateMilestone(input: unknown) {
     .parse(input);
   await congratulateFriendMilestone(user.id, milestoneId);
   revalidatePath("/friends");
+  revalidatePath("/notifications");
 }

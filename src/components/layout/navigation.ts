@@ -13,6 +13,7 @@ export const productNavigation = [
   { name: "Reading", href: "/sessions", icon: BookOpenText },
   { name: "Progress", href: "/analytics", icon: BarChart3 },
   { name: "Friends", href: "/friends", icon: UsersRound },
+  { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Reminders", href: "/reminders", icon: Bell },
 ] as const;
 

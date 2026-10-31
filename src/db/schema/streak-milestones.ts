@@ -39,11 +39,19 @@ export const milestoneCongratulations = pgTable(
     senderId: uuid("sender_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    reaction: text("reaction"),
+    reactionAt: timestamp("reaction_at", { withTimezone: true }),
+    reactionReadAt: timestamp("reaction_read_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (t) => [
+    check(
+      "milestone_congratulations_reaction_check",
+      sql`${t.reaction} is null or ${t.reaction} in ('❤️','👏','🙌')`,
+    ),
     unique("milestone_congratulations_sender_unique").on(
       t.milestoneId,
       t.senderId,

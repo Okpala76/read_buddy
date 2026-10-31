@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Search, UserRoundPlus, UsersRound, X } from "lucide-react";
@@ -18,11 +19,9 @@ type SearchResult = Awaited<ReturnType<typeof findReadingFriends>>[number];
 export function FriendsPage({
   relationships,
   partnerships,
-  nudges,
 }: {
   relationships: FriendView[];
   partnerships: StreakPartnershipView[];
-  nudges: { id: string; senderName: string | null; createdAt: string }[];
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -81,9 +80,7 @@ export function FriendsPage({
   return (
     <div className="space-y-9">
       <header className="max-w-2xl">
-        <p className="text-primary text-sm font-medium">
-          Reading Buddies · Batch 4/6
-        </p>
+        <p className="text-primary text-sm font-medium">Reading Buddies</p>
         <h1 className="text-foreground mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
           Friends & streak buddies
         </h1>
@@ -327,38 +324,11 @@ export function FriendsPage({
           </ul>
         )}
       </section>
-      <section className="space-y-3" aria-label="Reading encouragement inbox">
-        <h2 className="text-xl font-semibold">
-          Encouragement from your buddies
-        </h2>
-        {nudges.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No nudges yet.</p>
-        ) : (
-          <ul className="space-y-2">
-            {nudges.map((n) => (
-              <li
-                key={n.id}
-                className="border-border bg-card rounded-xl border p-4 text-sm"
-              >
-                <p className="font-semibold">
-                  {n.senderName?.trim() || "Your streak buddy"} is cheering you
-                  on!
-                </p>
-                <p className="text-muted-foreground">
-                  A little reading today keeps your streak alive. You’ve got
-                  this!
-                </p>
-                <time
-                  dateTime={n.createdAt}
-                  className="text-muted-foreground text-xs"
-                >
-                  {new Date(n.createdAt).toLocaleDateString()}
-                </time>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <p>
+        <Link href="/notifications" className="text-primary underline">
+          View encouragement and reactions in Notifications
+        </Link>
+      </p>
       <StreakPartnerships friends={relationships} partnerships={partnerships} />
     </div>
   );
