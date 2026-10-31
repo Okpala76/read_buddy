@@ -1,5 +1,6 @@
 "use server";
 
+import { celebrationForSavedSession } from "./daily-celebration";
 import { requireAuth } from "@/lib/auth/server";
 import { revalidatePath } from "next/cache";
 import {
@@ -51,7 +52,18 @@ export async function logReading(input: unknown) {
   revalidatePath("/books");
   revalidatePath("/sessions");
   revalidatePath("/analytics");
+  const book = await new DrizzleBookRepository().findById(parsed.bookId, user.id);
+  const celebration = await celebrationForSavedSession({
+    userId: user.id,
+    timezone: user.timezone,
+    sessionId: result.session.id,
+    readAt: result.session.readAt,
+    bookTitle: book?.title ?? "your book",
+    pagesRead: result.session.pagesRead,
+    source: "PHYSICAL",
+  });
   return {
+    celebration,
     pagesRead: result.session.pagesRead,
     newCurrentPage: result.newCurrentPage,
     wasCompleted: result.wasCompleted,
