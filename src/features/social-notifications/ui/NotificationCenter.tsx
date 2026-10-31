@@ -137,7 +137,7 @@ export function NotificationCenter({
                   dateTime={item.createdAt}
                   className="text-muted-foreground text-xs"
                 >
-                  {new Date(item.createdAt).toLocaleString(undefined, {
+                  {new Date(item.createdAt).toLocaleString("en-GB", {
                     timeZone: "UTC",
                   })}{" "}
                   UTC
