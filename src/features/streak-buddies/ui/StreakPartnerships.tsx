@@ -67,8 +67,8 @@ export function StreakPartnerships({
         <p className="text-muted-foreground max-w-2xl text-sm">
           Invite a reading friend to build a daily reading habit together. Each
           partnership is one-to-one. Once you both agree, you can encourage each
-          other when one of you hasn&apos;t read that day. Daily nudges arrive
-          in Batch 4/6.
+          other when one of you hasn&apos;t read that day. Daily nudges are
+          available after your first reading session of the day.
         </p>
       </header>
       {error && (
@@ -185,7 +185,7 @@ export function StreakPartnerships({
                 <p className="font-semibold">{p.partnerName}</p>
                 <p className="text-muted-foreground text-sm">
                   {p.status === "ACTIVE"
-                    ? "Active streak buddy · Daily encouragement enabled when nudges launch"
+                    ? "Active streak buddy · Daily encouragement enabled"
                     : p.pausedByYou
                       ? "You paused this streak journey"
                       : "Your buddy paused this streak journey"}

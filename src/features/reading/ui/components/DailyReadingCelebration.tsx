@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { BookOpen, Flame, PartyPopper, X } from "lucide-react";
+import { nudgeMyBuddies } from "@/features/streak-buddies/ui/nudge-actions";
 import type { DailyCelebration } from "@/features/reading/ui/celebration-types";
 
 export function DailyReadingCelebration({
@@ -10,6 +12,31 @@ export function DailyReadingCelebration({
   celebration: DailyCelebration;
   onDismiss: () => void;
 }) {
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+  async function sendNudges() {
+    setSending(true);
+    setError(null);
+    try {
+      const response = await nudgeMyBuddies();
+      setResult(
+        response.alreadySent
+          ? "You already used today’s nudge."
+          : response.sent > 0
+            ? `Encouraged ${response.sent} ${response.sent === 1 ? "buddy" : "buddies"} today!`
+            : "All your buddies have already read, received a nudge, or are not active.",
+      );
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not send nudges. Try again.",
+      );
+    } finally {
+      setSending(false);
+    }
+  }
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
@@ -63,13 +90,23 @@ export function DailyReadingCelebration({
           your streak buddies to read today too?
         </p>
         <div className="space-y-3">
+          {error && (
+            <p role="alert" className="text-destructive text-sm">
+              {error}
+            </p>
+          )}
+          {result && (
+            <p role="status" className="text-primary text-sm">
+              {result}
+            </p>
+          )}
           <button
             type="button"
-            disabled
-            aria-disabled="true"
-            className="bg-primary text-primary-foreground min-h-12 w-full rounded-xl px-4 font-semibold opacity-55"
+            disabled={sending || result !== null}
+            onClick={sendNudges}
+            className="bg-primary text-primary-foreground min-h-12 w-full rounded-xl px-4 font-semibold disabled:opacity-55"
           >
-            Nudge my buddies · Available in Batch 4/6
+            {sending ? "Sending…" : "Nudge my buddies"}
           </button>
           <button
             type="button"
@@ -80,7 +117,8 @@ export function DailyReadingCelebration({
           </button>
         </div>
         <p className="text-muted-foreground text-xs">
-          Daily nudges are not active yet. Your reading is saved.
+          Only active buddies who have not read or received a nudge today will
+          be notified. Your reading is saved.
         </p>
       </section>
     </div>

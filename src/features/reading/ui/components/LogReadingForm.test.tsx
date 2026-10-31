@@ -9,13 +9,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LogReadingForm } from "./LogReadingForm";
 
-const { logReadingMock, refreshMock } = vi.hoisted(() => ({
+const { logReadingMock, nudgeMock, refreshMock } = vi.hoisted(() => ({
   logReadingMock: vi.fn(),
+  nudgeMock: vi.fn(),
   refreshMock: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: refreshMock }),
+}));
+vi.mock("@/features/streak-buddies/ui/nudge-actions", () => ({
+  nudgeMyBuddies: nudgeMock,
 }));
 vi.mock("@/features/reading/ui/reading-actions", () => ({
   logReading: logReadingMock,
@@ -39,6 +43,9 @@ describe("LogReadingForm", () => {
       wasCompleted: false,
     });
     refreshMock.mockReset();
+    nudgeMock
+      .mockReset()
+      .mockResolvedValue({ sent: 1, skipped: 0, alreadySent: false });
   });
 
   it("automatically previews pages read from the previous page", () => {
@@ -96,11 +103,38 @@ describe("LogReadingForm", () => {
     expect(screen.getByText(/3-day reading streak/)).toBeVisible();
     expect(
       screen.getByRole("button", { name: /Nudge my buddies/ }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "Maybe later" }));
     expect(
       screen.queryByRole("dialog", { name: "Daily reading celebration" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("sends an optional nudge once and confirms delivery", async () => {
+    logReadingMock.mockResolvedValueOnce({
+      pagesRead: 15,
+      newCurrentPage: 100,
+      wasCompleted: false,
+      celebration: {
+        bookTitle: "A Long Read",
+        pagesRead: 15,
+        streakDays: 3,
+        source: "PHYSICAL",
+      },
+    });
+    render(<LogReadingForm currentBook={book} dailyTarget={20} />);
+    fireEvent.change(screen.getByLabelText("What page did you stop at?"), {
+      target: { value: "100" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save page 100" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Nudge my buddies" }),
+    );
+    expect(await screen.findByText(/Encouraged 1 buddy today!/)).toBeVisible();
+    expect(nudgeMock).toHaveBeenCalledOnce();
+    expect(
+      screen.getByRole("button", { name: "Nudge my buddies" }),
+    ).toBeDisabled();
   });
 
   it("does not show celebration for subsequent sessions", async () => {
