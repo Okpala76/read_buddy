@@ -161,3 +161,4 @@ jobs:
           pnpm exec vitest run
           src/features/reminders/infrastructure/drizzle-reminder-concurrency.integration.test.ts
           src/features/streak-buddies/infrastructure/milestone-repository.integration.test.ts
+          src/features/social-notifications/infrastructure/notification-repository.integration.test.ts

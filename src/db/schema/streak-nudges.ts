@@ -1,4 +1,6 @@
+import { sql } from "drizzle-orm";
 import {
+  check,
   index,
   pgTable,
   text,
@@ -39,6 +41,10 @@ export const streakNudges = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     recipientDay: text("recipient_day").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    reaction: text("reaction"),
+    reactionAt: timestamp("reaction_at", { withTimezone: true }),
+    reactionReadAt: timestamp("reaction_read_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -47,6 +53,10 @@ export const streakNudges = pgTable(
     unique("streak_nudges_recipient_day_unique").on(
       t.recipientId,
       t.recipientDay,
+    ),
+    check(
+      "streak_nudges_reaction_check",
+      sql`${t.reaction} is null or ${t.reaction} in ('❤️','👏','🙌')`,
     ),
     index("streak_nudges_recipient_created_idx").on(t.recipientId, t.createdAt),
   ],
