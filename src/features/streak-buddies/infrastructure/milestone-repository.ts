@@ -3,7 +3,6 @@ import { and, desc, eq, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   milestoneCongratulations,
-  socialPreferences,
   readingFriends,
   readingSessions,
   streakMilestones,
@@ -45,7 +44,6 @@ export async function recordReadingMilestone(
 function friendshipCondition(userId: string) {
   return and(
     eq(readingFriends.status, "ACCEPTED"),
-    sql`not exists (select 1 from ${socialPreferences} where ${socialPreferences.userId} = ${streakMilestones.userId} and ${socialPreferences.shareMilestones} = false)`,
     or(
       and(
         eq(readingFriends.userLowId, userId),
@@ -97,12 +95,6 @@ export async function congratulateFriendMilestone(
       .from(users)
       .where(eq(users.id, owner.userId))
       .for("update");
-    const settings = await tx
-      .select()
-      .from(socialPreferences)
-      .where(eq(socialPreferences.userId, owner.userId));
-    if (settings[0]?.shareMilestones === false)
-      throw new Error("This milestone is not available to you.");
     await tx
       .insert(milestoneCongratulations)
       .values({ milestoneId, senderId: userId })

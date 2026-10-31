@@ -3,42 +3,34 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth/server";
 import { reactions } from "../domain/notification";
+import { panelKinds } from "../domain/panel";
 import {
-  readNotifications,
-  readSocialPreferences,
-  updateNotification,
-  writeSocialPreferences,
-} from "../infrastructure/notification-repository";
-const notificationInput = z.object({
-  id: z.string().uuid(),
-  kind: z.enum([
-    "NUDGE",
-    "CONGRATULATION",
-    "NUDGE_REACTION",
-    "CONGRATULATION_REACTION",
-  ]),
-  reaction: z.enum(reactions).optional(),
-});
-const settingsInput = z.object({
-  receiveNudges: z.boolean(),
-  shareMilestones: z.boolean(),
-});
-export async function getNotificationCenter() {
+  ensureReadingReminder,
+  markPanelItemRead,
+  readPanel,
+} from "../infrastructure/panel-repository";
+import { updateNotification } from "../infrastructure/notification-repository";
+export async function getNotificationCenter(input: unknown = {}) {
   const user = await requireAuth();
-  const [notifications, settings] = await Promise.all([
-    readNotifications(user.id),
-    readSocialPreferences(user.id),
-  ]);
-  return { notifications, settings };
+  const { limit } = z
+    .object({ limit: z.number().int().min(1).max(500).default(50) })
+    .parse(input);
+  await ensureReadingReminder(user);
+  return readPanel(user.id, limit);
 }
 export async function changeNotification(input: unknown) {
   const user = await requireAuth();
-  await updateNotification(user.id, notificationInput.parse(input));
-  revalidatePath("/notifications");
-}
-export async function saveSocialPreferences(input: unknown) {
-  const user = await requireAuth();
-  await writeSocialPreferences(user.id, settingsInput.parse(input));
-  revalidatePath("/notifications");
-  revalidatePath("/friends");
+  const parsed = z
+    .object({
+      id: z.string().uuid(),
+      kind: z.enum(panelKinds),
+      reaction: z.enum(reactions).optional(),
+    })
+    .parse(input);
+  if (parsed.reaction) {
+    if (parsed.kind !== "NUDGE" && parsed.kind !== "CONGRATULATION")
+      throw new Error("Only received encouragement can receive reactions.");
+    await updateNotification(user.id, { ...parsed, kind: parsed.kind });
+  } else await markPanelItemRead(user.id, parsed.id, parsed.kind);
+  revalidatePath("/dashboard");
 }

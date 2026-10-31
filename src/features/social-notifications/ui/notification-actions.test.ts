@@ -2,37 +2,36 @@ import { beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
   read: vi.fn(),
-  settings: vi.fn(),
-  update: vi.fn(),
-  save: vi.fn(),
+  ensure: vi.fn(),
+  mark: vi.fn(),
+  react: vi.fn(),
 }));
 vi.mock("@/lib/auth/server", () => ({ requireAuth: mocks.auth }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("../infrastructure/panel-repository", () => ({
+  readPanel: mocks.read,
+  ensureReadingReminder: mocks.ensure,
+  markPanelItemRead: mocks.mark,
+}));
 vi.mock("../infrastructure/notification-repository", () => ({
-  readNotifications: mocks.read,
-  readSocialPreferences: mocks.settings,
-  updateNotification: mocks.update,
-  writeSocialPreferences: mocks.save,
+  updateNotification: mocks.react,
 }));
 import {
   changeNotification,
   getNotificationCenter,
-  saveSocialPreferences,
 } from "./notification-actions";
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.auth.mockResolvedValue({ id: "viewer" });
+  mocks.auth.mockResolvedValue({ id: "viewer", timezone: "UTC" });
 });
-it("authenticates before reading or mutating private activity", async () => {
+it("authenticates before accessing private activity", async () => {
   mocks.auth.mockRejectedValue(new Error("Unauthorized"));
   await expect(getNotificationCenter()).rejects.toThrow("Unauthorized");
   await expect(changeNotification({})).rejects.toThrow("Unauthorized");
-  await expect(saveSocialPreferences({})).rejects.toThrow("Unauthorized");
   expect(mocks.read).not.toHaveBeenCalled();
-  expect(mocks.update).not.toHaveBeenCalled();
-  expect(mocks.save).not.toHaveBeenCalled();
+  expect(mocks.mark).not.toHaveBeenCalled();
 });
-it("rejects malformed IDs, arbitrary messages and unsupported reactions", async () => {
+it("rejects malformed IDs, unsupported reactions and unbounded page sizes", async () => {
   await expect(
     changeNotification({ id: "fake", kind: "NUDGE" }),
   ).rejects.toThrow();
@@ -43,41 +42,25 @@ it("rejects malformed IDs, arbitrary messages and unsupported reactions", async 
       reaction: "hello",
     }),
   ).rejects.toThrow();
-  expect(mocks.update).not.toHaveBeenCalled();
+  await expect(getNotificationCenter({ limit: 501 })).rejects.toThrow();
+  expect(mocks.react).not.toHaveBeenCalled();
 });
-it("ignores forged user IDs and validates boolean privacy settings", async () => {
+it("uses the authenticated owner for read state and reactions", async () => {
   const id = crypto.randomUUID();
-  await changeNotification({
-    id,
-    kind: "NUDGE",
-    reaction: "👏",
-    userId: "someone-else",
-  });
-  expect(mocks.update).toHaveBeenCalledWith("viewer", {
+  await changeNotification({ id, kind: "FRIEND_INVITE", userId: "forged" });
+  expect(mocks.mark).toHaveBeenCalledWith("viewer", id, "FRIEND_INVITE");
+  await changeNotification({ id, kind: "NUDGE", reaction: "👏" });
+  expect(mocks.react).toHaveBeenCalledWith("viewer", {
     id,
     kind: "NUDGE",
     reaction: "👏",
   });
   await expect(
-    saveSocialPreferences({ receiveNudges: "false", shareMilestones: true }),
-  ).rejects.toThrow();
-  await saveSocialPreferences({
-    receiveNudges: false,
-    shareMilestones: false,
-    userId: "forged",
-  });
-  expect(mocks.save).toHaveBeenCalledWith("viewer", {
-    receiveNudges: false,
-    shareMilestones: false,
-  });
+    changeNotification({ id, kind: "MILESTONE", reaction: "👏" }),
+  ).rejects.toThrow("Only received");
 });
-it("reads both settings and notifications for the authenticated user", async () => {
-  mocks.read.mockResolvedValue([]);
-  mocks.settings.mockResolvedValue({
-    receiveNudges: true,
-    shareMilestones: true,
-  });
-  await getNotificationCenter();
-  expect(mocks.read).toHaveBeenCalledWith("viewer");
-  expect(mocks.settings).toHaveBeenCalledWith("viewer");
+it("loads the scoped panel after materializing due reading activity", async () => {
+  await getNotificationCenter({ limit: 100 });
+  expect(mocks.ensure).toHaveBeenCalledWith({ id: "viewer", timezone: "UTC" });
+  expect(mocks.read).toHaveBeenCalledWith("viewer", 100);
 });
