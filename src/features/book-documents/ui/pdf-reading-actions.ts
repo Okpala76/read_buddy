@@ -11,6 +11,7 @@ import {
   pdfReadingStates,
   readingSessions,
 } from "@/db/schema";
+import { celebrationForSavedSession } from "@/features/reading/ui/daily-celebration";
 import { requireAuth } from "@/lib/auth/server";
 
 function database() {
@@ -37,6 +38,7 @@ async function ownedPdf(bookId: string, userId: string) {
       documentId: bookDocuments.id,
       physicalPage: books.currentPage,
       status: books.status,
+      title: books.title,
     })
     .from(bookDocuments)
     .innerJoin(books, eq(books.id, bookDocuments.bookId))
@@ -143,7 +145,10 @@ export async function completePdfReading(input: unknown) {
       throw new Error("Invalid viewed page");
 
     const pagesRead = endPage - state.confirmedPage;
+    const sessionId = crypto.randomUUID();
+    const readAt = new Date();
     await tx.insert(readingSessions).values({
+      id: sessionId,
       userId: user.id,
       bookId,
       startPage: state.confirmedPage,
@@ -151,7 +156,7 @@ export async function completePdfReading(input: unknown) {
       pagesRead,
       source: "PDF",
       mood: null,
-      readAt: new Date(),
+      readAt,
     });
     await tx
       .update(pdfReadingStates)
@@ -161,9 +166,14 @@ export async function completePdfReading(input: unknown) {
         updatedAt: new Date(),
       })
       .where(eq(pdfReadingStates.id, state.id));
-    return { pagesRead, completedPage: endPage };
+    return { pagesRead, completedPage: endPage, sessionId, readAt };
+  });
+  const celebration = await celebrationForSavedSession({
+    userId: user.id, timezone: user.timezone,
+    sessionId: result.sessionId, readAt: result.readAt,
+    bookTitle: document.title, pagesRead: result.pagesRead, source: "PDF",
   });
   for (const path of ["/books", "/dashboard", "/sessions", "/analytics"])
     revalidatePath(path);
-  return result;
+  return { ...result, celebration };
 }
