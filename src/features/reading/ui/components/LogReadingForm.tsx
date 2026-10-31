@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 
 import { ReadingMood } from "@/features/reading/domain";
+import { DailyReadingCelebration } from "./DailyReadingCelebration";
+import type { DailyCelebration } from "@/features/reading/ui/celebration-types";
 import { logReading } from "@/features/reading/ui/reading-actions";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +46,7 @@ export function LogReadingForm({
   const [mood, setMood] = useState<ReadingMood | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [celebration, setCelebration] = useState<DailyCelebration | null>(null);
 
   const maxPages = currentBook
     ? Math.max(0, currentBook.totalPages - currentBook.currentPage)
@@ -86,6 +89,7 @@ export function LogReadingForm({
         mood,
       });
 
+      setCelebration(result.celebration ?? null);
       setEndingPage("");
       setMood(null);
       setSuccess(
@@ -145,6 +149,8 @@ export function LogReadingForm({
   );
 
   return (
+    <>
+    {celebration && <DailyReadingCelebration celebration={celebration} onDismiss={() => setCelebration(null)} />}
     <section className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm">
       <div className="border-border bg-muted/35 border-b p-5 sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -317,5 +323,6 @@ export function LogReadingForm({
         </button>
       </form>
     </section>
+    </>
   );
 }
