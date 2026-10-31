@@ -328,14 +328,30 @@ export function FriendsPage({
         )}
       </section>
       <section className="space-y-3" aria-label="Reading encouragement inbox">
-        <h2 className="text-xl font-semibold">Encouragement from your buddies</h2>
-        {nudges.length === 0 ? <p className="text-muted-foreground text-sm">No nudges yet.</p> : (
+        <h2 className="text-xl font-semibold">
+          Encouragement from your buddies
+        </h2>
+        {nudges.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No nudges yet.</p>
+        ) : (
           <ul className="space-y-2">
             {nudges.map((n) => (
-              <li key={n.id} className="border-border bg-card rounded-xl border p-4 text-sm">
-                <p className="font-semibold">{n.senderName?.trim() || "Your streak buddy"} is cheering you on!</p>
-                <p className="text-muted-foreground">A little reading today keeps your streak alive. You’ve got this!</p>
-                <time dateTime={n.createdAt} className="text-muted-foreground text-xs">
+              <li
+                key={n.id}
+                className="border-border bg-card rounded-xl border p-4 text-sm"
+              >
+                <p className="font-semibold">
+                  {n.senderName?.trim() || "Your streak buddy"} is cheering you
+                  on!
+                </p>
+                <p className="text-muted-foreground">
+                  A little reading today keeps your streak alive. You’ve got
+                  this!
+                </p>
+                <time
+                  dateTime={n.createdAt}
+                  className="text-muted-foreground text-xs"
+                >
                   {new Date(n.createdAt).toLocaleDateString()}
                 </time>
               </li>

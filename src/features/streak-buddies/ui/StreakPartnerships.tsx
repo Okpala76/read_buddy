@@ -67,7 +67,8 @@ export function StreakPartnerships({
         <p className="text-muted-foreground max-w-2xl text-sm">
           Invite a reading friend to build a daily reading habit together. Each
           partnership is one-to-one. Once you both agree, you can encourage each
-          other when one of you hasn&apos;t read that day. Daily nudges are available after your first reading session of the day.
+          other when one of you hasn&apos;t read that day. Daily nudges are
+          available after your first reading session of the day.
         </p>
       </header>
       {error && (

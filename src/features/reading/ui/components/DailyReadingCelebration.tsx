@@ -20,9 +20,19 @@ export function DailyReadingCelebration({
     setError(null);
     try {
       const response = await nudgeMyBuddies();
-      setResult(response.alreadySent ? "You already used today’s nudge." : response.sent > 0 ? `Encouraged ${response.sent} ${response.sent === 1 ? "buddy" : "buddies"} today!` : "All your buddies have already read, received a nudge, or are not active.");
+      setResult(
+        response.alreadySent
+          ? "You already used today’s nudge."
+          : response.sent > 0
+            ? `Encouraged ${response.sent} ${response.sent === 1 ? "buddy" : "buddies"} today!`
+            : "All your buddies have already read, received a nudge, or are not active.",
+      );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not send nudges. Try again.");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not send nudges. Try again.",
+      );
     } finally {
       setSending(false);
     }
@@ -80,8 +90,16 @@ export function DailyReadingCelebration({
           your streak buddies to read today too?
         </p>
         <div className="space-y-3">
-          {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
-          {result && <p role="status" className="text-primary text-sm">{result}</p>}
+          {error && (
+            <p role="alert" className="text-destructive text-sm">
+              {error}
+            </p>
+          )}
+          {result && (
+            <p role="status" className="text-primary text-sm">
+              {result}
+            </p>
+          )}
           <button
             type="button"
             disabled={sending || result !== null}
@@ -99,7 +117,8 @@ export function DailyReadingCelebration({
           </button>
         </div>
         <p className="text-muted-foreground text-xs">
-          Only active buddies who have not read or received a nudge today will be notified. Your reading is saved.
+          Only active buddies who have not read or received a nudge today will
+          be notified. Your reading is saved.
         </p>
       </section>
     </div>

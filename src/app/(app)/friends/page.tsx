@@ -10,6 +10,13 @@ export default async function ReadingFriendsPage() {
     getReceivedStreakNudges(),
   ]);
   return (
-    <FriendsPage relationships={relationships} partnerships={partnerships} nudges={nudges.map(n => ({...n, createdAt: n.createdAt.toISOString()}))} />
+    <FriendsPage
+      relationships={relationships}
+      partnerships={partnerships}
+      nudges={nudges.map((n) => ({
+        ...n,
+        createdAt: n.createdAt.toISOString(),
+      }))}
+    />
   );
 }

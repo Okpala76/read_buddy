@@ -8,7 +8,11 @@ describe("streak nudge day boundaries", () => {
     expect(localDayKey(instant, "America/Toronto")).toBe("2026-10-31");
   });
   it("uses calendar days across daylight saving transitions", () => {
-    expect(localDayKey(new Date("2026-11-01T05:30:00Z"), "America/Toronto")).toBe("2026-11-01");
-    expect(localDayKey(new Date("2026-11-02T05:30:00Z"), "America/Toronto")).toBe("2026-11-02");
+    expect(
+      localDayKey(new Date("2026-11-01T05:30:00Z"), "America/Toronto"),
+    ).toBe("2026-11-01");
+    expect(
+      localDayKey(new Date("2026-11-02T05:30:00Z"), "America/Toronto"),
+    ).toBe("2026-11-02");
   });
 });
