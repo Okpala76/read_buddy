@@ -130,12 +130,12 @@ describe.runIf(process.env.RUN_DATABASE_INTEGRATION_TESTS === "true")(
       await reading(r, new Date("2026-10-31T10:00:00Z"));
       expect((await send()).sent).toBe(0);
     });
-    it("enforces recipient opt-out and requires the sender to have read", async () => {
+    it("ignores retired notification switches and requires the sender to have read", async () => {
       await repo.writeSocialPreferences(r, {
         receiveNudges: false,
         shareMilestones: true,
       });
-      expect((await send()).sent).toBe(0);
+      expect((await send()).sent).toBe(1);
       await expect(send(x)).rejects.toThrow("first reading session");
     });
     it("skips paused partnerships and removed friendships", async () => {
@@ -216,7 +216,7 @@ describe.runIf(process.env.RUN_DATABASE_INTEGRATION_TESTS === "true")(
       expect(await repo.readNotifications(c)).toEqual([]);
       expect(JSON.stringify(inbox)).not.toMatch(/Private book|Private author/);
     });
-    it("hides opted-out milestones and blocks stale congratulations prompts", async () => {
+    it("keeps accepted-friend milestones available despite retired switches", async () => {
       const [event] = await db
         .insert(streakMilestones)
         .values({ userId: r, days: 10, localDay: "2026-10-31" })
@@ -225,16 +225,14 @@ describe.runIf(process.env.RUN_DATABASE_INTEGRATION_TESTS === "true")(
         receiveNudges: true,
         shareMilestones: false,
       });
-      expect(await milestones.readFriendMilestones(a)).toEqual([]);
-      await expect(
-        milestones.congratulateFriendMilestone(a, event.id),
-      ).rejects.toThrow("not available");
+      expect(await milestones.readFriendMilestones(a)).toHaveLength(1);
+      await milestones.congratulateFriendMilestone(a, event.id);
       expect(
         await db
           .select()
           .from(milestoneCongratulations)
           .where(eq(milestoneCongratulations.milestoneId, event.id)),
-      ).toHaveLength(0);
+      ).toHaveLength(1);
     });
     it("prevents new emoji deliveries to a removed friend", async () => {
       await send();

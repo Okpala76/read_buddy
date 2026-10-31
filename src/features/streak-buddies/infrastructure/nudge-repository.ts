@@ -3,7 +3,6 @@ import "server-only";
 import { and, eq, gte, lte, or } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
-  socialPreferences,
   readingFriends,
   readingSessions,
   streakNudgeBatches,
@@ -96,11 +95,6 @@ export async function sendDailyNudges(
         .from(users)
         .where(eq(users.id, recipient.id))
         .for("update");
-      const preferences = await tx
-        .select()
-        .from(socialPreferences)
-        .where(eq(socialPreferences.userId, recipient.id));
-      if (preferences[0]?.receiveNudges === false) continue;
       const recipientRange = getUserDayUtcRange(now, recipient.timezone);
       const alreadyRead = await tx
         .select({ id: readingSessions.id })

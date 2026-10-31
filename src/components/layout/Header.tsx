@@ -1,5 +1,6 @@
 "use client";
 
+import { NotificationPanel } from "@/features/social-notifications/ui/NotificationPanel";
 import { UserButton } from "@clerk/nextjs";
 import { BookOpen, Flame, Menu } from "lucide-react";
 import Link from "next/link";
@@ -53,7 +54,10 @@ export function Header({ currentStreak }: { currentStreak: number }) {
           </Link>
         </div>
 
-        <UserButton />
+        <div className="flex items-center gap-2">
+          <NotificationPanel />
+          <UserButton />
+        </div>
       </div>
     </header>
   );

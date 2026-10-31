@@ -148,6 +148,13 @@
       "when": 1793436665399,
       "tag": "0020_social_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793450603145,
+      "tag": "0021_notification_panel",
+      "breakpoints": true
     }
   ]
 }
