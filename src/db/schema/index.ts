@@ -16,3 +16,4 @@ export * from "./streak-nudges";
 export * from "./streak-milestones";
 export * from "./social-preferences";
 export * from "./notification-panel";
+export * from "./digital-book-uploads";

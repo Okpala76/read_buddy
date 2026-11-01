@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2, Plus, X } from "lucide-react";
 
+import { DigitalBookForm } from "@/features/book-documents/ui/DigitalBookForm";
 import { createBook } from "@/features/books/ui/book-actions";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,7 @@ interface CreateBookFormProps {
 }
 
 export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
+  const [format, setFormat] = useState<"PHYSICAL" | "PDF" | "EPUB">("PHYSICAL");
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
@@ -126,202 +128,235 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
-          {errors.form && (
-            <div
-              className="bg-destructive/10 text-destructive rounded-md p-3 text-sm"
-              role="alert"
-            >
-              {errors.form}
-            </div>
-          )}
-
-          <div>
-            <label
-              htmlFor="title"
-              className="text-foreground mb-1 block text-sm font-medium"
-            >
-              Book title
-            </label>
-            <input
-              id="title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              className={cn(
-                "bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring min-h-11 w-full rounded-lg border px-3 focus:ring-2 focus:outline-none",
-                errors.title && "border-destructive",
-              )}
-              placeholder="Book title"
+        <div
+          role="group"
+          aria-label="Book format"
+          className="mb-5 grid grid-cols-3 gap-2"
+        >
+          {(["PHYSICAL", "PDF", "EPUB"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
               disabled={isSubmitting}
-            />
-            {errors.title && (
-              <p className="text-destructive mt-1 text-sm">{errors.title}</p>
+              aria-pressed={format === value}
+              onClick={() => setFormat(value)}
+              className={cn(
+                "motion-press min-h-11 rounded-lg border px-3 text-sm font-medium",
+                format === value
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground",
+              )}
+            >
+              {value === "PHYSICAL" ? "Physical" : value}
+            </button>
+          ))}
+        </div>
+        {format !== "PHYSICAL" ? (
+          <DigitalBookForm
+            key={format}
+            format={format}
+            hasCurrentReading={hasCurrentReading}
+            onBusyChange={setIsSubmitting}
+            onSaved={() => setIsOpen(false)}
+          />
+        ) : (
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            {errors.form && (
+              <div
+                className="bg-destructive/10 text-destructive rounded-md p-3 text-sm"
+                role="alert"
+              >
+                {errors.form}
+              </div>
             )}
-          </div>
 
-          <div>
-            <label
-              htmlFor="author"
-              className="text-foreground mb-1 block text-sm font-medium"
-            >
-              Author
-            </label>
-            <input
-              id="author"
-              value={author}
-              onChange={(event) => setAuthor(event.target.value)}
-              className={cn(
-                "bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring min-h-11 w-full rounded-lg border px-3 focus:ring-2 focus:outline-none",
-                errors.author && "border-destructive",
-              )}
-              placeholder="Author name"
-              disabled={isSubmitting}
-            />
-            {errors.author && (
-              <p className="text-destructive mt-1 text-sm">{errors.author}</p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="totalPages"
-              className="text-foreground mb-1 block text-sm font-medium"
-            >
-              Total pages
-            </label>
-            <input
-              id="totalPages"
-              type="number"
-              min="1"
-              step="1"
-              value={totalPages}
-              onChange={(event) => setTotalPages(event.target.value)}
-              className={cn(
-                "bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring min-h-11 w-full rounded-lg border px-3 focus:ring-2 focus:outline-none",
-                errors.totalPages && "border-destructive",
-              )}
-              placeholder="300"
-              disabled={isSubmitting}
-            />
-            {errors.totalPages && (
-              <p className="text-destructive mt-1 text-sm">
-                {errors.totalPages}
-              </p>
-            )}
-          </div>
-
-          <fieldset className="space-y-2">
-            <legend className="text-foreground mb-2 text-sm font-semibold">
-              Where are you with this book?
-            </legend>
-            <label
-              className={cn(
-                "border-border flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm",
-                !alreadyReading && "border-primary bg-primary/5",
-              )}
-            >
-              <input
-                type="radio"
-                name="reading-start"
-                checked={!alreadyReading}
-                onChange={() => setAlreadyReading(false)}
-                disabled={isSubmitting}
-              />
-              Starting from the beginning
-            </label>
-            <label
-              className={cn(
-                "border-border flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm",
-                alreadyReading && "border-primary bg-primary/5",
-              )}
-            >
-              <input
-                type="radio"
-                name="reading-start"
-                checked={alreadyReading}
-                onChange={() => setAlreadyReading(true)}
-                disabled={isSubmitting}
-              />
-              Already reading this book
-            </label>
-          </fieldset>
-
-          {alreadyReading && (
             <div>
               <label
-                htmlFor="lastFinishedPage"
+                htmlFor="title"
                 className="text-foreground mb-1 block text-sm font-medium"
               >
-                Last page you finished
+                Book title
               </label>
               <input
-                id="lastFinishedPage"
+                id="title"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                className={cn(
+                  "bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring min-h-11 w-full rounded-lg border px-3 focus:ring-2 focus:outline-none",
+                  errors.title && "border-destructive",
+                )}
+                placeholder="Book title"
+                disabled={isSubmitting}
+              />
+              {errors.title && (
+                <p className="text-destructive mt-1 text-sm">{errors.title}</p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="author"
+                className="text-foreground mb-1 block text-sm font-medium"
+              >
+                Author
+              </label>
+              <input
+                id="author"
+                value={author}
+                onChange={(event) => setAuthor(event.target.value)}
+                className={cn(
+                  "bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring min-h-11 w-full rounded-lg border px-3 focus:ring-2 focus:outline-none",
+                  errors.author && "border-destructive",
+                )}
+                placeholder="Author name"
+                disabled={isSubmitting}
+              />
+              {errors.author && (
+                <p className="text-destructive mt-1 text-sm">{errors.author}</p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="totalPages"
+                className="text-foreground mb-1 block text-sm font-medium"
+              >
+                Total pages
+              </label>
+              <input
+                id="totalPages"
                 type="number"
                 min="1"
                 step="1"
-                max={
-                  Number(totalPages) > 0 ? Number(totalPages) - 1 : undefined
-                }
-                value={lastFinishedPage}
-                onChange={(event) => setLastFinishedPage(event.target.value)}
+                value={totalPages}
+                onChange={(event) => setTotalPages(event.target.value)}
                 className={cn(
                   "bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring min-h-11 w-full rounded-lg border px-3 focus:ring-2 focus:outline-none",
-                  errors.lastFinishedPage && "border-destructive",
+                  errors.totalPages && "border-destructive",
                 )}
-                placeholder="85"
+                placeholder="300"
                 disabled={isSubmitting}
               />
-              <p className="text-muted-foreground mt-1 text-xs">
-                We’ll pick up after this page. Earlier pages count toward book
-                progress, not your in-app reading history.
-              </p>
-              {errors.lastFinishedPage && (
+              {errors.totalPages && (
                 <p className="text-destructive mt-1 text-sm">
-                  {errors.lastFinishedPage}
+                  {errors.totalPages}
                 </p>
               )}
             </div>
-          )}
 
-          {hasCurrentReading ? (
-            <p className="bg-muted/60 text-muted-foreground rounded-lg p-3 text-sm">
-              You already have an active book. This one will go in Up next.
-            </p>
-          ) : (
-            <label className="text-foreground flex min-h-11 cursor-pointer items-center gap-3 text-sm">
-              <input
-                type="checkbox"
-                checked={startNow}
-                onChange={(event) => setStartNow(event.target.checked)}
+            <fieldset className="space-y-2">
+              <legend className="text-foreground mb-2 text-sm font-semibold">
+                Where are you with this book?
+              </legend>
+              <label
+                className={cn(
+                  "border-border flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm",
+                  !alreadyReading && "border-primary bg-primary/5",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="reading-start"
+                  checked={!alreadyReading}
+                  onChange={() => setAlreadyReading(false)}
+                  disabled={isSubmitting}
+                />
+                Starting from the beginning
+              </label>
+              <label
+                className={cn(
+                  "border-border flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm",
+                  alreadyReading && "border-primary bg-primary/5",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="reading-start"
+                  checked={alreadyReading}
+                  onChange={() => setAlreadyReading(true)}
+                  disabled={isSubmitting}
+                />
+                Already reading this book
+              </label>
+            </fieldset>
+
+            {alreadyReading && (
+              <div>
+                <label
+                  htmlFor="lastFinishedPage"
+                  className="text-foreground mb-1 block text-sm font-medium"
+                >
+                  Last page you finished
+                </label>
+                <input
+                  id="lastFinishedPage"
+                  type="number"
+                  min="1"
+                  step="1"
+                  max={
+                    Number(totalPages) > 0 ? Number(totalPages) - 1 : undefined
+                  }
+                  value={lastFinishedPage}
+                  onChange={(event) => setLastFinishedPage(event.target.value)}
+                  className={cn(
+                    "bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring min-h-11 w-full rounded-lg border px-3 focus:ring-2 focus:outline-none",
+                    errors.lastFinishedPage && "border-destructive",
+                  )}
+                  placeholder="85"
+                  disabled={isSubmitting}
+                />
+                <p className="text-muted-foreground mt-1 text-xs">
+                  We’ll pick up after this page. Earlier pages count toward book
+                  progress, not your in-app reading history.
+                </p>
+                {errors.lastFinishedPage && (
+                  <p className="text-destructive mt-1 text-sm">
+                    {errors.lastFinishedPage}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {hasCurrentReading ? (
+              <p className="bg-muted/60 text-muted-foreground rounded-lg p-3 text-sm">
+                You already have an active book. This one will go in Up next.
+              </p>
+            ) : (
+              <label className="text-foreground flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={startNow}
+                  onChange={(event) => setStartNow(event.target.checked)}
+                  disabled={isSubmitting}
+                />
+                Make this my current book
+              </label>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
                 disabled={isSubmitting}
-              />
-              Make this my current book
-            </label>
-          )}
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              disabled={isSubmitting}
-              className="border-border bg-background text-foreground hover:bg-muted min-h-11 flex-1 rounded-lg border px-4 text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
-            >
-              {isSubmitting && (
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              )}
-              {startNow && !hasCurrentReading
-                ? "Add and start"
-                : "Add to library"}
-            </button>
-          </div>
-        </form>
+                className="border-border bg-background text-foreground hover:bg-muted min-h-11 flex-1 rounded-lg border px-4 text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
+              >
+                {isSubmitting && (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                )}
+                {startNow && !hasCurrentReading
+                  ? "Add and start"
+                  : "Add to library"}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
