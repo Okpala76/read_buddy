@@ -155,6 +155,13 @@
       "when": 1793450603145,
       "tag": "0021_notification_panel",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793542862247,
+      "tag": "0022_digital_book_uploads",
+      "breakpoints": true
     }
   ]
 }

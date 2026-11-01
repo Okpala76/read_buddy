@@ -163,3 +163,4 @@ jobs:
           src/features/streak-buddies/infrastructure/milestone-repository.integration.test.ts
           src/features/social-notifications/infrastructure/notification-repository.integration.test.ts
           src/features/social-notifications/infrastructure/panel-repository.integration.test.ts
+          src/features/book-documents/infrastructure/digital-book-repository.integration.test.ts

@@ -17,6 +17,13 @@ vi.mock("@/features/books/ui/book-actions", () => ({
   createBook: createBookMock,
 }));
 
+vi.mock("@/features/book-documents/ui/digital-book-actions", () => ({
+  beginDigitalBook: vi.fn(),
+  inspectDigitalBook: vi.fn(),
+  completeDigitalBook: vi.fn(),
+  cancelDigitalBook: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 afterEach(cleanup);
 
 describe("CreateBookForm", () => {

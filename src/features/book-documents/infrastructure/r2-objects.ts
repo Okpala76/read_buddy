@@ -4,7 +4,7 @@ import { createHmac, createHash } from "node:crypto";
 
 import { getR2Config } from "./r2-config";
 
-type Method = "GET" | "PUT" | "HEAD";
+type Method = "GET" | "PUT" | "HEAD" | "DELETE";
 
 function sha256(value: string) {
   return createHash("sha256").update(value).digest("hex");
@@ -109,4 +109,15 @@ export async function headDocument(key: string) {
     sizeBytes: Number(response.headers.get("content-length")),
     contentType: response.headers.get("content-type")?.split(";")[0] ?? "",
   };
+}
+
+export async function deleteDocument(key: string) {
+  const request = signedRequest({ method: "DELETE", key, expiresSeconds: 60 });
+  const response = await fetch(request.url, {
+    method: "DELETE",
+    cache: "no-store",
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!response.ok && response.status !== 404)
+    throw new Error("Could not remove unused upload.");
 }
