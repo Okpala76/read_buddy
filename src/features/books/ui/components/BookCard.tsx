@@ -239,13 +239,15 @@ export function BookCard({
         <div className="flex shrink-0 flex-wrap items-center gap-2 sm:ml-auto sm:flex-nowrap sm:justify-end">
           {book.status === BookStatus.READING && (
             <>
-              <Link
-                href="/sessions"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 motion-press inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition-colors"
-              >
-                <BookOpen className="size-4" aria-hidden="true" />
-                Log reading
-              </Link>
+              {!isEpub && (
+                <Link
+                  href="/sessions"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 motion-press inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition-colors"
+                >
+                  <BookOpen className="size-4" aria-hidden="true" />
+                  Log reading
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={() =>

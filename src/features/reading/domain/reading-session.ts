@@ -16,6 +16,7 @@ export interface ReadingSessionProps {
   startPage: number;
   endPage: number;
   pagesRead: number;
+  locationsRead?: number;
   source?: "PHYSICAL" | "PDF" | "EPUB";
   mood: MoodValue | null;
   readAt: Date;
@@ -36,11 +37,26 @@ export class ReadingSession {
     startPage: number;
     endPage: number;
     pagesRead: number;
+    locationsRead?: number;
     source?: "PHYSICAL" | "PDF" | "EPUB";
     mood: MoodValue | null;
     readAt: Date;
     createdAt: Date;
   }): ReadingSession {
+    if (props.source === "EPUB") {
+      if (
+        props.startPage !== 0 ||
+        props.endPage !== 0 ||
+        props.pagesRead !== 0 ||
+        !Number.isInteger(props.locationsRead) ||
+        !props.locationsRead ||
+        props.locationsRead < 1
+      )
+        throw new Error(
+          "EPUB sessions require positive locations and zero paper pages",
+        );
+      return new ReadingSession({ ...props, createdAt: new Date() });
+    }
     if (props.startPage < 0) {
       throw new Error("Start page must be non-negative");
     }

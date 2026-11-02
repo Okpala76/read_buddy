@@ -123,6 +123,19 @@ export async function completePdfReading(input: unknown) {
     throw new Error("Start this book before logging reading");
 
   const result = await database().transaction(async (tx) => {
+    const [book] = await tx
+      .select({ status: books.status })
+      .from(books)
+      .where(
+        and(
+          eq(books.id, bookId),
+          eq(books.userId, user.id),
+          isNull(books.removedAt),
+        ),
+      )
+      .for("update");
+    if (book?.status !== "READING")
+      throw new Error("Start this book before logging reading");
     const rows = await tx
       .select()
       .from(pdfReadingStates)
@@ -166,6 +179,16 @@ export async function completePdfReading(input: unknown) {
         updatedAt: new Date(),
       })
       .where(eq(pdfReadingStates.id, state.id));
+    if (endPage === state.pageCount)
+      await tx
+        .update(books)
+        .set({
+          status: "COMPLETED",
+          completedAt: readAt,
+          completedViaDocument: true,
+          updatedAt: readAt,
+        })
+        .where(eq(books.id, bookId));
     return { pagesRead, completedPage: endPage, sessionId, readAt };
   });
   const celebration = await celebrationForSavedSession({

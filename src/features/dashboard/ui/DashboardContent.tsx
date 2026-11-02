@@ -18,6 +18,7 @@ interface DashboardContentProps {
   queuedBookCount: number;
   dailyTarget: number;
   pagesReadToday: number;
+  hasReadToday?: boolean;
   currentStreak: number;
   timezone: string;
   reminderSettings: {
@@ -32,6 +33,7 @@ export function DashboardContent({
   queuedBookCount,
   dailyTarget,
   pagesReadToday,
+  hasReadToday: hasAnyReading,
   currentStreak,
   timezone,
   reminderSettings,
@@ -42,7 +44,7 @@ export function DashboardContent({
     Math.round((pagesReadToday / safeTarget) * 100),
   );
   const dailyGoalComplete = pagesReadToday >= safeTarget;
-  const hasReadToday = pagesReadToday > 0;
+  const hasReadToday = hasAnyReading ?? pagesReadToday > 0;
   const todayLabel = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "short",
@@ -51,7 +53,8 @@ export function DashboardContent({
   }).format(new Date());
 
   const bookProgress = currentBook
-    ? overallConfirmedProgress(currentBook, currentBook.pdfProgress)
+    ? (currentBook.epubProgress?.progressPercent ??
+      overallConfirmedProgress(currentBook, currentBook.pdfProgress))
     : 0;
 
   const streakMessage = hasReadToday
@@ -103,9 +106,11 @@ export function DashboardContent({
                 <div className="mt-7 space-y-2">
                   <div className="flex items-center justify-between gap-4 text-sm">
                     <span className="text-foreground font-medium">
-                      {currentBook.pdfProgress
-                        ? `Physical ${currentBook.currentPage}/${currentBook.totalPages} · PDF ${currentBook.pdfProgress.confirmedPage}/${currentBook.pdfProgress.pageCount}`
-                        : `${currentBook.currentPage} of ${currentBook.totalPages} pages`}
+                      {currentBook.epubProgress
+                        ? `EPUB · ${currentBook.epubProgress.progressPercent ?? 0}% confirmed`
+                        : currentBook.pdfProgress
+                          ? `Physical ${currentBook.currentPage}/${currentBook.totalPages} · PDF ${currentBook.pdfProgress.confirmedPage}/${currentBook.pdfProgress.pageCount}`
+                          : `${currentBook.currentPage} of ${currentBook.totalPages} pages`}
                     </span>
                     <span className="text-muted-foreground">
                       {bookProgress}% overall complete
@@ -125,20 +130,30 @@ export function DashboardContent({
                     />
                   </div>
                   <p className="text-muted-foreground text-xs">
-                    {currentBook.pdfProgress
-                      ? "Overall completion uses the furthest confirmed position across editions."
-                      : `${Math.max(0, currentBook.totalPages - currentBook.currentPage)} pages left in this book`}
+                    {currentBook.epubProgress
+                      ? `EPUB · ${currentBook.epubProgress.progressPercent ?? 0}% confirmed`
+                      : currentBook.pdfProgress
+                        ? "Overall completion uses the furthest confirmed position across editions."
+                        : currentBook.epubProgress
+                          ? "EPUB progress is based on confirmed reading locations"
+                          : `${Math.max(0, currentBook.totalPages - currentBook.currentPage)} pages left in this book`}
                   </p>
                 </div>
               </div>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href="/sessions"
+                  href={
+                    currentBook?.epubProgress || currentBook?.pdfProgress
+                      ? "/books"
+                      : "/sessions"
+                  }
                   className="bg-primary text-primary-foreground hover:bg-primary/90 motion-press inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors"
                 >
                   <BookOpen className="size-4" aria-hidden="true" />
-                  Log reading
+                  {currentBook?.epubProgress || currentBook?.pdfProgress
+                    ? "Open library reader"
+                    : "Log reading"}
                 </Link>
                 <Link
                   href="/books"
@@ -292,7 +307,10 @@ export function DashboardContent({
                         {book.title}
                       </p>
                       <p className="text-muted-foreground truncate text-sm">
-                        {book.author} · {book.totalPages} pages
+                        {book.author} ·{" "}
+                        {book.epubProgress
+                          ? "EPUB"
+                          : `${book.totalPages} pages`}
                       </p>
                     </div>
                     <ArrowRight

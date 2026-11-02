@@ -12,6 +12,8 @@ function toDomain(row: typeof readingSessions.$inferSelect): ReadingSession {
     startPage: row.startPage,
     endPage: row.endPage,
     pagesRead: row.pagesRead,
+    locationsRead: row.locationsRead,
+    source: row.source as "PHYSICAL" | "PDF" | "EPUB",
     mood: row.mood,
     readAt: row.readAt,
     createdAt: row.createdAt,

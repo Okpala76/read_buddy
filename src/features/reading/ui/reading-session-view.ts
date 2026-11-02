@@ -16,6 +16,7 @@ export function toReadingSessionView(
     startPage: persisted.startPage,
     endPage: persisted.endPage,
     pagesRead: persisted.pagesRead,
+    locationsRead: persisted.locationsRead,
     source: persisted.source,
     mood: persisted.mood,
     readAt: persisted.readAt,

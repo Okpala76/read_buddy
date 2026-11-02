@@ -1,5 +1,8 @@
 declare module "epubjs" {
-  type Location = { start: { cfi: string; percentage?: number } };
+  type Location = {
+    atEnd?: boolean;
+    start: { cfi: string; percentage?: number };
+  };
   interface Rendition {
     display(target?: string): Promise<void>;
     next(): Promise<void>;
@@ -16,7 +19,12 @@ declare module "epubjs" {
     locations: EpubLocations;
     renderTo(
       element: HTMLElement,
-      options: { width: string; height: string; flow: string },
+      options: {
+        width: string;
+        height: string;
+        flow: string;
+        allowScriptedContent?: boolean;
+      },
     ): Rendition;
     ready: Promise<unknown>;
     destroy(): void;

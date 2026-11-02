@@ -20,6 +20,8 @@ export const epubPositions = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    confirmedLocation: integer("confirmed_location").notNull().default(0),
+    confirmedPercent: integer("confirmed_percent").notNull().default(0),
     cfi: text("cfi").notNull(),
     locationIndex: integer("location_index"),
     locationTotal: integer("location_total"),

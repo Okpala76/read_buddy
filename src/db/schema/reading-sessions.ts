@@ -24,6 +24,7 @@ export const readingSessions = pgTable(
     bookId: uuid("book_id").notNull(),
     startPage: integer("start_page").notNull(),
     endPage: integer("end_page").notNull(),
+    locationsRead: integer("locations_read").notNull().default(0),
     pagesRead: integer("pages_read").notNull(),
     source: text("source").notNull().default("PHYSICAL"),
     mood: readingMood("mood"),
@@ -42,7 +43,7 @@ export const readingSessions = pgTable(
     index("reading_sessions_book_read_at_idx").on(table.bookId, table.readAt),
     check(
       "reading_sessions_page_range_check",
-      sql`${table.startPage} >= 0 and ${table.endPage} > ${table.startPage}`,
+      sql`(${table.source} = 'EPUB' and ${table.startPage} = 0 and ${table.endPage} = 0 and ${table.locationsRead} > 0) or (${table.source} <> 'EPUB' and ${table.startPage} >= 0 and ${table.endPage} > ${table.startPage} and ${table.locationsRead} = 0)`,
     ),
     check(
       "reading_sessions_source_check",

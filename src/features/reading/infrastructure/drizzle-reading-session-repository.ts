@@ -1,5 +1,5 @@
 import { db } from "@/db/client";
-import { books, readingSessions } from "@/db/schema";
+import { books, bookDocuments, readingSessions } from "@/db/schema";
 import { eq, and, desc, gte, lte, isNull } from "drizzle-orm";
 import {
   ReadingSession,
@@ -18,6 +18,7 @@ function toDomain(row: typeof readingSessions.$inferSelect): ReadingSession {
     startPage: row.startPage,
     endPage: row.endPage,
     pagesRead: row.pagesRead,
+    locationsRead: row.locationsRead,
     source: row.source as "PHYSICAL" | "PDF" | "EPUB",
     mood: row.mood as ReadingMood | null,
     readAt: row.readAt,
@@ -126,6 +127,7 @@ export class DrizzleReadingSessionRepository implements ReadingSessionRepository
         startPage: props.startPage,
         endPage: props.endPage,
         pagesRead: props.pagesRead,
+        locationsRead: props.locationsRead ?? 0,
         source: props.source ?? "PHYSICAL",
         mood: props.mood,
         readAt: props.readAt,
@@ -137,6 +139,7 @@ export class DrizzleReadingSessionRepository implements ReadingSessionRepository
           startPage: props.startPage,
           endPage: props.endPage,
           pagesRead: props.pagesRead,
+          locationsRead: props.locationsRead ?? 0,
           source: props.source ?? "PHYSICAL",
           mood: props.mood,
           readAt: props.readAt,
@@ -174,6 +177,21 @@ export class DrizzleReadingSessionRepository implements ReadingSessionRepository
         throw new Error("Book ID does not match current reading book");
       }
 
+      const [epub] = await tx
+        .select({ id: bookDocuments.id })
+        .from(bookDocuments)
+        .where(
+          and(
+            eq(bookDocuments.bookId, currentBook.id),
+            eq(bookDocuments.userId, userId),
+            eq(bookDocuments.format, "EPUB"),
+          ),
+        )
+        .limit(1);
+      if (epub)
+        throw new Error(
+          "Use the EPUB reader to log locations instead of paper pages.",
+        );
       const startPage = currentBook.currentPage;
       if (!Number.isInteger(input.endPage) || input.endPage <= startPage) {
         throw new Error(

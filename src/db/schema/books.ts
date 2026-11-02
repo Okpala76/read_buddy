@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  boolean,
   index,
   integer,
   pgTable,
@@ -26,6 +27,9 @@ export const books = pgTable(
     totalPages: integer("total_pages").notNull(),
     currentPage: integer("current_page").notNull().default(0),
     status: bookStatus("status").notNull().default("QUEUED"),
+    completedViaDocument: boolean("completed_via_document")
+      .notNull()
+      .default(false),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     removedAt: timestamp("removed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -51,7 +55,7 @@ export const books = pgTable(
       "books_completion_consistency_check",
       sql`(
         ${table.status} = 'COMPLETED'
-        and ${table.currentPage} = ${table.totalPages}
+        and (${table.currentPage} = ${table.totalPages} or ${table.completedViaDocument})
         and ${table.completedAt} is not null
       ) or (
         ${table.status} <> 'COMPLETED'

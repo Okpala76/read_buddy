@@ -1,3 +1,6 @@
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import { bookDocuments } from "@/db/schema";
 import { GetCurrentReadingUseCase } from "@/features/books/application";
 import { DrizzleBookRepository } from "@/features/books/infrastructure";
 import { toBookView } from "@/features/books/ui/book-view";
@@ -17,9 +20,29 @@ export default async function SessionsPage() {
     ),
   ]);
 
+  const view = currentBook ? toBookView(currentBook) : null;
+  if (view && db) {
+    const [epub] = await db
+      .select({ id: bookDocuments.id })
+      .from(bookDocuments)
+      .where(
+        and(
+          eq(bookDocuments.bookId, view.id),
+          eq(bookDocuments.userId, user.id),
+          eq(bookDocuments.format, "EPUB"),
+        ),
+      )
+      .limit(1);
+    if (epub)
+      view.epubProgress = {
+        locationIndex: null,
+        locationTotal: null,
+        progressPercent: null,
+      };
+  }
   return (
     <ReadingPage
-      currentBook={currentBook ? toBookView(currentBook) : null}
+      currentBook={view}
       dailyTarget={user.dailyPageTarget}
       recentSessions={recentSessions.map(toReadingSessionView)}
       timezone={user.timezone}

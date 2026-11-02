@@ -71,9 +71,10 @@ export function DailyReadingCelebration({
               className="text-primary mr-2 inline size-4"
               aria-hidden="true"
             />
-            {celebration.pagesRead}{" "}
-            {celebration.pagesRead === 1 ? "page" : "pages"} of{" "}
-            {celebration.bookTitle}
+            {celebration.source === "EPUB"
+              ? `${celebration.locationsRead} locations`
+              : `${celebration.pagesRead} ${celebration.pagesRead === 1 ? "page" : "pages"}`}{" "}
+            of {celebration.bookTitle}
           </p>
           <p className="text-primary flex items-center justify-center gap-2 font-semibold">
             <Flame className="size-5" aria-hidden="true" />
@@ -82,7 +83,9 @@ export function DailyReadingCelebration({
           <p className="text-muted-foreground text-xs">
             {celebration.source === "PDF"
               ? "Read in PDF"
-              : "Physical reading log"}
+              : celebration.source === "EPUB"
+                ? "Read in EPUB"
+                : "Physical reading log"}
           </p>
         </div>
         <p className="text-foreground text-sm">

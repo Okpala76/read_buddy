@@ -1,7 +1,7 @@
 import "server-only";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { bookDocuments, pdfReadingStates } from "@/db/schema";
+import { bookDocuments, epubPositions, pdfReadingStates } from "@/db/schema";
 
 import { GetStreakUseCase } from "@/features/analytics/application";
 import { getUserDayUtcRange } from "@/features/analytics/domain";
@@ -62,6 +62,38 @@ export async function loadDashboardData() {
       .limit(1);
     if (pdf[0]) active.pdfProgress = pdf[0];
   }
+  if (db && bookViews.length) {
+    const documents = await db
+      .select({
+        bookId: bookDocuments.bookId,
+        locationIndex: epubPositions.confirmedLocation,
+        locationTotal: epubPositions.locationTotal,
+        progressPercent: epubPositions.confirmedPercent,
+      })
+      .from(bookDocuments)
+      .leftJoin(
+        epubPositions,
+        and(
+          eq(epubPositions.bookId, bookDocuments.bookId),
+          eq(epubPositions.userId, user.id),
+        ),
+      )
+      .where(
+        and(
+          eq(bookDocuments.userId, user.id),
+          eq(bookDocuments.format, "EPUB"),
+        ),
+      );
+    for (const document of documents) {
+      const view = bookViews.find((b) => b.id === document.bookId);
+      if (view)
+        view.epubProgress = {
+          locationIndex: document.locationIndex,
+          locationTotal: document.locationTotal,
+          progressPercent: document.progressPercent ?? 0,
+        };
+    }
+  }
   const queuedBooks = bookViews.filter(
     (book) => book.status === BookStatus.QUEUED,
   );
@@ -72,6 +104,7 @@ export async function loadDashboardData() {
     queuedBooks: queuedBooks.slice(0, 3),
     queuedBookCount: queuedBooks.length,
     dailyTarget: user.dailyPageTarget,
+    hasReadToday: todaySessions.length > 0,
     pagesReadToday: todaySessions.reduce(
       (total, session) => total + session.pagesRead,
       0,
