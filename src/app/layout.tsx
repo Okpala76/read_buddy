@@ -47,7 +47,23 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ClerkProvider appearance={{ theme: shadcn }}>
+        <ClerkProvider
+          appearance={{ theme: shadcn }}
+          localization={{
+            signIn: {
+              start: {
+                title: "Sign in to ReadOn",
+                titleCombined: "Continue to ReadOn",
+              },
+            },
+            signUp: {
+              start: {
+                title: "Create your ReadOn account",
+                titleCombined: "Create your ReadOn account",
+              },
+            },
+          }}
+        >
           <SerwistProvider
             swUrl="/serwist/sw.js"
             disable={process.env.NODE_ENV !== "production"}
