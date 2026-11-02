@@ -12,7 +12,7 @@ describe("push notification payload", () => {
     expect(
       normalizePushNotificationPayload(
         {
-          title: "Reading Buddy",
+          title: "ReadOn",
           body: "Your test notification is working.",
           url: "/dashboard?source=push",
           tag: "reading-buddy-test",
@@ -20,7 +20,7 @@ describe("push notification payload", () => {
         origin,
       ),
     ).toEqual({
-      title: "Reading Buddy",
+      title: "ReadOn",
       body: "Your test notification is working.",
       url: `${origin}/dashboard?source=push`,
       tag: "reading-buddy-test",
@@ -29,8 +29,8 @@ describe("push notification payload", () => {
 
   it("uses safe defaults for missing or malformed payloads", () => {
     expect(normalizePushNotificationPayload(undefined, origin)).toEqual({
-      title: "Reading Buddy",
-      body: "Open Reading Buddy to continue.",
+      title: "ReadOn",
+      body: "Open ReadOn to continue.",
       url: `${origin}/dashboard`,
     });
   });

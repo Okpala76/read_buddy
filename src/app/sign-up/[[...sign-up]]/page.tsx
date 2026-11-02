@@ -11,7 +11,7 @@ export default function SignUpPage() {
           className="inline-flex items-center gap-2 text-xl font-semibold"
         >
           <BookOpen className="text-primary size-7" aria-hidden="true" />
-          Reading Buddy
+          ReadOn
         </Link>
         <p className="text-muted-foreground mt-2 text-sm">
           Start with one book. Build the habit from there.

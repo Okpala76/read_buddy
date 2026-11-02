@@ -6,15 +6,15 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  applicationName: "Reading Buddy",
-  title: "Reading Buddy",
+  applicationName: "ReadOn",
+  title: "ReadOn",
   description:
     "A calm reading companion for tracking books, progress, and reading habits.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Reading Buddy",
+    title: "ReadOn",
   },
   formatDetection: {
     telephone: false,
@@ -52,7 +52,7 @@ export default function RootLayout({
             swUrl="/serwist/sw.js"
             disable={process.env.NODE_ENV !== "production"}
             cacheOnNavigation={false}
-            reloadOnOnline
+            reloadOnOnline={false}
             options={{ updateViaCache: "none" }}
           >
             {children}

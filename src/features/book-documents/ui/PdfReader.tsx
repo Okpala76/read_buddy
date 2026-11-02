@@ -313,7 +313,7 @@ export function PdfReader({
           <button
             type="button"
             disabled={busy}
-            className="bg-primary text-primary-foreground rounded-lg px-4 py-2 disabled:opacity-50"
+            className="motion-press bg-primary text-primary-foreground rounded-lg px-4 py-2 disabled:opacity-50"
             onClick={() => void align()}
           >
             Save PDF starting position

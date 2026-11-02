@@ -214,7 +214,7 @@ export function ReminderSettingsForm({
             </div>
             <p className="text-muted-foreground mt-2 max-w-xl text-sm">
               {remindersEnabled
-                ? "Reading Buddy will nudge you when you have not logged reading that day."
+                ? "ReadOn will nudge you when you have not logged reading that day."
                 : "Reminders are currently paused. Your reading history and streak tracking still work normally."}
             </p>
           </div>
@@ -283,7 +283,7 @@ export function ReminderSettingsForm({
                   </Label>
                   <p className="text-muted-foreground mt-1 max-w-xl text-sm">
                     Keep email available when push is not connected on a device.
-                    Reading Buddy sends one normal reminder, not both.
+                    ReadOn sends one normal reminder, not both.
                   </p>
                 </div>
               </div>

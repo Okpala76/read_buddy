@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Reading Buddy",
-    short_name: "Reading Buddy",
+    name: "ReadOn",
+    short_name: "ReadOn",
     description:
       "A calm reading companion for tracking books, progress, and reading habits.",
     start_url: "/",

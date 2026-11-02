@@ -123,7 +123,7 @@ export function NotificationPanel() {
           className="bg-card border-border fixed top-20 right-4 z-50 max-w-sm rounded-xl border p-4 shadow-lg"
         >
           <button
-            className="text-primary text-left text-sm"
+            className="motion-press text-primary text-left text-sm"
             onClick={() => {
               setOpen(true);
               setAlert("");

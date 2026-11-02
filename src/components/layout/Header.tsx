@@ -33,7 +33,7 @@ export function Header({ currentStreak }: { currentStreak: number }) {
               aria-hidden="true"
             />
             <span className="text-foreground hidden truncate font-semibold sm:block">
-              Reading Buddy
+              ReadOn
             </span>
           </Link>
 

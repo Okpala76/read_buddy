@@ -110,13 +110,14 @@
 
 @layer utilities {
   .motion-press {
-    transition-property: transform;
+    transition-property:
+      transform, background-color, border-color, color, box-shadow;
     transition-duration: var(--motion-fast);
     transition-timing-function: var(--ease-ui-out);
   }
 
   .motion-press:active:not(:disabled) {
-    transform: scale(0.975);
+    transform: translateY(1px) scale(0.975);
   }
 
   .motion-progress {
@@ -137,6 +138,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .motion-press:active:not(:disabled) {
+    transform: none;
+  }
   .motion-press,
   .motion-progress,
   .motion-feedback-in,

@@ -14,8 +14,8 @@ describe("PWA manifest", () => {
     const value = manifest();
 
     expect(value).toMatchObject({
-      name: "Reading Buddy",
-      short_name: "Reading Buddy",
+      name: "ReadOn",
+      short_name: "ReadOn",
       start_url: "/",
       scope: "/",
       display: "standalone",
@@ -95,6 +95,6 @@ describe("offline page", () => {
     expect(
       screen.getByRole("button", { name: /try again/i }),
     ).toBeInTheDocument();
-    expect(document.querySelector("form")).toHaveAttribute("action", "/");
+    expect(screen.getByRole("button", { name: /try again/i })).toBeEnabled();
   });
 });

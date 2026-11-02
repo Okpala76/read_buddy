@@ -24,7 +24,7 @@ export function Sidebar() {
             className="text-sidebar-primary size-6"
             aria-hidden="true"
           />
-          <span>Reading Buddy</span>
+          <span>ReadOn</span>
         </Link>
       </div>
 

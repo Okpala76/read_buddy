@@ -243,8 +243,8 @@ export function DashboardContent({
               No book is active right now
             </h2>
             <p className="text-muted-foreground mt-2">
-              Choose a book from your library and Reading Buddy will make it the
-              focus of your Home screen.
+              Choose a book from your library and ReadOn will make it the focus
+              of your Home screen.
             </p>
             <Link
               href="/books"

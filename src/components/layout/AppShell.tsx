@@ -25,6 +25,13 @@ export function AppShell({
   currentStreak: number;
 }) {
   const pathname = usePathname();
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("readon:last-path", pathname);
+    } catch {
+      /* Storage may be unavailable. */
+    }
+  }, [pathname]);
   const [mobileNavState, setMobileNavState] = useState({
     pathname,
     open: false,

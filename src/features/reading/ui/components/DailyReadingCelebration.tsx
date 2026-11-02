@@ -52,7 +52,7 @@ export function DailyReadingCelebration({
           type="button"
           aria-label="Dismiss celebration"
           onClick={onDismiss}
-          className="text-muted-foreground hover:bg-muted absolute top-4 right-4 rounded-lg p-2"
+          className="motion-press text-muted-foreground hover:bg-muted absolute top-4 right-4 rounded-lg p-2"
         >
           <X className="size-5" />
         </button>
@@ -107,14 +107,14 @@ export function DailyReadingCelebration({
             type="button"
             disabled={sending || result !== null}
             onClick={sendNudges}
-            className="bg-primary text-primary-foreground min-h-12 w-full rounded-xl px-4 font-semibold disabled:opacity-55"
+            className="motion-press bg-primary text-primary-foreground min-h-12 w-full rounded-xl px-4 font-semibold disabled:opacity-55"
           >
             {sending ? "Sending…" : "Nudge my buddies"}
           </button>
           <button
             type="button"
             onClick={onDismiss}
-            className="border-border min-h-12 w-full rounded-xl border px-4 font-semibold"
+            className="motion-press border-border min-h-12 w-full rounded-xl border px-4 font-semibold"
           >
             Maybe later
           </button>
