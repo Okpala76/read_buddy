@@ -19,9 +19,9 @@ export default async function BooksPage() {
   const rows = await db
     .select({
       bookId: bookDocuments.bookId,
-      locationIndex: epubPositions.locationIndex,
+      locationIndex: epubPositions.confirmedLocation,
       locationTotal: epubPositions.locationTotal,
-      progressPercent: epubPositions.progressPercent,
+      progressPercent: epubPositions.confirmedPercent,
     })
     .from(bookDocuments)
     .leftJoin(

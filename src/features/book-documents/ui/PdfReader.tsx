@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { ReaderHeader, ReaderNavigation } from "./ReaderChrome";
 import { useEffect, useRef, useState } from "react";
 import { DailyReadingCelebration } from "@/features/reading/ui/components/DailyReadingCelebration";
 import type { DailyCelebration } from "@/features/reading/ui/celebration-types";
@@ -27,6 +29,7 @@ export function PdfReader({
   isReading: boolean;
   onClose: () => void;
 }) {
+  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const documentRef = useRef<PdfDocument | null>(null);
@@ -234,6 +237,7 @@ export function PdfReader({
       if (saved.celebration) {
         setCelebration(saved.celebration);
       } else {
+        router.refresh();
         onClose();
       }
     } catch (cause) {
@@ -269,25 +273,17 @@ export function PdfReader({
           celebration={celebration}
           onDismiss={() => {
             setCelebration(null);
+            router.refresh();
             onClose();
           }}
         />
       )}
-      <header className="flex items-center justify-between gap-3 border-b px-4 py-3">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{fileName}</p>
-          <p role="status" className="text-muted-foreground text-xs">
-            {saveState}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={requestClose}
-          className="rounded-lg border px-3 py-2 text-sm"
-        >
-          Finish / Close
-        </button>
-      </header>
+      <ReaderHeader
+        title={fileName}
+        status={saveState}
+        busy={busy}
+        onClose={requestClose}
+      />
       {!aligned && pageCount > 0 && (
         <section
           className="bg-muted/40 space-y-3 border-b p-4"
@@ -404,27 +400,13 @@ export function PdfReader({
           </section>
         </div>
       )}
-      <footer className="flex items-center justify-center gap-3 border-t px-4 py-3">
-        <button
-          type="button"
-          disabled={page <= 1 || !pageCount}
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40"
-        >
-          Previous
-        </button>
-        <span className="text-sm" aria-live="polite">
-          Page {page} of {pageCount || "…"}
-        </span>
-        <button
-          type="button"
-          disabled={!pageCount || page >= pageCount}
-          onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-          className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40"
-        >
-          Next
-        </button>
-      </footer>
+      <ReaderNavigation
+        label={`Page ${page} of ${pageCount || "…"}`}
+        previous={() => setPage((p) => Math.max(1, p - 1))}
+        next={() => setPage((p) => Math.min(pageCount, p + 1))}
+        disablePrevious={page <= 1 || !pageCount || busy}
+        disableNext={!pageCount || page >= pageCount || busy}
+      />
     </div>
   );
 }

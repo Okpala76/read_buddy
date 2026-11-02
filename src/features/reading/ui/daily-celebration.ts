@@ -10,8 +10,9 @@ import { DrizzleAnalyticsRepository } from "@/features/analytics/infrastructure"
 export type DailyCelebration = {
   bookTitle: string;
   pagesRead: number;
+  locationsRead?: number;
   streakDays: number;
-  source: "PHYSICAL" | "PDF";
+  source: "PHYSICAL" | "PDF" | "EPUB";
 };
 
 /** The canonical first saved session in the user's local calendar day gets the
@@ -23,6 +24,7 @@ export async function celebrationForSavedSession({
   readAt,
   bookTitle,
   pagesRead,
+  locationsRead = 0,
   source,
 }: {
   userId: string;
@@ -31,9 +33,10 @@ export async function celebrationForSavedSession({
   readAt: Date;
   bookTitle: string;
   pagesRead: number;
-  source: "PHYSICAL" | "PDF";
+  locationsRead?: number;
+  source: "PHYSICAL" | "PDF" | "EPUB";
 }): Promise<DailyCelebration | null> {
-  if (!db || pagesRead <= 0) return null;
+  if (!db || (pagesRead <= 0 && locationsRead <= 0)) return null;
   await recordReadingMilestone(userId, timezone, readAt);
   const day = getUserDayUtcRange(readAt, timezone);
   const first = await db
@@ -52,5 +55,11 @@ export async function celebrationForSavedSession({
   const streak = await new GetStreakUseCase(
     new DrizzleAnalyticsRepository(),
   ).execute(userId, timezone);
-  return { bookTitle, pagesRead, streakDays: streak.currentStreak, source };
+  return {
+    bookTitle,
+    pagesRead,
+    locationsRead,
+    streakDays: streak.currentStreak,
+    source,
+  };
 }

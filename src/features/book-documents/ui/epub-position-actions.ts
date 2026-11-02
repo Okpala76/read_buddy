@@ -4,14 +4,14 @@ import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db/client";
-import { books, epubPositions } from "@/db/schema";
+import { books, bookDocuments, epubPositions } from "@/db/schema";
 import { requireAuth } from "@/lib/auth/server";
 
 const inputSchema = z.object({
   bookId: z.string().uuid(),
   cfi: z.string().min(5).max(2048),
   locationIndex: z.number().int().positive(),
-  locationTotal: z.number().int().positive(),
+  locationTotal: z.number().int().positive().max(1000000),
   progressPercent: z.number().int().min(0).max(100),
 });
 
@@ -56,6 +56,18 @@ export async function saveEpubPosition(input: unknown) {
     )
     .limit(1);
   if (!owned[0]) throw new Error("Book not found");
+  const attached = await database()
+    .select({ id: bookDocuments.id })
+    .from(bookDocuments)
+    .where(
+      and(
+        eq(bookDocuments.bookId, bookId),
+        eq(bookDocuments.userId, user.id),
+        eq(bookDocuments.format, "EPUB"),
+      ),
+    )
+    .limit(1);
+  if (!attached.length) throw new Error("EPUB not found");
   await database()
     .insert(epubPositions)
     .values({
@@ -77,4 +89,24 @@ export async function saveEpubPosition(input: unknown) {
         updatedAt: new Date(),
       },
     });
+}
+
+export async function getEpubReadingState(input: unknown) {
+  const user = await requireAuth();
+  const { bookId } = z.object({ bookId: z.string().uuid() }).parse(input);
+  const [state] = await database()
+    .select({ confirmedLocation: epubPositions.confirmedLocation })
+    .from(epubPositions)
+    .innerJoin(
+      books,
+      and(
+        eq(books.id, epubPositions.bookId),
+        eq(books.userId, user.id),
+        isNull(books.removedAt),
+      ),
+    )
+    .where(
+      and(eq(epubPositions.bookId, bookId), eq(epubPositions.userId, user.id)),
+    );
+  return state ?? null;
 }

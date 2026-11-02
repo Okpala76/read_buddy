@@ -126,6 +126,7 @@ export function BookDocumentControl({
       {reader?.contentType === "application/epub+zip" && (
         <EpubReader
           bookId={bookId}
+          isReading={isReading}
           url={reader.url}
           fileName={reader.fileName}
           onClose={() => setReader(null)}

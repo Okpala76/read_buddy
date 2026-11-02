@@ -162,6 +162,13 @@
       "when": 1793542862247,
       "tag": "0022_digital_book_uploads",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793631754576,
+      "tag": "0023_confirmed_digital_reading",
+      "breakpoints": true
     }
   ]
 }

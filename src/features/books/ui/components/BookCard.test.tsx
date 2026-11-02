@@ -23,6 +23,8 @@ const {
   startBookMock: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
 vi.mock("@/features/books/ui/book-actions", () => ({
   deleteBook: deleteBookMock,
   reopenCompletedBook: reopenCompletedBookMock,
@@ -36,7 +38,12 @@ vi.mock("@/features/streak-buddies/ui/nudge-actions", () => ({
 
 vi.mock("@/features/book-documents/ui/epub-position-actions", () => ({
   loadEpubPosition: vi.fn(),
+  getEpubReadingState: vi.fn(),
   saveEpubPosition: vi.fn(),
+}));
+
+vi.mock("@/features/book-documents/ui/epub-reading-actions", () => ({
+  completeEpubReading: vi.fn(),
 }));
 
 vi.mock("@/features/book-documents/ui/pdf-reading-actions", () => ({

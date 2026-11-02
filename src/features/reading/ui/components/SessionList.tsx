@@ -22,6 +22,7 @@ export interface SessionData {
   startPage: number;
   endPage: number;
   pagesRead: number;
+  locationsRead?: number;
   source?: "PHYSICAL" | "PDF" | "EPUB";
   mood: MoodValue | null;
   readAt: Date;
@@ -39,10 +40,16 @@ export function SessionItem({ session, timezone }: SessionItemProps) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-foreground font-medium">
-              Pages {session.startPage} → {session.endPage}
+              {session.source === "EPUB"
+                ? "EPUB reading session"
+                : `Pages ${session.startPage} → ${session.endPage}`}
             </span>
             <span className="text-muted-foreground">
-              ({session.pagesRead} pages)
+              (
+              {session.source === "EPUB"
+                ? `${session.locationsRead} locations`
+                : `${session.pagesRead} pages`}
+              )
             </span>
             <span className="rounded-full border px-2 py-0.5 text-xs">
               {session.source === "PDF"
@@ -78,9 +85,13 @@ export function SessionItem({ session, timezone }: SessionItemProps) {
         </div>
         <div className="flex-shrink-0 text-right">
           <div className="text-foreground text-lg font-semibold">
-            {session.pagesRead}
+            {session.source === "EPUB"
+              ? session.locationsRead
+              : session.pagesRead}
           </div>
-          <div className="text-muted-foreground text-xs">pages</div>
+          <div className="text-muted-foreground text-xs">
+            {session.source === "EPUB" ? "locations" : "pages"}
+          </div>
         </div>
       </div>
     </article>
