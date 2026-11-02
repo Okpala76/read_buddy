@@ -6,7 +6,7 @@ export interface PushNotificationPayload {
 }
 
 export const TEST_PUSH_NOTIFICATION: PushNotificationPayload = {
-  title: "Reading Buddy",
+  title: "ReadOn",
   body: "Notifications are working. We'll use them to help you stay consistent with your reading.",
   url: "/dashboard",
   tag: "reading-buddy-test",
@@ -24,8 +24,8 @@ export function createReadingReminderPushNotification(
 }
 
 const DEFAULT_PUSH_NOTIFICATION: PushNotificationPayload = {
-  title: "Reading Buddy",
-  body: "Open Reading Buddy to continue.",
+  title: "ReadOn",
+  body: "Open ReadOn to continue.",
   url: "/dashboard",
 };
 

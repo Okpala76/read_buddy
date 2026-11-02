@@ -63,7 +63,7 @@ export function PushAdoptionPrompt({
         />
         <div>
           <h2 className="text-foreground font-semibold">
-            Want Reading Buddy to remind you on this device?
+            Want ReadOn to remind you on this device?
           </h2>
           <p className="text-muted-foreground mt-1 text-sm">
             We will remind you each day if you have not logged reading.

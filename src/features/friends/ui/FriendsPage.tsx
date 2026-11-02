@@ -140,7 +140,7 @@ export function FriendsPage({
           <button
             type="submit"
             disabled={pending}
-            className="bg-primary text-primary-foreground inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-sm font-medium disabled:opacity-50"
+            className="motion-press bg-primary text-primary-foreground inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-sm font-medium disabled:opacity-50"
           >
             <Search className="size-4" aria-hidden="true" />
             Search

@@ -102,8 +102,8 @@ export function InstalledPushActivation({
           </span>
           <SheetTitle>Get your reading reminders</SheetTitle>
           <SheetDescription>
-            Reading Buddy is now on your Home Screen. Turn on notifications to
-            get reminders even when the app is closed.
+            ReadOn is now on your Home Screen. Turn on notifications to get
+            reminders even when the app is closed.
           </SheetDescription>
         </SheetHeader>
 

@@ -19,14 +19,14 @@ export function InstallAppBanner() {
 
   return (
     <aside
-      aria-label="Install Reading Buddy"
+      aria-label="Install ReadOn"
       className="border-primary/20 bg-primary/5 relative mb-6 rounded-2xl border p-5 lg:hidden"
     >
       <button
         type="button"
         onClick={dismissSuggestion}
         aria-label="Dismiss install suggestion"
-        className="text-muted-foreground hover:text-foreground absolute top-2 right-2 flex size-10 items-center justify-center rounded-md"
+        className="motion-press text-muted-foreground hover:text-foreground absolute top-2 right-2 flex size-10 items-center justify-center rounded-md"
       >
         <X className="size-5" aria-hidden="true" />
       </button>
@@ -36,10 +36,10 @@ export function InstallAppBanner() {
         </span>
         <div>
           <h2 className="text-foreground text-lg font-semibold">
-            Take Reading Buddy with you
+            Take ReadOn with you
           </h2>
           <p className="text-muted-foreground mt-1 text-sm">
-            Add Reading Buddy to your Home Screen for quick access. Then connect
+            Add ReadOn to your Home Screen for quick access. Then connect
             notifications to receive reading reminders on supported devices.
           </p>
         </div>
@@ -51,7 +51,7 @@ export function InstallAppBanner() {
           className="min-h-11"
         >
           <Download className="size-4" aria-hidden="true" />
-          Install Reading Buddy
+          Install ReadOn
         </Button>
         <Button
           type="button"
@@ -97,7 +97,7 @@ export function InstallAppGuide() {
         className="max-h-[85dvh] overflow-y-auto rounded-t-3xl pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:inset-x-auto sm:right-0 sm:w-[28rem] sm:rounded-t-2xl"
       >
         <SheetHeader className="text-left">
-          <SheetTitle>Install Reading Buddy</SheetTitle>
+          <SheetTitle>Install ReadOn</SheetTitle>
           <SheetDescription>
             Add the app to your Home Screen, then open it there to set up
             reminders.
@@ -115,7 +115,7 @@ export function InstallAppGuide() {
                 scroll).
               </li>
               <li>
-                Tap <strong>Add</strong>, then open Reading Buddy from your Home
+                Tap <strong>Add</strong>, then open ReadOn from your Home
                 Screen.
               </li>
             </ol>
@@ -126,7 +126,7 @@ export function InstallAppGuide() {
                 <strong>Add to Home Screen</strong>.
               </p>
               <p>
-                If that option is missing, open Reading Buddy in Safari and use{" "}
+                If that option is missing, open ReadOn in Safari and use{" "}
                 <strong>Share → Add to Home Screen</strong>.
               </p>
             </div>
@@ -139,7 +139,7 @@ export function InstallAppGuide() {
                 Choose <strong>Install app</strong> or{" "}
                 <strong>Add to Home screen</strong>.
               </li>
-              <li>Confirm, then launch Reading Buddy from your Home Screen.</li>
+              <li>Confirm, then launch ReadOn from your Home Screen.</li>
             </ol>
           ) : (
             <p>
@@ -150,7 +150,7 @@ export function InstallAppGuide() {
           )}
           <p className="text-muted-foreground bg-muted rounded-lg p-3">
             Installation does not enable notifications automatically. You’ll
-            enable them separately from Reading Buddy after installation.
+            enable them separately from ReadOn after installation.
           </p>
         </div>
         <Button

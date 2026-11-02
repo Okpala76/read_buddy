@@ -167,7 +167,7 @@ export function SessionList({
         <button
           onClick={onLoadMore}
           disabled={isLoading}
-          className="border-border bg-background text-foreground hover:bg-muted mt-4 w-full rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+          className="motion-press border-border bg-background text-foreground hover:bg-muted mt-4 w-full rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
         >
           Load more sessions
         </button>

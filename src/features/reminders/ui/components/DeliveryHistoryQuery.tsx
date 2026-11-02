@@ -14,7 +14,7 @@ export function DeliveryHistoryQuery() {
         <p className="text-destructive">Could not load delivery history.</p>
         <button
           type="button"
-          className="text-primary mt-3 text-sm font-medium underline-offset-4 hover:underline"
+          className="motion-press text-primary mt-3 text-sm font-medium underline-offset-4 hover:underline"
           onClick={() => void deliveries.refetch()}
         >
           Try again

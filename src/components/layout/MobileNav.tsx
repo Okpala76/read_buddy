@@ -30,7 +30,7 @@ export function MobileNav({ onNavigate }: { onNavigate?: () => void } = {}) {
       <SheetHeader className="border-border border-b px-5 py-5 text-left">
         <SheetTitle className="flex items-center gap-2">
           <BookOpen className="text-primary size-6" aria-hidden="true" />
-          Reading Buddy
+          ReadOn
         </SheetTitle>
         <SheetDescription>Keep your reading rhythm moving.</SheetDescription>
       </SheetHeader>

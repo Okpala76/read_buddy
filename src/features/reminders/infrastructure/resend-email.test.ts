@@ -42,7 +42,7 @@ describe("ResendEmailService", () => {
     });
     const service = new ResendEmailService({
       apiKey: "test-key",
-      fromEmail: "Reading Buddy <reminders@example.com>",
+      fromEmail: "ReadOn <reminders@example.com>",
       appUrl: "https://read.example.com",
       client,
     });
@@ -55,7 +55,7 @@ describe("ResendEmailService", () => {
     });
     expect(client.emails.send).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: "Reading Buddy <reminders@example.com>",
+        from: "ReadOn <reminders@example.com>",
         to: "reader@example.com",
         subject: "Time to read: A <Useful> Book",
         html: expect.stringContaining("A &lt;Useful&gt; Book"),
@@ -75,7 +75,7 @@ describe("ResendEmailService", () => {
     });
     const service = new ResendEmailService({
       apiKey: "test-key",
-      fromEmail: "Reading Buddy <reminders@example.com>",
+      fromEmail: "ReadOn <reminders@example.com>",
       appUrl: "https://read.example.com",
       client,
     });

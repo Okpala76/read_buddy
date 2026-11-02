@@ -87,7 +87,7 @@ export function PushNotificationSettings({
             setStatus("sync-error");
             setMessage({
               kind: "error",
-              text: "Notifications are enabled in this browser, but Reading Buddy could not connect this device. Retry the connection.",
+              text: "Notifications are enabled in this browser, but ReadOn could not connect this device. Retry the connection.",
             });
           }
         }
@@ -102,7 +102,7 @@ export function PushNotificationSettings({
         setStatus("not-enabled");
         setMessage({
           kind: "error",
-          text: "Reading Buddy could not verify notification status.",
+          text: "ReadOn could not verify notification status.",
         });
       }
     });
@@ -175,7 +175,7 @@ export function PushNotificationSettings({
       }
       setMessage({
         kind: "error",
-        text: "Reading Buddy could not enable notifications. Try again.",
+        text: "ReadOn could not enable notifications. Try again.",
       });
     } finally {
       setBusyAction(null);
@@ -191,13 +191,13 @@ export function PushNotificationSettings({
       setStatus("enabled");
       setMessage({
         kind: "success",
-        text: "This device is connected to Reading Buddy.",
+        text: "This device is connected to ReadOn.",
       });
     } catch {
       setStatus("sync-error");
       setMessage({
         kind: "error",
-        text: "Reading Buddy could not connect this device. Try again.",
+        text: "ReadOn could not connect this device. Try again.",
       });
     } finally {
       setBusyAction(null);
@@ -236,7 +236,7 @@ export function PushNotificationSettings({
         kind: "error",
         text: browserUnsubscribed
           ? "Notifications are off in this browser. Server cleanup will finish automatically."
-          : "Reading Buddy could not disable notifications. Try again.",
+          : "ReadOn could not disable notifications. Try again.",
       });
     } finally {
       setBusyAction(null);
@@ -284,12 +284,12 @@ export function PushNotificationSettings({
     loading: "Checking this device…",
     unsupported: "This browser does not support web push.",
     unavailable:
-      "Push is unavailable here. Open the installed Reading Buddy app and try again.",
+      "Push is unavailable here. Open the installed ReadOn app and try again.",
     "not-enabled": "Push is not connected on this device.",
     enabled:
       "Push is connected on this device and will be preferred for reminders.",
     "sync-error":
-      "Push is enabled in the browser, but this device is not connected to Reading Buddy.",
+      "Push is enabled in the browser, but this device is not connected to ReadOn.",
     blocked: "Notifications are blocked in your browser settings.",
   }[status];
 

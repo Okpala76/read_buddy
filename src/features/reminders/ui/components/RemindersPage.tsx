@@ -57,9 +57,9 @@ function RemindersPageContent({
           Build a reminder that fits your reading day.
         </h1>
         <p className="text-muted-foreground mt-2">
-          Choose when you want a nudge. Reading Buddy will use push when this
-          device is connected, then fall back to email if you keep email
-          reminders enabled.
+          Choose when you want a nudge. ReadOn will use push when this device is
+          connected, then fall back to email if you keep email reminders
+          enabled.
         </p>
       </header>
 

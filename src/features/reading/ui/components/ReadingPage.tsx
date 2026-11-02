@@ -22,8 +22,8 @@ export function ReadingPage({
           Save where you stopped.
         </h1>
         <p className="text-muted-foreground mt-2">
-          Enter the last page you finished. Reading Buddy calculates the pages
-          read and updates your book progress, today&apos;s goal, and streak
+          Enter the last page you finished. ReadOn calculates the pages read and
+          updates your book progress, today&apos;s goal, and streak
           automatically.
         </p>
       </header>

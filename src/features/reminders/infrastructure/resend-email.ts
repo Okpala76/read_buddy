@@ -151,8 +151,8 @@ export function buildReminderEmail(
     <p>Your next pages in <strong>${escapeHtml(bookTitle)}</strong> are ready.</p>
     <p>${escapeHtml(progress)}</p>
     <p>Today's reading target is <strong>${input.dailyPageTarget} pages</strong>.</p>
-    <p><a href="${escapeHtml(dashboardUrl)}" style="display: inline-block; padding: 12px 20px; border-radius: 6px; background: #1d4ed8; color: #ffffff; text-decoration: none;">Open Read Buddy</a></p>
-    <p style="font-size: 12px; color: #6b7280;">You received this transactional email because reading reminders are enabled in Read Buddy.</p>
+    <p><a href="${escapeHtml(dashboardUrl)}" style="display: inline-block; padding: 12px 20px; border-radius: 6px; background: #1d4ed8; color: #ffffff; text-decoration: none;">Open ReadOn</a></p>
+    <p style="font-size: 12px; color: #6b7280;">You received this transactional email because reading reminders are enabled in ReadOn.</p>
   </body>
 </html>`,
     text: `Time for a reading break
@@ -161,9 +161,9 @@ Your next pages in ${bookTitle} are ready.
 ${progress}
 Today's reading target is ${input.dailyPageTarget} pages.
 
-Open Read Buddy: ${dashboardUrl}
+Open ReadOn: ${dashboardUrl}
 
-You received this transactional email because reading reminders are enabled in Read Buddy.`,
+You received this transactional email because reading reminders are enabled in ReadOn.`,
   };
 }
 

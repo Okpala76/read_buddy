@@ -65,7 +65,7 @@ describe("PWA installation experience", () => {
   it("offers manual iOS instructions instead of a non-existent native install prompt", async () => {
     renderFlow();
     fireEvent.click(
-      await screen.findByRole("button", { name: "Install Reading Buddy" }),
+      await screen.findByRole("button", { name: "Install ReadOn" }),
     );
     expect(await screen.findByText("Add to Home Screen")).toBeVisible();
     expect(screen.getByRole("button", { name: "Got it" })).toBeVisible();
@@ -77,7 +77,7 @@ describe("PWA installation experience", () => {
       await screen.findByRole("button", { name: "Continue in browser" }),
     );
     expect(
-      screen.queryByRole("button", { name: "Install Reading Buddy" }),
+      screen.queryByRole("button", { name: "Install ReadOn" }),
     ).not.toBeInTheDocument();
     expect(
       Number(window.localStorage.getItem(INSTALL_DISMISSAL_KEY)),
@@ -95,7 +95,7 @@ describe("PWA installation experience", () => {
       ).not.toBeInTheDocument(),
     );
     expect(
-      screen.queryByRole("button", { name: "Install Reading Buddy" }),
+      screen.queryByRole("button", { name: "Install ReadOn" }),
     ).not.toBeInTheDocument();
   });
 
@@ -120,7 +120,7 @@ describe("PWA installation experience", () => {
     });
     fireEvent(window, event);
     fireEvent.click(
-      await screen.findByRole("button", { name: "Install Reading Buddy" }),
+      await screen.findByRole("button", { name: "Install ReadOn" }),
     );
     await waitFor(() => expect(prompt).toHaveBeenCalledOnce());
   });

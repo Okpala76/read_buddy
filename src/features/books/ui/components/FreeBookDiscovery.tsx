@@ -105,7 +105,7 @@ export function FreeBookDiscovery() {
             <button
               disabled={busy}
               type="submit"
-              className="bg-primary text-primary-foreground min-h-11 rounded-lg px-4 disabled:opacity-50"
+              className="motion-press bg-primary text-primary-foreground min-h-11 rounded-lg px-4 disabled:opacity-50"
             >
               Search
             </button>

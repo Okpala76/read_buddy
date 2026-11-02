@@ -89,7 +89,7 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
           setStartNow(!hasCurrentReading);
           setIsOpen(true);
         }}
-        className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+        className="motion-press bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
       >
         <Plus className="size-4" aria-hidden="true" />
         Add book
@@ -345,7 +345,7 @@ export function CreateBookForm({ hasCurrentReading }: CreateBookFormProps) {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
+                className="motion-press bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
               >
                 {isSubmitting && (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
