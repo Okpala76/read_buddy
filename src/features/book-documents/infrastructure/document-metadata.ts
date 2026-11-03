@@ -147,6 +147,8 @@ async function readPdfWithReader(bytes: Uint8Array): Promise<DocumentMetadata> {
     | undefined;
   try {
     const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    // Loading the worker module registers PDF.js's Node worker in the same process.
+    await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
     task = pdfjs.getDocument({
       data: new Uint8Array(bytes),
       isEvalSupported: false,
