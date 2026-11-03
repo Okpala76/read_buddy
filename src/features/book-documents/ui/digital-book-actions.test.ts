@@ -14,6 +14,7 @@ vi.mock("../infrastructure/digital-book-repository", () => ({
   finalizeDigitalUpload: m.finish,
   discardDigitalUpload: m.discard,
 }));
+import { DocumentInspectionError } from "../domain/document-inspection-error";
 import {
   beginDigitalBook,
   inspectDigitalBook,
@@ -81,4 +82,26 @@ it("accepts edited details while deriving ownership from the session", async () 
   });
   await inspectDigitalBook({ uploadId });
   expect(m.inspect).toHaveBeenCalledWith("owner", uploadId);
+});
+
+it("returns safe actionable inspection failures without exposing internal errors", async () => {
+  const uploadId = crypto.randomUUID();
+  m.inspect.mockRejectedValueOnce(
+    new DocumentInspectionError(
+      "This PDF requires a password. Upload an unlocked copy.",
+    ),
+  );
+  expect(await inspectDigitalBook({ uploadId })).toEqual({
+    error: "This PDF requires a password. Upload an unlocked copy.",
+  });
+  const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  try {
+    m.inspect.mockRejectedValueOnce(new Error("private internal error"));
+    expect(await inspectDigitalBook({ uploadId })).toEqual({
+      error:
+        "We couldn't read the uploaded book. Please try again or choose another file.",
+    });
+  } finally {
+    log.mockRestore();
+  }
 });

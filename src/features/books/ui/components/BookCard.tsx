@@ -225,6 +225,7 @@ export function BookCard({
           )}
           <BookDocumentControl
             bookId={book.id}
+            documentFormat={book.documentFormat}
             currentPage={book.currentPage}
             isReading={book.status === BookStatus.READING}
           />

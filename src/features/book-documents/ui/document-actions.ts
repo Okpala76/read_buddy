@@ -118,7 +118,7 @@ export async function getDocumentDownload(input: unknown) {
     .limit(1);
 
   const document = rows[0];
-  if (!document) throw new Error("Document not found");
+  if (!document) return null;
 
   return {
     documentId: document.id,

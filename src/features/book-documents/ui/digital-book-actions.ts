@@ -9,6 +9,7 @@ import {
   finalizeDigitalUpload,
   discardDigitalUpload,
 } from "../infrastructure/digital-book-repository";
+import { DocumentInspectionError } from "../domain/document-inspection-error";
 const uploadIdSchema = z.object({ uploadId: z.string().uuid() });
 export async function beginDigitalBook(input: unknown) {
   const user = await requireAuth();
@@ -28,7 +29,18 @@ export async function beginDigitalBook(input: unknown) {
 }
 export async function inspectDigitalBook(input: unknown) {
   const user = await requireAuth();
-  return inspectDigitalUpload(user.id, uploadIdSchema.parse(input).uploadId);
+  const { uploadId } = uploadIdSchema.parse(input);
+  try {
+    return await inspectDigitalUpload(user.id, uploadId);
+  } catch (cause) {
+    if (cause instanceof DocumentInspectionError)
+      return { error: cause.message };
+    console.error("Digital book inspection failed", cause);
+    return {
+      error:
+        "We couldn't read the uploaded book. Please try again or choose another file.",
+    };
+  }
 }
 export async function completeDigitalBook(input: unknown) {
   const user = await requireAuth();

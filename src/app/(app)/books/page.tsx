@@ -59,7 +59,7 @@ export default async function BooksPage() {
       viewedPage: pdfReadingStates.viewedPage,
     })
     .from(bookDocuments)
-    .innerJoin(
+    .leftJoin(
       pdfReadingStates,
       and(
         eq(pdfReadingStates.documentId, bookDocuments.id),
@@ -83,8 +83,16 @@ export default async function BooksPage() {
     <BooksPageComponent
       books={views.map((book) => ({
         ...book,
+        documentFormat: progressById.has(book.id)
+          ? "EPUB"
+          : pdfById.has(book.id)
+            ? "PDF"
+            : undefined,
         epubProgress: progressById.get(book.id),
-        pdfProgress: pdfById.get(book.id),
+        pdfProgress:
+          pdfById.get(book.id)?.pageCount != null
+            ? (pdfById.get(book.id) as NonNullable<typeof book.pdfProgress>)
+            : undefined,
       }))}
     />
   );
