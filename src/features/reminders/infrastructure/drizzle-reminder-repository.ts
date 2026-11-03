@@ -495,6 +495,7 @@ export class DrizzleReminderDispatchRepository implements ReminderDispatchReposi
       .update(reminderDeliveries)
       .set({
         status: data.status,
+        deliveryChannel: data.deliveryChannel,
         lockedAt: data.lockedAt,
         nextAttemptAt: data.nextAttemptAt,
         sentAt: data.sentAt,
