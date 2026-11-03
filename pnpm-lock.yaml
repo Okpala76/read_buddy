@@ -27,6 +27,9 @@ importers:
       '@js-temporal/polyfill':
         specifier: 0.5.1
         version: 0.5.1
+      '@napi-rs/canvas':
+        specifier: 0.1.100
+        version: 0.1.100
       '@radix-ui/react-alert-dialog':
         specifier: 1.1.24
         version: 1.1.24(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -5919,7 +5922,6 @@ snapshots:
       '@napi-rs/canvas-linux-x64-musl': 0.1.100
       '@napi-rs/canvas-win32-arm64-msvc': 0.1.100
       '@napi-rs/canvas-win32-x64-msvc': 0.1.100
-    optional: true
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true

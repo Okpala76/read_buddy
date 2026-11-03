@@ -146,6 +146,12 @@ async function readPdfWithReader(bytes: Uint8Array): Promise<DocumentMetadata> {
     | ReturnType<typeof import("pdfjs-dist/legacy/build/pdf.mjs").getDocument>
     | undefined;
   try {
+    const canvas = await import("@napi-rs/canvas");
+    // PDF.js needs these browser primitives even for Node metadata inspection.
+    for (const key of ["DOMMatrix", "ImageData", "Path2D"] as const) {
+      if (!(key in globalThis))
+        Object.assign(globalThis, { [key]: canvas[key] });
+    }
     const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
     // Loading the worker module registers PDF.js's Node worker in the same process.
     await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
