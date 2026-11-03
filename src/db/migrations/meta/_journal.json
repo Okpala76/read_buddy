@@ -169,6 +169,13 @@
       "when": 1793631754576,
       "tag": "0023_confirmed_digital_reading",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793721411703,
+      "tag": "0024_independent_reminder_channels",
+      "breakpoints": true
     }
   ]
 }

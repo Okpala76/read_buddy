@@ -214,22 +214,27 @@ export class ScheduleDueRemindersUseCase {
         dailyScheduledAt > graceWindowStart
       ) {
         due++;
-        const dailyDelivery = ReminderDelivery.create({
-          id: crypto.randomUUID(),
-          userId: candidate.userId,
-          recipientEmail: candidate.recipientEmail,
-          bookTitle: candidate.bookTitle,
-          bookCurrentPage: candidate.bookCurrentPage,
-          bookTotalPages: candidate.bookTotalPages,
-          dailyPageTarget: candidate.dailyPageTarget,
-          scheduledFor: dailyScheduledFor,
-          notificationKind: "DAILY_REMINDER",
-        });
+        for (const deliveryTarget of ["EMAIL", "PUSH"] as const) {
+          const dailyDelivery = ReminderDelivery.create({
+            deliveryTarget,
+            id: crypto.randomUUID(),
+            userId: candidate.userId,
+            recipientEmail: candidate.recipientEmail,
+            bookTitle: candidate.bookTitle,
+            bookCurrentPage: candidate.bookCurrentPage,
+            bookTotalPages: candidate.bookTotalPages,
+            dailyPageTarget: candidate.dailyPageTarget,
+            scheduledFor: dailyScheduledFor,
+            notificationKind: "DAILY_REMINDER",
+          });
 
-        if (
-          await this.schedulingRepository.createDeliveryIfAbsent(dailyDelivery)
-        ) {
-          scheduled++;
+          if (
+            await this.schedulingRepository.createDeliveryIfAbsent(
+              dailyDelivery,
+            )
+          ) {
+            scheduled++;
+          }
         }
       }
 
@@ -247,24 +252,27 @@ export class ScheduleDueRemindersUseCase {
           rescueScheduledAt > graceWindowStart
         ) {
           due++;
-          const rescueDelivery = ReminderDelivery.create({
-            id: crypto.randomUUID(),
-            userId: candidate.userId,
-            recipientEmail: candidate.recipientEmail,
-            bookTitle: candidate.bookTitle,
-            bookCurrentPage: candidate.bookCurrentPage,
-            bookTotalPages: candidate.bookTotalPages,
-            dailyPageTarget: candidate.dailyPageTarget,
-            scheduledFor: rescueScheduledFor,
-            notificationKind: "STREAK_RESCUE",
-          });
+          for (const deliveryTarget of ["EMAIL", "PUSH"] as const) {
+            const rescueDelivery = ReminderDelivery.create({
+              deliveryTarget,
+              id: crypto.randomUUID(),
+              userId: candidate.userId,
+              recipientEmail: candidate.recipientEmail,
+              bookTitle: candidate.bookTitle,
+              bookCurrentPage: candidate.bookCurrentPage,
+              bookTotalPages: candidate.bookTotalPages,
+              dailyPageTarget: candidate.dailyPageTarget,
+              scheduledFor: rescueScheduledFor,
+              notificationKind: "STREAK_RESCUE",
+            });
 
-          if (
-            await this.schedulingRepository.createDeliveryIfAbsent(
-              rescueDelivery,
-            )
-          ) {
-            scheduled++;
+            if (
+              await this.schedulingRepository.createDeliveryIfAbsent(
+                rescueDelivery,
+              )
+            ) {
+              scheduled++;
+            }
           }
         }
       }
@@ -356,7 +364,8 @@ export class ProcessReminderDeliveriesUseCase {
           if (
             !alreadyReadToday &&
             eligibility.hasActiveBook &&
-            delivery.deliveryChannel === null
+            delivery.deliveryChannel === null &&
+            delivery.deliveryTarget !== "EMAIL"
           ) {
             pushAvailable = await this.pushSender.hasActiveSubscription(
               delivery.userId,
@@ -414,6 +423,7 @@ export class ProcessReminderDeliveriesUseCase {
         hasActiveBook: eligibility.hasActiveBook,
         pushAvailable,
         selectedChannel: delivery.deliveryChannel,
+        deliveryTarget: delivery.deliveryTarget,
         notificationKind: delivery.notificationKind,
         streakRescueEnabled: eligibility.streakRescueEnabled,
         streakStatus,
@@ -458,6 +468,7 @@ export class ProcessReminderDeliveriesUseCase {
           if (
             pushResult.status === "NO_ACTIVE_SUBSCRIPTIONS" &&
             selectedNow &&
+            delivery.deliveryTarget === "LEGACY" &&
             eligibility.emailEnabled
           ) {
             const changed = await this.dispatchRepository.fallbackToEmail(

@@ -407,6 +407,7 @@ describe("ReminderDelivery domain", () => {
         dailyPageTarget: 15,
         status: "PENDING",
         deliveryChannel: null,
+        deliveryTarget: "LEGACY",
         notificationKind: "DAILY_REMINDER",
         scheduledFor: baseProps.scheduledFor,
         lockedAt: null,

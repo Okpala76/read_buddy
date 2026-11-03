@@ -1,5 +1,7 @@
 # Reminder Delivery
 
+> Current behavior (migration 0024): email and push are independent channels. See [Independent reminder channels](INDEPENDENT_REMINDER_CHANNELS.md). The Phase 2B single-channel/fallback descriptions below document historical delivery behavior only.
+
 Reminder delivery is implemented through Resend and Web Push, behind the application-layer `ReminderEmailSender` and `ReminderPushSender` ports. The official `resend` Node SDK is used only by the email infrastructure adapter; `web-push` is used only by the push infrastructure adapter.
 
 The Resend sending domain, Vercel production variables, production migrations, and VPS scheduler are configured.

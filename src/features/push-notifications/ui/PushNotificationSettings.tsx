@@ -287,7 +287,7 @@ export function PushNotificationSettings({
       "Push is unavailable here. Open the installed ReadOn app and try again.",
     "not-enabled": "Push is not connected on this device.",
     enabled:
-      "Push is connected on this device and will be preferred for reminders.",
+      "Push is connected on this device. Email reminders are controlled separately.",
     "sync-error":
       "Push is enabled in the browser, but this device is not connected to ReadOn.",
     blocked: "Notifications are blocked in your browser settings.",

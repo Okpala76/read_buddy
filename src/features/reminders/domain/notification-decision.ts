@@ -25,6 +25,7 @@ export interface NotificationDecisionInput {
   hasActiveBook: boolean;
   pushAvailable: boolean;
   selectedChannel: ReminderDeliveryChannel | null;
+  deliveryTarget?: "LEGACY" | ReminderDeliveryChannel;
   notificationKind: ReminderNotificationKind;
   streakRescueEnabled: boolean;
   streakStatus: "ACTIVE" | "AT_RISK" | "BROKEN";
@@ -65,6 +66,18 @@ export class NotificationDecisionEngine {
       }
     }
 
+    // New occurrences have independent email and push targets. Historical rows
+    // retain their original channel selection until their retries finish.
+    if (input.deliveryTarget === "EMAIL" || input.selectedChannel === "EMAIL") {
+      return input.emailEnabled
+        ? { action: "EMAIL", reason: "EMAIL_SELECTED" }
+        : { action: "SKIP", reason: "NO_ENABLED_CHANNEL" };
+    }
+    if (input.deliveryTarget === "PUSH") {
+      return input.selectedChannel === "PUSH" || input.pushAvailable
+        ? { action: "PUSH", reason: "PUSH_SELECTED" }
+        : { action: "SKIP", reason: "NO_ENABLED_CHANNEL" };
+    }
     if (input.selectedChannel === "PUSH") {
       return { action: "PUSH", reason: "PUSH_SELECTED" };
     }

@@ -5,6 +5,7 @@ export const reminderDeliverySchema = z.object({
   id: z.string().uuid(),
   status: z.enum(["PENDING", "PROCESSING", "SENT", "FAILED", "SKIPPED"]),
   deliveryChannel: z.enum(["EMAIL", "PUSH"]).nullable(),
+  deliveryTarget: z.enum(["LEGACY", "EMAIL", "PUSH"]).optional(),
   scheduledFor: z.string(),
   nextAttemptAt: z.string().nullable(),
   sentAt: z.string().nullable(),

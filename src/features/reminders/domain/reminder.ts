@@ -261,6 +261,7 @@ export interface ReminderDeliveryProps {
   dailyPageTarget: number;
   status: DeliveryStatusValue;
   deliveryChannel: ReminderDeliveryChannel | null;
+  deliveryTarget?: "LEGACY" | ReminderDeliveryChannel;
   notificationKind: ReminderNotificationKind;
   scheduledFor: Date;
   lockedAt: Date | null;
@@ -291,11 +292,13 @@ export class ReminderDelivery {
     dailyPageTarget: number;
     scheduledFor: Date;
     notificationKind?: ReminderNotificationKind;
+    deliveryTarget?: "LEGACY" | ReminderDeliveryChannel;
   }): ReminderDelivery {
     return new ReminderDelivery({
       ...props,
       status: "PENDING",
       deliveryChannel: null,
+      deliveryTarget: props.deliveryTarget ?? "LEGACY",
       notificationKind: props.notificationKind ?? "DAILY_REMINDER",
       lockedAt: null,
       nextAttemptAt: null,
@@ -351,6 +354,10 @@ export class ReminderDelivery {
 
   get deliveryChannel(): ReminderDeliveryChannel | null {
     return this.props.deliveryChannel;
+  }
+
+  get deliveryTarget(): "LEGACY" | ReminderDeliveryChannel {
+    return this.props.deliveryTarget ?? "LEGACY";
   }
 
   get notificationKind(): ReminderNotificationKind {
@@ -487,6 +494,7 @@ export class ReminderDelivery {
     return new ReminderDelivery({
       ...this.props,
       status: "SKIPPED",
+      deliveryChannel: null,
       lockedAt: null,
       nextAttemptAt: null,
       errorCode: null,

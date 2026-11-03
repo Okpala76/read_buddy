@@ -96,6 +96,17 @@ describe("ReminderSettingsForm", () => {
     );
   });
 
+  it("can disable email without disabling reading reminders", async () => {
+    render(<ReminderSettingsForm initialPreference={storedSettings} />);
+    fireEvent.click(screen.getByLabelText("Email reminders"));
+    fireEvent.click(screen.getByRole("button", { name: "Save Settings" }));
+    await waitFor(() =>
+      expect(updateReminderPreferenceMock).toHaveBeenCalledWith(
+        expect.objectContaining({ enabled: true, emailEnabled: false }),
+      ),
+    );
+  });
+
   it("shows an error without replacing server-provided settings", async () => {
     updateReminderPreferenceMock.mockRejectedValue(new Error("Unavailable"));
     render(<ReminderSettingsForm initialPreference={storedSettings} />);
