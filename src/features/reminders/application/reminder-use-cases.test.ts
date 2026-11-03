@@ -300,7 +300,7 @@ describe("ScheduleDueRemindersUseCase", () => {
 
     const result = await useCase.execute(new Date("2026-10-05T18:05:00.000Z"));
 
-    expect(result).toEqual({ candidates: 1, due: 1, scheduled: 1 });
+    expect(result).toEqual({ candidates: 1, due: 1, scheduled: 2 });
     expect(repository.createDeliveryIfAbsent).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "user-lagos",
@@ -416,7 +416,7 @@ describe("ScheduleDueRemindersUseCase", () => {
     ]);
     vi.mocked(repository.createDeliveryIfAbsent).mockImplementation(
       async (delivery) => {
-        const key = `${delivery.userId}:${delivery.scheduledFor.toISOString()}`;
+        const key = `${delivery.userId}:${delivery.scheduledFor.toISOString()}:${delivery.deliveryTarget}`;
         if (insertedOccurrences.has(key)) return false;
         insertedOccurrences.add(key);
         return true;
@@ -427,9 +427,9 @@ describe("ScheduleDueRemindersUseCase", () => {
     const first = await useCase.execute(now);
     const second = await useCase.execute(now);
 
-    expect(first.scheduled).toBe(1);
+    expect(first.scheduled).toBe(2);
     expect(second.scheduled).toBe(0);
-    expect(insertedOccurrences.size).toBe(1);
+    expect(insertedOccurrences.size).toBe(2);
   });
 });
 
@@ -496,6 +496,155 @@ describe("ProcessReminderDeliveriesUseCase", () => {
       pushSender,
       streakService,
     );
+  });
+
+  function targeted(channel: "EMAIL" | "PUSH") {
+    return ReminderDelivery.reconstitute({
+      ...claimedDelivery().toPersistence(),
+      id: `delivery-${channel}`,
+      deliveryTarget: channel,
+    });
+  }
+
+  it("sends email even if checking push availability fails", async () => {
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([
+      targeted("PUSH"),
+      targeted("EMAIL"),
+    ]);
+    vi.mocked(pushSender.hasActiveSubscription).mockRejectedValue(
+      new Error("Push unavailable"),
+    );
+    expect(await useCase.execute(now)).toMatchObject({
+      sentEmail: 1,
+      unresolved: 1,
+    });
+    expect(emailSender.sendReminder).toHaveBeenCalledOnce();
+  });
+
+  it("sends email and skips the push target when no device is connected", async () => {
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([
+      targeted("EMAIL"),
+      targeted("PUSH"),
+    ]);
+    expect(await useCase.execute(now)).toMatchObject({
+      sentEmail: 1,
+      sentPush: 0,
+      skipped: 1,
+    });
+    expect(emailSender.sendReminder).toHaveBeenCalledOnce();
+    expect(pushSender.sendReminder).not.toHaveBeenCalled();
+  });
+
+  it("sends email alongside push for the same due occurrence", async () => {
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([
+      targeted("EMAIL"),
+      targeted("PUSH"),
+    ]);
+    vi.mocked(pushSender.hasActiveSubscription).mockResolvedValue(true);
+    vi.mocked(pushSender.sendReminder).mockResolvedValue({
+      status: "ACCEPTED",
+      providerMessageId: "push-id",
+      attempted: 1,
+      accepted: 1,
+      invalidated: 0,
+    });
+    const result = await useCase.execute(now);
+    expect(result).toMatchObject({ sentEmail: 1, sentPush: 1, sent: 2 });
+    expect(emailSender.sendReminder).toHaveBeenCalledOnce();
+    expect(pushSender.sendReminder).toHaveBeenCalledOnce();
+  });
+
+  it("retries only failed email after push succeeds", async () => {
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValueOnce([
+      targeted("EMAIL"),
+      targeted("PUSH"),
+    ]);
+    vi.mocked(pushSender.hasActiveSubscription).mockResolvedValue(true);
+    vi.mocked(pushSender.sendReminder).mockResolvedValue({
+      status: "ACCEPTED",
+      providerMessageId: "push-id",
+      attempted: 1,
+      accepted: 1,
+      invalidated: 0,
+    });
+    vi.mocked(emailSender.sendReminder).mockResolvedValueOnce({
+      status: "FAILED",
+      classification: "RETRYABLE",
+      errorCode: "RESEND_TIMEOUT",
+    });
+    expect(await useCase.execute(now)).toMatchObject({
+      sentPush: 1,
+      retryScheduled: 1,
+    });
+    const failedEmail = vi
+      .mocked(dispatchRepo.saveClaimResult)
+      .mock.calls.map(([d]) => d)
+      .find((d) => d.deliveryTarget === "EMAIL")!;
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([
+      failedEmail.markProcessing(new Date(now.getTime() + 300000)),
+    ]);
+    expect(
+      await useCase.execute(new Date(now.getTime() + 300000)),
+    ).toMatchObject({ sentEmail: 1, sentPush: 0 });
+    expect(pushSender.sendReminder).toHaveBeenCalledOnce();
+    expect(emailSender.sendReminder).toHaveBeenCalledTimes(2);
+    expect(
+      vi.mocked(emailSender.sendReminder).mock.calls[0][0].deliveryId,
+    ).toBe(vi.mocked(emailSender.sendReminder).mock.calls[1][0].deliveryId);
+  });
+
+  it("honors email opt-out on a queued retry without disabling push", async () => {
+    const email = ReminderDelivery.reconstitute({
+      ...targeted("EMAIL").toPersistence(),
+      deliveryChannel: "EMAIL",
+      attemptCount: 1,
+    });
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([
+      email,
+      targeted("PUSH"),
+    ]);
+    const eligibility = await dispatchRepo.findEligibility("user-1");
+    vi.mocked(dispatchRepo.findEligibility).mockResolvedValue({
+      ...eligibility,
+      emailEnabled: false,
+    });
+    vi.mocked(pushSender.hasActiveSubscription).mockResolvedValue(true);
+    vi.mocked(pushSender.sendReminder).mockResolvedValue({
+      status: "ACCEPTED",
+      providerMessageId: "push-id",
+      attempted: 1,
+      accepted: 1,
+      invalidated: 0,
+    });
+    expect(await useCase.execute(now)).toMatchObject({
+      skipped: 1,
+      sentPush: 1,
+      sentEmail: 0,
+    });
+    expect(emailSender.sendReminder).not.toHaveBeenCalled();
+    expect(dispatchRepo.saveClaimResult).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "SKIPPED", deliveryChannel: null }),
+      now,
+    );
+  });
+
+  it("does not duplicate email when targeted push discovers expired subscriptions", async () => {
+    vi.mocked(dispatchRepo.claimDueDeliveries).mockResolvedValue([
+      targeted("EMAIL"),
+      targeted("PUSH"),
+    ]);
+    vi.mocked(pushSender.hasActiveSubscription).mockResolvedValue(true);
+    vi.mocked(pushSender.sendReminder).mockResolvedValue({
+      status: "NO_ACTIVE_SUBSCRIPTIONS",
+      attempted: 0,
+      invalidated: 0,
+    });
+    expect(await useCase.execute(now)).toMatchObject({
+      sentEmail: 1,
+      pushFallbackToEmail: 0,
+    });
+    expect(emailSender.sendReminder).toHaveBeenCalledOnce();
+    expect(dispatchRepo.fallbackToEmail).not.toHaveBeenCalled();
   });
 
   it("recovers stale claims and atomically claims a bounded batch", async () => {

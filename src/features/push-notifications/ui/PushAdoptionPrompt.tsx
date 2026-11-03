@@ -69,7 +69,7 @@ export function PushAdoptionPrompt({
             We will remind you each day if you have not logged reading.
             {emailEnabled
               ? " Email reminders are on by default, and you can change them anytime."
-              : " Your email fallback is currently off."}
+              : " Your email reminders are currently off."}
           </p>
         </div>
       </div>

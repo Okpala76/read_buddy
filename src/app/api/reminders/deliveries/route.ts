@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
         id: delivery.id,
         status: delivery.status,
         deliveryChannel: delivery.deliveryChannel,
+        deliveryTarget: delivery.deliveryTarget,
         scheduledFor: delivery.scheduledFor,
         nextAttemptAt: delivery.nextAttemptAt,
         sentAt: delivery.sentAt,

@@ -71,6 +71,87 @@ describe.runIf(runIntegrationTests)(
       await databasePool.end();
     });
 
+    it("creates each channel only once under concurrent scheduling", async () => {
+      const { DrizzleReminderSchedulingRepository } =
+        await import("./drizzle-reminder-repository");
+      const { ReminderDelivery } = await import("../domain");
+      const scheduler = new DrizzleReminderSchedulingRepository();
+      const results = await Promise.all(
+        Array.from({ length: 8 }, (_, i) =>
+          scheduler.createDeliveryIfAbsent(
+            ReminderDelivery.create({
+              id: crypto.randomUUID(),
+              userId,
+              ...deliverySnapshot,
+              bookTitle: null,
+              bookCurrentPage: null,
+              bookTotalPages: null,
+              scheduledFor: new Date("2026-11-04T19:00:00Z"),
+              deliveryTarget: i % 2 ? "EMAIL" : "PUSH",
+            }),
+          ),
+        ),
+      );
+      expect(results.filter(Boolean)).toHaveLength(2);
+      const rows = await database
+        .select()
+        .from(reminderDeliveries)
+        .where(eq(reminderDeliveries.userId, userId));
+      expect(rows.map((r) => r.deliveryTarget).sort()).toEqual([
+        "EMAIL",
+        "PUSH",
+      ]);
+      const repo = new Repository();
+      const claims = await repo.claimDueDeliveries(
+        new Date("2026-11-04T19:01:00Z"),
+        10,
+        3,
+      );
+      expect(claims).toHaveLength(2);
+      const email = claims.find((d) => d.deliveryTarget === "EMAIL")!;
+      const skipped = email
+        .selectChannel("EMAIL")
+        .markSkipped("NO_ENABLED_CHANNEL");
+      expect(
+        await repo.selectChannel(
+          email.id,
+          email.lockedAt!,
+          "EMAIL",
+          new Date(),
+        ),
+      ).toBe(true);
+      expect(await repo.saveClaimResult(skipped, email.lockedAt!)).toBe(true);
+    });
+
+    it("preserves historical occurrences without replaying either channel", async () => {
+      const { DrizzleReminderSchedulingRepository } =
+        await import("./drizzle-reminder-repository");
+      const { ReminderDelivery } = await import("../domain");
+      const scheduler = new DrizzleReminderSchedulingRepository();
+      const snapshot = {
+        userId,
+        ...deliverySnapshot,
+        bookTitle: null,
+        bookCurrentPage: null,
+        bookTotalPages: null,
+        scheduledFor: new Date("2026-11-04T19:00:00Z"),
+      };
+      await scheduler.createDeliveryIfAbsent(
+        ReminderDelivery.create({ ...snapshot, id: crypto.randomUUID() }),
+      );
+      for (const deliveryTarget of ["EMAIL", "PUSH"] as const) {
+        expect(
+          await scheduler.createDeliveryIfAbsent(
+            ReminderDelivery.create({
+              ...snapshot,
+              id: crypto.randomUUID(),
+              deliveryTarget,
+            }),
+          ),
+        ).toBe(false);
+      }
+    });
+
     it("removes an active book without deleting its reading sessions", async () => {
       const bookId = crypto.randomUUID();
       const sessionId = crypto.randomUUID();

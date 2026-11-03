@@ -54,6 +54,11 @@ export function DeliveryHistory({
   return (
     <div className="border-border bg-card divide-border divide-y overflow-hidden rounded-2xl border">
       {deliveries.map((delivery) => {
+        const channel =
+          delivery.deliveryChannel ??
+          (delivery.deliveryTarget === "LEGACY"
+            ? undefined
+            : delivery.deliveryTarget);
         const scheduled = new Date(delivery.scheduledFor);
         const icon =
           delivery.status === "SENT" ? (
@@ -117,10 +122,8 @@ export function DeliveryHistory({
                     minute: "2-digit",
                   })}
                 </p>
-                {delivery.deliveryChannel && (
-                  <Badge variant="outline">
-                    {delivery.deliveryChannel.toLowerCase()}
-                  </Badge>
+                {channel && (
+                  <Badge variant="outline">{channel.toLowerCase()}</Badge>
                 )}
               </div>
               <p className="text-muted-foreground mt-1 text-sm capitalize">

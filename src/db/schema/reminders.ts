@@ -55,6 +55,7 @@ export const reminderDeliveries = pgTable(
     dailyPageTarget: integer("daily_page_target").notNull(),
     status: reminderDeliveryStatus("status").notNull().default("PENDING"),
     deliveryChannel: reminderDeliveryChannel("delivery_channel"),
+    deliveryTarget: text("delivery_target").notNull().default("LEGACY"),
     notificationKind: reminderNotificationKind("notification_kind")
       .notNull()
       .default("DAILY_REMINDER"),
@@ -74,10 +75,11 @@ export const reminderDeliveries = pgTable(
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("reminder_deliveries_user_scheduled_kind_unique").on(
+    uniqueIndex("reminder_deliveries_user_scheduled_kind_target_unique").on(
       table.userId,
       table.scheduledFor,
       table.notificationKind,
+      table.deliveryTarget,
     ),
     index("reminder_deliveries_status_scheduled_idx").on(
       table.status,
@@ -86,6 +88,10 @@ export const reminderDeliveries = pgTable(
     index("reminder_deliveries_status_next_attempt_idx").on(
       table.status,
       table.nextAttemptAt,
+    ),
+    check(
+      "reminder_deliveries_target_check",
+      sql`${table.deliveryTarget} in ('LEGACY', 'EMAIL', 'PUSH')`,
     ),
     check(
       "reminder_deliveries_attempt_count_check",

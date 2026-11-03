@@ -71,6 +71,7 @@ function toDeliveryDomain(
     dailyPageTarget: row.dailyPageTarget,
     status: row.status as DeliveryStatusValue,
     deliveryChannel: row.deliveryChannel as ReminderDeliveryChannel | null,
+    deliveryTarget: row.deliveryTarget as "LEGACY" | ReminderDeliveryChannel,
     notificationKind: row.notificationKind as ReminderNotificationKind,
     scheduledFor: row.scheduledFor,
     lockedAt: row.lockedAt,
@@ -112,6 +113,7 @@ function toDeliveryPersistence(props: ReminderDeliveryProps) {
     dailyPageTarget: props.dailyPageTarget,
     status: props.status,
     deliveryChannel: props.deliveryChannel,
+    deliveryTarget: props.deliveryTarget ?? "LEGACY",
     notificationKind: props.notificationKind,
     scheduledFor: props.scheduledFor,
     lockedAt: props.lockedAt,
@@ -219,6 +221,22 @@ export class DrizzleReminderSchedulingRepository implements ReminderSchedulingRe
   async createDeliveryIfAbsent(delivery: ReminderDelivery): Promise<boolean> {
     const database = getDb();
     const data = toDeliveryPersistence(delivery.toPersistence());
+    // Do not replay occurrences handled by the pre-dual-channel worker.
+    if (delivery.deliveryTarget !== "LEGACY") {
+      const legacy = await database
+        .select({ id: reminderDeliveries.id })
+        .from(reminderDeliveries)
+        .where(
+          and(
+            eq(reminderDeliveries.userId, delivery.userId),
+            eq(reminderDeliveries.scheduledFor, delivery.scheduledFor),
+            eq(reminderDeliveries.notificationKind, delivery.notificationKind),
+            eq(reminderDeliveries.deliveryTarget, "LEGACY"),
+          ),
+        )
+        .limit(1);
+      if (legacy.length) return false;
+    }
     const inserted = await database
       .insert(reminderDeliveries)
       .values(data)
@@ -227,6 +245,7 @@ export class DrizzleReminderSchedulingRepository implements ReminderSchedulingRe
           reminderDeliveries.userId,
           reminderDeliveries.scheduledFor,
           reminderDeliveries.notificationKind,
+          reminderDeliveries.deliveryTarget,
         ],
       })
       .returning({ id: reminderDeliveries.id });
@@ -476,6 +495,7 @@ export class DrizzleReminderDispatchRepository implements ReminderDispatchReposi
       .update(reminderDeliveries)
       .set({
         status: data.status,
+        deliveryChannel: data.deliveryChannel,
         lockedAt: data.lockedAt,
         nextAttemptAt: data.nextAttemptAt,
         sentAt: data.sentAt,

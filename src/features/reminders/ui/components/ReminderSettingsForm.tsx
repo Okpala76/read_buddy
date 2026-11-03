@@ -279,11 +279,12 @@ export function ReminderSettingsForm({
                     htmlFor="emailEnabled"
                     className="text-base font-semibold"
                   >
-                    Email fallback
+                    Email reminders
                   </Label>
                   <p className="text-muted-foreground mt-1 max-w-xl text-sm">
-                    Keep email available when push is not connected on a device.
-                    ReadOn sends one normal reminder, not both.
+                    Receive email reminders alongside notifications on your
+                    connected devices. ReadOn sends one normal reminder, not
+                    both.
                   </p>
                 </div>
               </div>
@@ -303,8 +304,8 @@ export function ReminderSettingsForm({
             {remindersEnabled && (
               <p className="text-muted-foreground mt-3 pl-14 text-xs">
                 {emailEnabled
-                  ? "Email is available as your fallback channel."
-                  : "Email fallback is off. A connected push device will be required for notifications."}
+                  ? "Email reminders are on, whether or not push is connected."
+                  : "Email reminders are off. Push notifications remain available on connected devices."}
               </p>
             )}
           </div>
