@@ -1,4 +1,5 @@
 import { PDFDocument } from "pdf-lib";
+import { DocumentInspectionError } from "../domain/document-inspection-error";
 import JSZip from "jszip";
 import { XMLParser } from "fast-xml-parser";
 export type DocumentMetadata = {
@@ -69,23 +70,31 @@ export async function extractDocumentMetadata(
     clean(fileName.replace(/\.(pdf|epub)$/i, "")) || "Untitled book";
   if (contentType === "application/pdf") {
     if (Buffer.from(bytes.subarray(0, 1024)).indexOf("%PDF-") < 0)
-      throw new Error("This file is not a PDF.");
+      throw new DocumentInspectionError(
+        "This file is not a PDF. Choose a PDF file.",
+      );
+    let document: PDFDocument;
     try {
-      const document = await PDFDocument.load(bytes, {
-        updateMetadata: false,
-        throwOnInvalidObject: true,
-      });
-      const pageCount = document.getPageCount();
-      if (pageCount < 1 || pageCount > 100000)
-        throw new Error("Invalid PDF page count.");
-      return {
-        title: clean(document.getTitle()) || fallback,
-        author: clean(document.getAuthor()),
-        pageCount,
-      };
+      document = await PDFDocument.load(bytes, { updateMetadata: false });
     } catch {
-      throw new Error("Could not read this PDF. Use a valid, unencrypted PDF.");
+      // Use the reader's parser for PDFs that pdf-lib cannot inspect.
+      return readPdfWithReader(bytes);
     }
+    let pageCount: number;
+    try {
+      pageCount = document.getPageCount();
+    } catch {
+      return readPdfWithReader(bytes);
+    }
+    if (pageCount < 1 || pageCount > 100000)
+      throw new DocumentInspectionError(
+        "This PDF has an unsupported page count.",
+      );
+    return {
+      title: optionalDetail(() => document.getTitle()),
+      author: optionalDetail(() => document.getAuthor()),
+      pageCount,
+    };
   }
   if (contentType !== "application/epub+zip")
     throw new Error("Unsupported book format.");
@@ -122,5 +131,66 @@ export async function extractDocumentMetadata(
         ? `Could not read this EPUB: ${cause.message}`
         : "Could not read this EPUB.",
     );
+  }
+}
+
+function optionalDetail(read: () => unknown): string {
+  try {
+    return clean(read());
+  } catch {
+    return "";
+  }
+}
+async function readPdfWithReader(bytes: Uint8Array): Promise<DocumentMetadata> {
+  let task:
+    | ReturnType<typeof import("pdfjs-dist/legacy/build/pdf.mjs").getDocument>
+    | undefined;
+  try {
+    const canvas = await import("@napi-rs/canvas");
+    // PDF.js needs these browser primitives even for Node metadata inspection.
+    for (const key of ["DOMMatrix", "ImageData", "Path2D"] as const) {
+      if (!(key in globalThis))
+        Object.assign(globalThis, { [key]: canvas[key] });
+    }
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    // Loading the worker module registers PDF.js's Node worker in the same process.
+    await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+    task = pdfjs.getDocument({
+      data: new Uint8Array(bytes),
+      isEvalSupported: false,
+      useSystemFonts: false,
+    });
+    const document = await task.promise;
+    if (document.numPages < 1 || document.numPages > 100000)
+      throw new DocumentInspectionError(
+        "This PDF has an unsupported page count.",
+      );
+    let title = "",
+      author = "";
+    try {
+      const { info } = await document.getMetadata();
+      const details = info as Record<string, unknown>;
+      title = clean(details.Title);
+      author = clean(details.Author);
+    } catch {
+      /* Optional metadata must not prevent adding a readable book. */
+    }
+    return { title, author, pageCount: document.numPages };
+  } catch (cause) {
+    if (cause instanceof DocumentInspectionError) throw cause;
+    if (cause instanceof Error && cause.name === "PasswordException")
+      throw new DocumentInspectionError(
+        "This PDF requires a password. Upload an unlocked copy.",
+      );
+    if (cause instanceof Error && cause.name === "InvalidPDFException")
+      throw new DocumentInspectionError(
+        "This PDF could not be opened. It may be damaged or incomplete. Try exporting a new copy.",
+      );
+    console.error("PDF inspection failed", cause);
+    throw new DocumentInspectionError(
+      "We couldn't check this PDF. Please try again or upload a newly exported copy.",
+    );
+  } finally {
+    await task?.destroy().catch(() => undefined);
   }
 }

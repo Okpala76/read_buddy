@@ -72,6 +72,7 @@ export function DigitalBookForm({
       setStage("Reading book details…");
       const metadata = await inspectDigitalBook({ uploadId: result.uploadId });
       if (version !== generation.current) return;
+      if ("error" in metadata) throw new Error(metadata.error);
       setTitle(metadata.title);
       setAuthor(metadata.author);
       setPageCount(metadata.pageCount);
@@ -159,6 +160,12 @@ export function DigitalBookForm({
       )}
       {uploadId && (
         <>
+          {!title.trim() && (
+            <p role="status" className="text-muted-foreground text-sm">
+              Your book is readable, but we could not extract its title. Enter
+              it below to continue.
+            </p>
+          )}
           <label className="block space-y-1 text-sm">
             <span>Book title</span>
             <input

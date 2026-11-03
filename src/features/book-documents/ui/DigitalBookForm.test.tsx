@@ -100,3 +100,53 @@ it("retains the reviewed upload after a failed save so retry uses the same ID", 
   await waitFor(() => expect(m.finish).toHaveBeenCalledTimes(2));
   expect(m.begin).toHaveBeenCalledOnce();
 });
+
+it("asks for a missing title while keeping detected pages and author", async () => {
+  m.inspect.mockResolvedValue({ title: "", author: "Writer", pageCount: 12 });
+  render(
+    <DigitalBookForm
+      format="PDF"
+      hasCurrentReading={false}
+      onSaved={vi.fn()}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("Choose PDF file"), {
+    target: { files: [new File(["pdf"], "book.pdf")] },
+  });
+  const title = await screen.findByLabelText("Book title");
+  expect(title).toHaveValue("");
+  expect(screen.getByLabelText("Author (optional)")).toHaveValue("Writer");
+  expect(screen.getByText(/12 PDF pages detected/)).toBeVisible();
+  expect(screen.getByRole("button", { name: "Add to library" })).toBeDisabled();
+  fireEvent.change(title, { target: { value: "Manual title" } });
+  fireEvent.click(screen.getByRole("button", { name: "Add to library" }));
+  await waitFor(() =>
+    expect(m.finish).toHaveBeenCalledWith({
+      uploadId,
+      title: "Manual title",
+      author: "Writer",
+      startNow: true,
+    }),
+  );
+});
+it("shows an explicit inspection error without offering to save an unreadable file", async () => {
+  m.inspect.mockResolvedValue({
+    error: "This PDF requires a password. Upload an unlocked copy.",
+  });
+  render(
+    <DigitalBookForm
+      format="PDF"
+      hasCurrentReading={false}
+      onSaved={vi.fn()}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("Choose PDF file"), {
+    target: { files: [new File(["pdf"], "book.pdf")] },
+  });
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "requires a password",
+  );
+  expect(
+    screen.queryByRole("button", { name: "Add to library" }),
+  ).not.toBeInTheDocument();
+});

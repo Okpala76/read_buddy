@@ -11,6 +11,7 @@ export interface BookView {
   createdAt: Date;
   updatedAt: Date;
   progressPercent: number;
+  documentFormat?: "PDF" | "EPUB";
   pdfProgress?: {
     confirmedPage: number;
     pageCount: number;

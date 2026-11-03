@@ -1,5 +1,6 @@
-import { expect, it } from "vitest";
-import { PDFDocument } from "pdf-lib";
+// @vitest-environment node
+import { expect, it, vi } from "vitest";
+import { PDFDocument, PDFName, PDFNumber } from "pdf-lib";
 import JSZip from "jszip";
 import { extractDocumentMetadata } from "./document-metadata";
 it("extracts actual PDF page count and metadata", async () => {
@@ -16,7 +17,7 @@ it("extracts actual PDF page count and metadata", async () => {
     ),
   ).toEqual({ title: "Digital book", author: "Author", pageCount: 2 });
 });
-it("uses the filename when optional PDF details are absent", async () => {
+it("leaves missing PDF titles editable without rejecting the file", async () => {
   const pdf = await PDFDocument.create();
   pdf.addPage();
   expect(
@@ -25,7 +26,7 @@ it("uses the filename when optional PDF details are absent", async () => {
       "application/pdf",
       "My reading.pdf",
     ),
-  ).toEqual({ title: "My reading", author: "", pageCount: 1 });
+  ).toEqual({ title: "", author: "", pageCount: 1 });
 });
 it("rejects spoofed and broken files", async () => {
   await expect(
@@ -80,4 +81,48 @@ it("rejects unsafe EPUB paths and entity declarations", async () => {
       "book.epub",
     ),
   ).rejects.toThrow("Unsupported EPUB metadata");
+});
+
+it("keeps valid details when title metadata is malformed", async () => {
+  const pdf = await PDFDocument.create();
+  pdf.addPage();
+  pdf.setAuthor("Writer");
+  const info = pdf.context.lookup(pdf.context.trailerInfo.Info);
+  if (info && "set" in info)
+    (info as import("pdf-lib").PDFDict).set(
+      PDFName.of("Title"),
+      PDFNumber.of(123),
+    );
+  expect(
+    await extractDocumentMetadata(
+      await pdf.save(),
+      "application/pdf",
+      "book.pdf",
+    ),
+  ).toEqual({ title: "", author: "Writer", pageCount: 1 });
+});
+it("uses the reader parser if the metadata parser rejects a readable PDF", async () => {
+  const pdf = await PDFDocument.create();
+  pdf.addPage();
+  pdf.setTitle("Reader fallback");
+  const bytes = await pdf.save();
+  const spy = vi
+    .spyOn(PDFDocument, "load")
+    .mockRejectedValueOnce(new Error("Unsupported object"));
+  try {
+    expect(
+      await extractDocumentMetadata(bytes, "application/pdf", "book.pdf"),
+    ).toEqual({ title: "Reader fallback", author: "", pageCount: 1 });
+  } finally {
+    spy.mockRestore();
+  }
+});
+it("reports a broken PDF without claiming it is encrypted", async () => {
+  await expect(
+    extractDocumentMetadata(
+      new TextEncoder().encode("%PDF-1.7\ntruncated"),
+      "application/pdf",
+      "bad.pdf",
+    ),
+  ).rejects.toThrow("could not be opened");
 });
